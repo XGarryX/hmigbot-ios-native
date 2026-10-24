@@ -7,8 +7,8 @@ import xml.etree.ElementTree as ET
 
 from .core import MigrationError, digest, json_bytes, read_json, snapshot, write_json
 from .swiftui import tokenize
+from .source_scope import import_token_lines, source_anchor_info, PLIST_SUFFIXES
 from .computed_properties import computed_property
-from .source_scope import import_token_lines
 from .xcode import project_inventory, dependency_inventory
 from .resources import asset_inventory
 
@@ -200,6 +200,10 @@ class _FileViews:
             self._raw = raw
         return self._raw
 
+    def raw(self, key, path, expected_sha256):
+        self._select(key, path, expected_sha256)
+        return self._read()
+
     def text(self, key, path, expected_sha256):
         self._select(key, path, expected_sha256)
         if self._text is None and self._decode_error is None:
@@ -229,6 +233,8 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
     if not isinstance(variant, dict) or variant.get('scope') not in {'repository', 'selected-build', 'project-targets'}:
         raise MigrationError('Variant must declare repository, selected-build or project-targets scope')
     project_context = None
+    conditional = None
+    additional_compiled_files = set()
     if variant['scope'] == 'project-targets':
         from .project_scope import resolve
         variant, project_context = resolve(source, variant, _context=True)
@@ -274,6 +280,38 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
                               'evidence_manifest_sha256', 'membership_sha256'}
               or variant.get('effective_build', 'unresolved') != 'unresolved'):
             raise MigrationError('Legacy membership cannot claim captured compiler identity or verified build')
+        if variant.get('conditional_evidence'):
+            from .conditional_evidence import validate as validate_conditionals
+            conditional = validate_conditionals(source, Path(variant['conditional_evidence']))
+            if (conditional['members'] != variant['source_files'] or
+                    conditional['expected_build'] != variant.get('expected_build') or
+                    Path(read_json(Path(variant['conditional_evidence']) / 'manifest.json')['build_evidence']).resolve() != bundle.resolve()):
+                raise MigrationError('Conditional evidence does not match selected build')
+        if variant.get('compilation_evidence_path'):
+            if conditional is None:
+                raise MigrationError('Separate compilation evidence requires validated conditional context')
+            compiled_bundle = Path(variant['compilation_evidence_path'])
+            compiled_capture = validate(source, compiled_bundle)
+            from .source_build_membership import validate as validate_membership
+            compiled_document = read_json(compiled_bundle / 'artifacts/source-files.json')
+            if compiled_capture['kind'] != 'source_build' or compiled_document.get('kind') != 'source_build_membership':
+                raise MigrationError('Separate compilation evidence needs versioned source build membership')
+            checked = validate_membership(source, compiled_document, capture=compiled_bundle / 'artifacts')
+            selection, expected = compiled_document['selection'], conditional['expected_build']
+            if (checked['membership_status'] != 'complete'
+                    or any(selection.get(key) != expected.get(key) for key in ('scheme', 'configuration', 'sdk'))
+                    or expected.get('target') not in selection['targets']
+                    or expected.get('architecture') not in selection['architectures']):
+                raise MigrationError('Compilation units and preprocessing dependencies use different build contexts')
+            additional_compiled_files = set(compiled_document['source_files'])
+            pinned_view = {'compiled_source_files': sorted(additional_compiled_files),
+                           'preprocessor_dependency_files': conditional['members'],
+                           'compilation_manifest_sha256': digest((compiled_bundle / 'manifest.json').read_bytes())}
+            for key, value in pinned_view.items():
+                if key in variant and variant[key] != value:
+                    raise MigrationError('Separate membership view changed: ' + key)
+            variant = {**variant, **pinned_view}
+
     evaluated_manifests, evidence_ref = None, None
     if manifest_evidence is not None:
         from .manifest_evidence import validate
@@ -284,35 +322,61 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
         evidence_ref = {'path': str(report_path), 'report_sha256': digest(report_path.read_bytes())}
     facts, issues = [], []
     occurrence = {}
-    views = _FileViews()
+    file_views = _FileViews()
 
     def add(file, kind, line, end, symbol, value, owner='unresolved', evidence='token_signal'):
         key = (file['path'], kind, owner, symbol)
         occurrence[key] = occurrence.get(key, 0) + 1
         ident = 'IF-' + digest(json_bytes([*key, occurrence[key]]))[:16]
+        raw = file_views.raw(file['path'], source / file['path'], file['sha256'])
+        resource_info = source_anchor_info(source / file['path'], raw=raw) if kind == 'resource' and Path(file['path']).suffix.lower() in PLIST_SUFFIXES else None
         try:
-            snippet = '\n'.join(views.lines(file['path'], source / file['path'], file['sha256'])[line - 1:end])
+            if resource_info and resource_info['coordinate_kind'] == 'resource_document':
+                raise UnicodeError('Resource-document coordinate')
+            text = file_views.text(file['path'], source / file['path'], file['sha256'])
+            snippet = '\n'.join(file_views.lines(file['path'], source / file['path'], file['sha256'])[line - 1:end])
         except UnicodeError:
             if kind != 'resource':
                 raise MigrationError('Non-text source needs an explicit parser: ' + file['path'])
             snippet = 'binary resource sha256:' + file['sha256']
             value = {**value, 'encoding': 'binary', 'content_validation': 'unresolved'}
+        if resource_info:
+            value = {**value, **{k: v for k, v in resource_info.items() if k != 'line_count'}}
         facts.append({'id': ident, 'kind': kind, 'symbol': symbol, 'owner': owner,
                       'value': value, 'resolution': evidence, 'variant': variant['scope'],
                       'anchor': {'path': file['path'], 'line': line, 'end_line': end,
                                  'file_sha256': file['sha256'], 'snippet_sha256': digest(snippet.encode()),
                                  'snippet': snippet}})
+        if build_contexts is not None:
+            facts[-1]['build_contexts'] = build_contexts
 
+    inputs = []
+    objc_inputs = []
     for file in snap['files']:
+        views = conditional['observed'].get(file['path']) if conditional else None
+        if views:
+            groups = {}
+            for view in views:
+                key = tuple(view['active_lines'])
+                groups.setdefault(key, []).append({'unit': view['unit'], 'instance': view['instance']})
+            for lines, contexts in sorted(groups.items()):
+                inputs.append((file, set(lines), contexts))
+        else:
+            inputs.append((file, None, None))
+    for file, active_lines, build_contexts in inputs:
         path = source / file['path']
-        if variant['scope'] == 'selected-build' and path.suffix in SOURCE_KINDS and file['path'] not in variant['source_files']:
+        if variant['scope'] == 'selected-build' and path.suffix in SOURCE_KINDS and file['path'] not in set(variant['source_files']) | additional_compiled_files:
             continue
         if (variant['scope'] == 'project-targets' and path.suffix in SOURCE_KINDS - {'.h'}
                 and file['path'] not in variant['source_files']):
             continue  # Declared product membership; implicit headers remain conservatively included.
         if path.suffix in SOURCE_KINDS:
-            text = views.text(file['path'], path, file['sha256'])
-            tokens = tokenize(text)
+            text = file_views.text(file['path'], path, file['sha256'])
+            tokens = tokenize(text, skip_pragma_marks=path.suffix in {'.m', '.mm', '.h', '.c', '.cpp'})
+            if active_lines is not None:
+                tokens = [t for t in tokens if t.line in active_lines]
+            if path.suffix in {'.m', '.mm', '.h'}:
+                objc_inputs.append((file, tokens, build_contexts))
             import_lines = import_token_lines(tokens)
             values = [t.value for t in tokens]
             owner, pending_owner, depth, stack, wrapper_vars = 'file', None, 0, [], set()
@@ -434,15 +498,15 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
                 issues.append({'rule': 'IOS.TOKEN_BALANCE', 'path': file['path'], 'message': 'Use a syntax provider; token scope is incomplete'})
             if any(ord(t.value[0]) > 127 and t.kind != 'string' for t in tokens if t.value):
                 issues.append({'rule': 'IOS.TOKEN_IDENTIFIER_UNRESOLVED', 'path': file['path'], 'message': 'Unicode identifiers require a syntax provider and explicit review'})
-            if re.search(r'^\s*#\s*(if|ifdef|ifndef)', text, re.M):
+            if active_lines is None and re.search(r'^\s*#\s*(if|ifdef|ifndef)', text, re.M):
                 issues.append({'rule': 'IOS.CONDITIONAL_BUILD', 'path': file['path'], 'message': 'Resolve active branches using selected configuration'})
         elif path.suffix in {'.storyboard', '.xib'}:
-            text = views.text(file['path'], path, file['sha256'])
+            text = file_views.text(file['path'], path, file['sha256'])
             if '<!DOCTYPE' in text or '<!ENTITY' in text:
                 raise MigrationError('Interface Builder DTD/entities are not supported')
             try:
                 tree = ET.fromstring(text)
-                lines = views.lines(file['path'], path, file['sha256'])
+                lines = file_views.lines(file['path'], path, file['sha256'])
                 for element in tree.iter():
                     kind = {'action': 'event', 'segue': 'navigation', 'constraint': 'constraint'}.get(element.tag)
                     if kind:
@@ -453,7 +517,21 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
             except ET.ParseError as exc:
                 issues.append({'rule': 'IOS.IB_PARSE', 'path': file['path'], 'message': str(exc)})
         elif path.name == 'Contents.json' or path.suffix in {'.xcstrings', '.stringsdict', '.xcprivacy', '.entitlements', '.plist'}:
-            add(file, 'resource', 1, 1, path.name, {'resource_type': path.suffix or path.name}, evidence='resource_locator')
+            try:
+                add(file, 'resource', 1, 1, path.name, {'resource_type': path.suffix or path.name}, evidence='resource_locator')
+            except MigrationError as exc:
+                if str(exc).startswith('Source content changed'):
+                    raise
+                issues.append({'rule': 'IOS.RESOURCE_PARSE', 'path': file['path'], 'message': str(exc)})
+    from .objc_state import extract_states
+    objc_states, objc_issues = extract_states(objc_inputs)
+    issues.extend(objc_issues)
+    for state in objc_states:
+        # Keep declarations and their cross-file assignment evidence together;
+        # conditional views retain the declaration's original build contexts.
+        build_contexts = state['contexts']
+        add(state['file'], 'state', state['line'], state['end_line'],
+            state['symbol'], state['value'], state['owner'])
     project, pi = project_inventory(source, snap['files'])
     dependencies, di = dependency_inventory(source, snap['files'], manifest_evaluations=evaluated_manifests)
     assets, ai = asset_inventory(source, snap['files'])
@@ -467,6 +545,10 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
         graph['dependency_scope'] = classify(source, snap, variant, project_context)
     if evidence_ref is not None:
         graph['manifest_evidence'] = evidence_ref
+    if conditional is not None:
+        graph['conditional_evidence'] = conditional['reference']
+        graph['capabilities']['conditional_compilation'] = 'clang_textual_observations'
+        # Module/PCH-only files and non-C inputs are NOT promoted by this capture.
     return graph
 
 
@@ -516,6 +598,9 @@ def _capture_providers(project, source, graph, providers):
 
 
 def refresh(project, source, variant=None, provider_plan=None, manifest_evidence=None):
+    if variant and variant.get('conditional_evidence'):
+        from .conditional_evidence import validate as validate_conditionals
+        validate_conditionals(source, Path(variant['conditional_evidence']), project=project)
     from .provider_plan import preflight
     providers = preflight(provider_plan) if provider_plan is not None else None
     if manifest_evidence is not None:
@@ -543,6 +628,11 @@ def refresh(project, source, variant=None, provider_plan=None, manifest_evidence
 
 def validate_graph(source, project):
     graph = read_json(project / 'spec/baseline/ios-facts.json')
+    if graph.get('conditional_evidence') is not None:
+        from .conditional_evidence import validate as validate_conditionals
+        ref = graph['conditional_evidence']
+        if validate_conditionals(source, Path(ref['path']), project=project)['reference'] != ref:
+            raise MigrationError('Conditional evidence changed; re-extract and review')
     manifest = graph.get('manifest_evidence')
     evidence_path = None
     if manifest is not None:

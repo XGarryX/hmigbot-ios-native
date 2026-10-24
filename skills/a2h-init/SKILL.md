@@ -11,9 +11,12 @@ metadata:
   layer: pipeline
 ---
 
+本统一版本先读 [单一流程、环境前置与兼容范围](../a2h-run/references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
+
+
 > **派发约定**：本 skill **不派发 subagent**，全部步骤在主会话执行。它只做只读探测、按已有授权确认输入、调用 init/harness-init/doctor/validate 本包命令——不写产品文件、不建 spec 业务产物。
 >
-> 路径约定：`$IOS_SRC` = iOS 源码根；`<target>` = 鸿蒙目标工程根；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。本 skill 的配置写入只限 `<target>/.migbot/config.json`：身份字段由 init 写，harness 标记由 harness-init 写；不手改配置、不动源/目标代码。历史v1迁移需单独的显式导入，不能在初始化中自动代做。
+> 路径约定：`$IOS_SRC` = iOS 源码根；`<target>` = 鸿蒙目标工程根；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。本 skill 写入 `<target>/.migbot/config.json`、`spec/reports/init-environment.json` 及清单内受控工具元数据：身份字段由 init 写，harness 标记由 harness-init 写；不手改配置、不动源/目标代码。历史v1迁移需单独的显式导入，不能在初始化中自动代做。
 
 # a2h-init — 迁移初始化与环境确认
 
@@ -44,9 +47,11 @@ metadata:
 1. 定位 `<runtime>`：工作区安装在 `.hmigbot-ios/plugin` 时取该目录；插件原目录本身就是 runtime。两个都查不到 → 停止并提示重新安装本包，**禁止**用别的 `a2h_ios.py` 凑数（runtime 版本必须一致）。
 2. 读 `<target>/.migbot/config.json`（存在时），解析：`source_platform`、`ios`、`harmonyos`、`language`、`confirmed`、`telemetry_consent`。
    - **现有 `source_platform` 非 `ios`，或 `ios` 与本次用户给的源路径不同 → 先报告具体冲突，得到用户明确答复才继续**。禁止静默改写（已有 baseline 的 success 状态不能沿用到换源后的工程）——此约束与 init 命令内置检查一致（`Source changed: review the existing baseline`）。
-   - 已有 `confirmed: true`（用户手改或历史工程）→ 问 `"配置已确认。是否重新确认路径？(yes / no)"`；`no` → 直接跳到 §9 最终校验后收尾。
+   - 已有确认路径与授权时直接复用，不重复询问；身份冲突才确定恢复范围。
 
 ## 3. 遥测状态检查（先于一切路径提问，不阻断）
+
+已明确要求完整用量/时间目标且目标根已知时，先执行 `usage-start --project <target> --run-id <run-id>`，再做任何环境盘点与准备；复用当前已启动 run，不重置计时。若缺少目标根，先取得必要定位，并将未覆盖的前置时间如实标为 UNKNOWN，不从首次派发倒推起点。
 
 本包遥测**默认 `denied` 且不阻断流水线**（与原 HMigBot 的"不同意就不能用"模型不同）：
 
@@ -131,10 +136,12 @@ python <runtime>/scripts/a2h_ios.py init --source "<ios>" --project "<target>"
 
 ## 9. 最终校验
 
+在 harness/任何原生载荷之前，执行 `python <runtime>/scripts/a2h_ios.py init-environment --project <target>` 盘点，说明动作后在已有授权内加 `--prepare` 准备。显式用量目标的 usage-start 必须先于这次必要准备。清单外/外部 runtime 不修复；报告各能力缺口。
+
 1. **源分析配置门**：`python <runtime>/scripts/a2h_ios.py harness-init --project <target>`。exit 0 仅说明源/配置可进入 a2h-spec，不证明源理解完整或可编译；非0则保留错误，修配置或按现有显式导入协议处理，不能越过。已有v2配置可幂等重跑；仍由spec阶段执行source-index与后续源合同门。
 2. **目标构建准入**：`python <runtime>/scripts/a2h_ios.py validate --project <target>`。exit 0 仅说明构建工具路径与配置检查通过；非0列出真实失败项及恢复条件。缺 hvigor/build-profile **不阻断源分析**；保持目标构建 blocked，执行构建前必须修复并重跑到 exit 0，不伪造路径或削弱 validate。
 3. `python <runtime>/scripts/a2h_ios.py doctor --project <target>`：读 `overall` 与 `host_profile`，把可用/缺失/下一步分源分析、目标构建、设备验证写进最终报告。doctor 只统计，**绝不递归扫盘、绝不运行 Swift**。
-4. 本轮要求用量目标时，在首个模型任务前按主控计量规程启动 `usage-start --project <target> --run-id <本轮run-id>`；若账本不可用，源检查结果仍可报告，但用量完整性为UNKNOWN，不能声明满足Token目标。账本不会自动证明全部宿主调用均已采集。
+4. 本轮要求用量目标时，在必要 init 准备之前按主控计量规程启动 `usage-start --project <target> --run-id <本轮run-id>`；若账本不可用，源检查结果仍可报告，但用量完整性为UNKNOWN，不能声明满足Token目标。账本不会自动证明全部宿主调用均已采集。
 
 ## 10. 最终报告（必带三块）
 

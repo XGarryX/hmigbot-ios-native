@@ -1,8 +1,8 @@
 {
   "schema_version": "hmigbot-ios/1",
-  "tool_version": "0.11.0",
+  "tool_version": "0.13.0",
   "design_date": "2026-09-24",
-  "note": "Original a2h pipeline with bundled HMigBot resources; 62 atoms are internal reference only.",
+  "note": "Canonical independent capabilities come from canonical_catalog; the 62 atoms below are internal checklist references and never added to the semantic count.",
   "atoms": [
     {
       "id": "A01",
@@ -1319,5 +1319,18 @@
     "a2h-execute",
     "a2h-verify",
     "a2h-retrospect"
-  ]
+  ],
+  "canonical_catalog": "semantic_capabilities.json",
+  "non_counting_source_orchestration": {
+    "entry": "source-analysis",
+    "implementation": [
+      "src/hmigbot_ios/analysis_strategy.py",
+      "src/hmigbot_ios/source_analysis.py",
+      "src/hmigbot_ios/apple_capabilities.py",
+      "src/hmigbot_ios/native_source_capture.py"
+    ],
+    "policy": "Apple guidance and read-only MCP first, official CLI/compiler evidence; explicit fallback; device remote control excluded",
+    "progress": "spec/reports/derived/source-analysis.json",
+    "independent_capability_increment": 0
+  }
 }

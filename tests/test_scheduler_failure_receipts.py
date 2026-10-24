@@ -297,7 +297,7 @@ class SchedulerRuntimeCleanupTests(unittest.TestCase):
                 with scheduler._runtime_directory(self.project, 'next_batch', windows=False) as name:
                     self.assertEqual(name, 'original-posix-temp')
             self.assertIs(raised.exception, failure)
-            constructor.assert_called_once_with(prefix='ios-scheduler-python-')
+            constructor.assert_called_once_with(prefix='ios-scheduler-python-', dir='/private/tmp' if scheduler.platform.system() == 'Darwin' else None)
             windows_cleanup.assert_not_called()
 
 

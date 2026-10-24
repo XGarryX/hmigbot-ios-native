@@ -12,6 +12,9 @@ metadata:
   layer: pipeline
 ---
 
+本统一版本先读 [单一流程、环境前置与兼容范围](../a2h-run/references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
+
+
 > **派发约定**：本 skill **派发 subagent**。P1 三写（ui-plan / base-plan / slices）按 §3.0 编排派发 A∥B∥C 三个通用子代理；understand/域读临时代理与 slice 修复代理同理。**一律 `fork_turns:"none"`**（任务书自足：写清 spec 文件路径、门禁阻断原文、iOS 源锚点、输出契约）；**禁止**套 a2h-execute 的「修复波=all」——计划产物重写是重读源规格重写文档，继承主会话上下文只会带来污染与限流。
 >
 > **Join 协议（收口五条款）**：① 循环 wait：完成唯一合法信号 = `agent_status=completed`，绝不是产物文件存在/条数；② 死句柄与验收：3 次超时后 `list` 核对，completed≠验收通过，join 点跑门禁验产物，FAIL 视同未取回按断点重派；③ 收口锚点：最终报告前必须收口全部句柄；④ 放行≠遗弃；⑤ fire-and-forget 仅正文显式声明免收口。

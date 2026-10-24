@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "entries": [
+    "bin/a2h-tool",
+    "vendor/hmigbot-1.7.0/skills/a2h-execute/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/a2h-execute/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/a2h-functional-merge/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/a2h-functional-registry/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/a2h-join/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/a2h-plan/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/a2h-spec/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/android-api-inventory/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/android-fact-tree/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/android-ui-graph-builder/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/android-ui-graph-query/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/app-relationship-tree/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-feature-coverage-auditor/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-icon-sizing/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-network-troubleshoot/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-router-verify/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-scenario-runner/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-structural-closure/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-ut-verifier/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/arkts-visual-verify/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/compose-fact-tree/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/hmos-env-doctor/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/hmos-fix-build-errors/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/skill-checker/scripts/bin/macos-arm64/_entry.dist/_entry.bin",
+    "vendor/hmigbot/skills/toolkit-fact-indexer/scripts/bin/macos-arm64/_entry.dist/_entry.bin"
+  ]
+}

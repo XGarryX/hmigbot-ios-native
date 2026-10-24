@@ -21,7 +21,7 @@ metadata:
 
 ## 0. 定位与纪律
 
-- **前置**：`<target>/.migbot/config.json` 存在且 `source_platform=ios`；`harness-init` 已完成（缺 → 提示先由 a2h-spec 跑 §1 基线启动，不代跑）。读写机器事实、审阅外部资料都随本 skill 的命令执行。**源不可读是阻塞**，不以文件夹名或文件数量补造行为。
+- **前置**：`<target>/.migbot/config.json` 存在且 `source_platform=ios`；首次由 `source-analysis` 自动完成 harness-init、索引与适用证据编排；已规划项目走受审刷新流程。读写机器事实、审阅外部资料都随本 skill 的命令执行。**源不可读是阻塞**，不以文件夹名或文件数量补造行为。
 - **输入**：iOS 源码（Xcode 工程 / SwiftPM / 混合 Swift+ObjC + SwiftUI/UIKit/IB）+ 用户预知（既有决策、平台侧分工）+ `<target>`。源工程与目标工程必须分离。
 - **输出**：机器事实 `spec/baseline/{ios-source-index,ios-facts,ios-obligations}.json`、语义 `spec/baseline/ios-semantics.json`、覆盖 `spec/baseline/ios-coverage.json`、归属 `spec/ref/ios-source-disposition.json`、四个分析 skill 的 `spec/ref/*.md` 事实（ios-project.md / ios-ui-facts.md / ios-feature-facts.md / api-inventory）。**契约定稿与计划 IR 归 a2h-plan**，本 skill 不请求审批。
 - **唯一交互点**：无。机械检查由 exit code 判定（0=PASS，非 0=FAIL）；不经猜测填表。
@@ -36,12 +36,14 @@ metadata:
 
 | # | 命令 | 产物 | exit / 处置 |
 |---|---|---|---|
-| 1.1 | `python <runtime>/scripts/a2h_ios.py source-index --project <target>`（首轮或源变化后） | `spec/baseline/ios-source-index.json` | 非 0 = 源在索引期变化或索引已存在，按提示处置，禁删旧索引硬建 |
-| 1.2 | `python <runtime>/scripts/a2h_ios.py facts --project <target>` | `spec/baseline/ios-facts.json` + `ios-obligations.json` | 非 0 读错误修配置重跑，最多 2 轮；缺处标 unknown 不阻塞视图 |
-| 1.3 | `python <runtime>/scripts/a2h_ios.py product-literals --project <target> [--output <path>]`（按需） | 业务常量/字面量账本（缺省落点以命令返回为准） | 非 0 记 warning，不阻断；业务常量/字面量保留实际值 |
-| 1.4 | `python <runtime>/scripts/a2h_ios.py facts-view --project <target> --scope {project,ui,feature,api}`（四类各跑一次） | 四类机器信号（project→`spec/ref/ios-project-signals.json`，api→`spec/ref/ios-api-signals.json`，ui→`ios-ui-signals.json`，feature→`ios-feature-signals.json`） | 任一非 0 → 对应分析 skill 补事实后重跑 |
-| 1.5 | `python <runtime>/scripts/a2h_ios.py expertise-plan --project <target>` | `spec/ref/ios-expertise-plan.json`（按清单定本轮必读上游资料） | 缺 vendor 快照 → 记 `apple_skills.status=not_loaded` 继续 |
-| 1.6 | `python <runtime>/scripts/a2h_ios.py facts --project <target> --providers <target>/spec/ref/provider-plan.json`（按需，配置格式见 `assets/provider-plan.json`） | 指定 SwiftSyntax/Clang/构建设置/IB/资源 provider 的证据 | provider 只提升自身证据层级，不自动消除业务未知；工具失败保留 failure.json |
+| 1.1 | `python <runtime>/scripts/a2h_ios.py source-analysis --project <target> --plan-only` | 只读决策计划：宿主、工程、范围、证据与缺失输入 | 歧义必须根据实际工程/既定决策补足，不猜产品范围 |
+| 1.2 | `python <runtime>/scripts/a2h_ios.py source-analysis --project <target>` | 自动选择官方技能/MCP、原生采集或当前冻结回放、SwiftSyntax、构建配置、Clang、条件编译、IB/资源、本地化、facts、literals、expertise-plan 及待审规格 | 逐步进度输出到 stderr；失败收据保留；已有计划和旧源索引拒绝修改 |
+| 1.3 | 读取 `spec/reports/derived/source-analysis.json`、`spec/ref/analysis-runs/*/plan.json` 与 `progress.json` | 决策理由、当前步骤、总数、处理/失败/阻塞、原命令和产物 | unavailable 代表缺失证据，不是对应能力通过 |
+| 1.4 | `python <runtime>/scripts/a2h_ios.py facts-view --project <target> --scope {project,ui,feature,api}`（四类各跑） | 四类机器信号 | 对应作者补充源语义；视图不批准语义 |
+| 1.5 | 按 `ios-expertise-plan.json` 实际读取当前官方资源，沿源码形成观察，再用 expertise-review 记录 | 真实源锚点、固定资源摘要和观察 | 官方资源不足的主题显式使用第三方备用；审阅仍必须完成 |
+| 1.6 | 显式需要底层重采时使用 facts/providers、manifest-evaluate、conditional-capture 或 mcp-query | 保留既有低层能力及配置入口 | 普通流程使用 1.2 自动编排；低层调用不能代替完整收口 |
+
+默认配置为 `spec/ref/ios-analysis-config.json`，支持 auto/native/replay/static、已确认的 selection、证据路径及 MCP 配置；完整字段和自动选择规则见 [自动编排协议](references/auto-orchestration.md)。不得为通过门禁随意改成 static。远程控制设备类能力排除在默认调用范围；其他官方能力逐项说明来源、用途、读写范围和实际结果。
 
 ### 单写者分区（违者 PROCESS_VIOLATION）
 

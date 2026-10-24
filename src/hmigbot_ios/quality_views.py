@@ -36,19 +36,23 @@ def product_literals(project):
     from .ios_harness import ac_inventory
     from .ios_literals import extract
     from .native_contract import validate_literal_exclusion
-    from .source_scope import preview_lines
+    from .source_scope import preview_source_lines
     source, project = context(Path(project))
     base = project / 'spec/baseline'
     raw = read_json(base / 'literal-ledger.json')
     if raw != extract(source):
         raise MigrationError('Raw literal ledger is stale or edited; extract it again')
-    graph, _ = validate_graph(source, project)
+    graph, obs = validate_graph(source, project)
+    from .ios_harness import responsibility
+    projection = responsibility(project, source=source, graph=graph, obligations=obs)
     coverage = read_json(base / 'ios-coverage.json')
     if coverage.get('graph_sha256') != digest(json_bytes(graph)):
         raise MigrationError('Product literal view requires current reviewed coverage')
     acs = ac_inventory(project)
     facts = {f['id']: f for f in graph['facts']}
     reviewed = []
+    historical = [facts[projection.treatments[o]['source_fact_id']]['anchor']
+                  for o in projection.historical_obligation_ids] if projection is not None else []
     for mapping in coverage.get('mappings', []):
         review = mapping.get('source_review', {})
         fact = facts.get('IF-' + str(mapping.get('obligation_id', ''))[3:])
@@ -76,8 +80,10 @@ def product_literals(project):
                     raise MigrationError('Literal source must identify an exact source line')
                 line = int(raw_line)
                 if path not in preview_cache:
-                    preview_cache[path] = preview_lines(safe_child(source, path).read_text(encoding='utf-8-sig'))
+                    preview_cache[path] = preview_source_lines(safe_child(source, path))
                 classification, reason = 'unknown', 'No reviewed active source fact at this line'
+                if any(a['path'] == path and a['line'] <= line <= a['end_line'] for a in historical):
+                    classification, reason = 'source_history', 'Exact validated historical source responsibility; retained in raw ledger'
                 if any(a['path'] == path and a['line'] <= line <= a['end_line'] for a in reviewed):
                     classification, reason = 'product', 'Intersects reviewed active source fact; usage still needs source analysis'
                 if line in preview_cache[path]:
@@ -86,6 +92,13 @@ def product_literals(project):
                     if scope['path'] == path and scope['line'] <= line <= scope['end_line']:
                         classification = {'not_applicable': 'excluded'}.get(scope['disposition'], scope['disposition'])
                         reason = scope['reason']
+                if projection is not None:
+                    # Old file ownership notes do not override precise reviewed
+                    # obligations. Shared source lines keep product priority.
+                    if line not in preview_cache[path] and any(a['path'] == path and a['line'] <= line <= a['end_line'] for a in reviewed):
+                        classification, reason = 'product', 'Intersects reviewed active source fact; usage still needs source analysis'
+                    elif any(a['path'] == path and a['line'] <= line <= a['end_line'] for a in historical):
+                        classification, reason = 'source_history', 'Exact validated historical source responsibility; retained in raw ledger'
                 entries.append({**item, 'sources': [anchor], 'raw_ref': {'collection': group, 'index': index},
                                 'classification': classification, 'reason': reason, 'usage': 'unresolved'})
     inputs = {'literal-ledger.json': digest(json_bytes(raw)), 'ios-facts.json': digest(json_bytes(graph)),
@@ -93,6 +106,8 @@ def product_literals(project):
     if scope_path.exists():
         inputs[scope_path.name] = digest(scope_path.read_bytes())
     inputs['acceptance'] = digest(json_bytes(acs))
+    if projection is not None:
+        inputs['responsibility'] = digest(json_bytes(projection.frozen_inputs()))
     return {'schema_version': 1, 'source_sha256': graph['source_sha256'], 'inputs': inputs,
             'entries': entries, 'behavior_verified': False,
             'scope': 'Derived source-consumption candidates; not localization completeness or pixel conversion'}
@@ -238,27 +253,38 @@ def _behavior(project, source_sha, acs):
     return result
 
 
-def summary(project, *, build_evidence=None):
+def summary(project, *, build_evidence=None, include_behavior=True):
     from .artifact_contract import _primary_feature
     from .native_pipeline import context
-    from .ios_harness import ac_inventory
+    from .ios_harness import ac_inventory, responsibility
     source, project = context(Path(project))
-    acs = ac_inventory(project)
+    projection = responsibility(project, source=source)
+    try:
+        acs = ac_inventory(project, projection=projection)
+    except MigrationError as exc:
+        # Reports must describe the pre-authoring boundary, too. Malformed
+        # acceptance contracts remain errors; no ACs means no behavior proof.
+        if str(exc) != 'No stable acceptance criteria exist':
+            raise
+        acs = {}
     source_sha = snapshot(source)['sha256']
     base = project / 'spec/baseline'
     from .page_evidence import generation, pages
     generated, tasks, records = generation(project, source_sha)
     axes = {'generation': generated,
             'compilation': _compilation(project, source_sha, build_evidence),
-            'behavior': _behavior(project, source_sha, acs), 'visual': {'status': 'not_run'}}
+            'behavior': _behavior(project, source_sha, acs) if include_behavior else {'status': 'not_run', 'scope': 'behavior not selected in this verification scope'}, 'visual': {'status': 'not_run'}}
+    if not acs and include_behavior:
+        axes['behavior'] = {'status': 'unverified', 'reason': 'No stable acceptance criteria exist'}
     visual = project / 'spec/reports/visual-verify-report.md'
     if visual.exists():
         axes['visual'] = {'status': 'legacy_unclassified', 'evidence': visual.relative_to(project).as_posix()}
     evidence_files = [p for folder in ('spec/state', 'spec/waves', 'spec/blueprint', 'spec/verification', 'spec/reports/behavior')
-                      for p in (project / folder).rglob('*') if p.is_file()]
+                      for p in (project / folder).rglob('*') if p.is_file()
+                      and (include_behavior or not p.relative_to(project).as_posix().startswith('spec/reports/behavior/') and p.name != 'ios-behavior.json')]
     for name in ('ios-behavior-check.json', 'visual-verify-report.md'):
         path = project / 'spec/reports' / name
-        if path.exists(): evidence_files.append(path)
+        if path.exists() and (include_behavior or name != 'ios-behavior-check.json'): evidence_files.append(path)
     inputs = {'spec': spec_inputs(project), 'target': target_inputs(project),
               'evidence': {p.relative_to(project).as_posix(): digest(p.read_bytes()) for p in sorted(evidence_files)}}
     if build_evidence is not None: inputs['build_evidence_sha256'] = digest(Path(build_evidence).read_bytes())
@@ -271,6 +297,11 @@ def summary(project, *, build_evidence=None):
                                 'pages': _legacy_counts(base / 'ui-manifest.md')},
             'placeholders': _placeholders(project),
             'scope': 'Read-only evidence axes; historical verified cells are compatibility progress only'}
+    if projection is not None:
+        result['source_responsibility'] = {'enabled': True, 'counts': projection.counts,
+                                           'behavior_verified': False}
+        result['counts'].update(acceptance_all=len(projection.acceptance['all']),
+                                acceptance_source_history=len(projection.acceptance['source_history']))
     from .harness_schema import validate
     return validate(result, 'specSummary')
 

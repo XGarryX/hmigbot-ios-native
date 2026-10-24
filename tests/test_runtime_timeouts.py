@@ -91,7 +91,7 @@ def test_pipeline_override_and_deadline_reach_nested_environment(tmp_path, monke
     monkeypatch.setenv(DEADLINE, '1010')
     monkeypatch.setattr('hmigbot_ios.runtime_timeouts.time.time', lambda: 1000)
     @contextmanager
-    def layout():
+    def layout(**kwargs):
         yield tmp_path / 'engine', os.environ.copy()
     monkeypatch.setattr(native_pipeline_runtime, 'runtime_layout', layout)
     calls = []

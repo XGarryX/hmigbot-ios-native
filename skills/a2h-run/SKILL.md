@@ -3,10 +3,15 @@ name: a2h-run
 description: "运行原生 iOS→HarmonyOS 的 a2h-spec → a2h-plan → a2h-execute → a2h-verify → a2h-retrospect 全流水线；按已有授权推进，真实记录生成、编译和行为验证状态。"
 ---
 
+本统一版本先读 [单一流程、环境前置与兼容范围](references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
+
+
 
 # a2h 原生 iOS 迁移主控
 
 ## 启动
+
+先读 [工具与项目结果分离规则](references/tool-project-status-separation.md)。工具审计与项目转换各自报告范围、owner 和实际证据，候选/回归/发布/安装不得折算为转换进度。
 
 读取用户目标、范围、路径和已经授权的步骤；先检查 a2h-init 配置。
 未选具体应用时只执行工具开发/安装请求，不把工具仓自身当作 iOS 项目。

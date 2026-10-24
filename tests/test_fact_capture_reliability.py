@@ -90,9 +90,9 @@ class ProviderRunTests(unittest.TestCase):
         config = self.root / 'provider.json'
         write_json(config, {'executable': ['fixture']})
         other = refresh(self.project, self.source, provider_plan=self.plan([{'operation': 'interface-builder', 'config': str(config)}]))
-        self.assertNotEqual(other['provider_artifacts'][0]['run']['identity'], artifact['run']['identity'])
+        self.assertEqual(other['provider_artifacts'][0]['run']['identity'], artifact['run']['identity'], 'unconsumed config cannot change identity')
         self.assertEqual(len(self.attempts()), 3, 'each fingerprint keeps its own attempt history')
-        self.assertEqual(other['provider_artifacts'][0]['run']['attempt'], 1, 'new identity starts its own attempt counter')
+        self.assertEqual(other['provider_artifacts'][0]['run']['attempt'], 3, 'same consumed inputs retain their attempt history')
 
     def test_graph_only_references_successes_and_failure_keeps_previous_baseline(self):
         good = self.plan([{'operation': 'interface-builder'}])
@@ -165,8 +165,8 @@ class ProviderRunTests(unittest.TestCase):
         self.assertEqual(read_json(baseline), drifted, 'a stable re-extract publishes and then validates')
         self.assertEqual(drifted['provider_artifacts'][0]['run']['attempt'], 1)
         captured = self.attempts()
-        self.assertEqual(len({identity for identity, _, _ in captured}), 3,
-                         'operation + source state + config fingerprint each define a separate identity')
+        self.assertEqual(len({identity for identity, _, _ in captured}), 2,
+                         'source state and actually consumed inputs define identity; ignored config does not')
         self.assertEqual({read_json(path / 'run.json')['source_sha256'] for _, _, path in captured},
                          {graph['source_sha256'], drifted['source_sha256']},
                          'a stale source state stays in its own directory instead of being reused')

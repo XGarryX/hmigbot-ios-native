@@ -331,14 +331,14 @@ def main(argv=None, *, helper=None, root=None):
             if os.name == 'nt':
                 result = run_owned_process(original_args, cwd=project, env=env, timeout=limit)
             else:
-                result = subprocess.run(original_args, cwd=project, capture_output=True, timeout=limit,
-                                        shell=False, env=env)
+                from .portable_helper import run
+                result = run(helper, original_args[2:], cwd=project, capture_output=True, timeout=limit, env=env)
             stdout, stderr = result.stdout.decode('utf-8', 'replace'), result.stderr.decode('utf-8', 'replace')
             count = re.search(r'句柄\s+(\d+)', stdout)
             recognized = int(count.group(1)) if count else 0
             code = result.returncode
             manifest['original_gate'] = {'exit_code': result.returncode, 'recognized_handles': recognized,
-                'stdout': stdout, 'stderr': stderr, 'argv': original_args}
+                'stdout': stdout, 'stderr': stderr, 'argv': getattr(result, 'args', original_args), 'requested_argv': original_args}
             if code == 0:
                 if recognized != len(manifest['handles']):
                     code = 3

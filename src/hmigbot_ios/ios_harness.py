@@ -46,7 +46,21 @@ def initialize(project: Path, *, import_legacy=False):
     return {'status': 'initialized', 'harness_version': 2, 'legacy_pass_inherited': False, 'source': str(source)}
 
 
-def ac_inventory(project):
+def responsibility(project, *, source=None, graph=None, obligations=None, semantics=None, candidate=None):
+    """The sole optional source/target authority; absence retains legacy strictness."""
+    project = Path(project)
+    if candidate is None and not (project / 'spec/baseline/ios-responsibility.json').is_file():
+        return None
+    if source is None:
+        from .native_pipeline import context
+        source, project = context(project)
+    if graph is None or obligations is None:
+        graph, obligations = validate_graph(source, project)
+    from .source_responsibility import load_and_validate
+    return load_and_validate(project, source, graph, obligations, semantics=semantics, candidate=candidate)
+
+
+def ac_inventory(project, *, projection=None):
     from .spec_contract import acceptance
     from .native_pipeline import source_paths
     from .artifact_contract import _primary_feature
@@ -77,6 +91,12 @@ def ac_inventory(project):
                          'source_paths': source_paths(owner.read_text(encoding='utf-8-sig'))}
     if not acs:
         raise MigrationError('No stable acceptance criteria exist')
+    projection = projection if projection is not None else responsibility(project)
+    if projection is not None:
+        projection.validate_frozen_inputs(project)
+        acs = {ident: row for ident, row in acs.items() if ident in projection.target_acceptance_ids}
+        if set(acs) != set(projection.target_acceptance_ids):
+            raise MigrationError('Active acceptance criteria differ from the original freshly compiled inventory')
     return acs
 
 
@@ -125,9 +145,11 @@ def _coverage_source_paths(project, source, ident, ac):
     return paths
 
 
-def validate_native_claims(project, graph, semantics, fail):
+def validate_native_claims(project, graph, semantics, fail, *, projection=None):
     """Shared v2 claim checks for the formal gate and authoring candidates."""
     from .native_pipeline import source_paths
+    if projection is not None:
+        projection.validate_frozen_inputs(project)
     facts = {f['id']: f for f in graph['facts']}
     for doc in semantics.get('documents', []):
         anchors = set()
@@ -137,30 +159,53 @@ def validate_native_claims(project, graph, semantics, fail):
         for dimension, claim in doc.get('facts', {}).items():
             relevant = [f for f in facts.values() if f['anchor']['path'] in anchors and dimension in RULES[f['kind']]['dimensions']]
             subject = str(doc.get('id')) + ':' + dimension
-            tool_ids = claim.get('tool_evidence_ids', [])
-            if not isinstance(tool_ids, list):
-                raise MigrationError('tool_evidence_ids must be a list')
-            if tool_ids:
-                from .source_mcp import validate_captures
-                validate_captures(project, graph, tool_ids, claim.get('fact_ids', []))
-            if claim.get('status') == 'not_applicable' and relevant:
-                fail('IOS.NA_CONTRADICTION', subject, 'Source signals require treatment: ' + ','.join(f['id'] for f in relevant))
-            if claim.get('status') == 'known':
-                if not isinstance(claim.get('value'), dict) or not claim['value']:
-                    fail('IOS.CLAIM_TYPED_VALUE', subject, 'v2 known values must be structured objects')
-                refs = claim.get('fact_ids')
-                if not isinstance(refs, list) or not refs or any(r not in facts or facts[r]['anchor']['path'] not in anchors for r in refs):
-                    fail('IOS.CLAIM_FACT_LINK', subject, 'Known claims need machine fact IDs within document source anchors')
-                elif relevant and not {f['id'] for f in relevant} <= set(refs):
-                    fail('IOS.CLAIM_SIGNAL_MISSING', subject, 'Known dimension omitted a detected source signal')
-                else:
-                    evidence = claim.get('evidence', [])
-                    if any(not any(e.get('path') == facts[r]['anchor']['path'] and facts[r]['anchor']['line'] <= e.get('line', 0) <= facts[r]['anchor']['end_line'] for r in refs) for e in evidence):
-                        fail('IOS.CLAIM_UNRELATED_LINE', subject, 'Evidence must intersect the linked fact spans')
-                if dimension == 'state_ownership' and relevant:
-                    expected = [{'fact_id': f['id'], 'owner': f['owner'], **f['value']} for f in relevant if f['kind'] == 'state']
-                    if claim.get('value') != {'states': expected}:
-                        fail('IOS.STATE_VALUE_CONTRADICTION', subject, 'State owner/storage/type/initializer must match extracted declarations')
+            if claim.get('status') == 'unknown' and projection is not None:
+                _validate_claim(project, graph, facts, anchors, dimension, subject, claim, [], fail)
+                treatment = projection.semantic_requirement(doc.get('id'), dimension, claim)
+                if not treatment['target_required']:
+                    private_ids = {f for p in treatment['private_parts'] for f in p['fact_ids']}
+                    app_relevant = [f for f in relevant if f['id'] not in private_ids]
+                    retained = treatment['retained_parts']
+                    combined = {f for p in retained for f in p['fact_ids']}
+                    if not {f['id'] for f in app_relevant} <= combined:
+                        fail('IOS.CLAIM_SIGNAL_MISSING', subject, 'Retained app dimensions omitted a source signal')
+                    for part in retained:
+                        part_relevant = [f for f in app_relevant if f['id'] in part['fact_ids']]
+                        _validate_claim(project, graph, facts, anchors, dimension, subject + ':' + part['id'], part, part_relevant, fail)
+                    continue
+            _validate_claim(project, graph, facts, anchors, dimension, subject, claim, relevant, fail)
+
+
+def _validate_claim(project, graph, facts, anchors, dimension, subject, claim, relevant, fail):
+    tool_ids = claim.get('tool_evidence_ids', [])
+    if not isinstance(tool_ids, list):
+        raise MigrationError('tool_evidence_ids must be a list')
+    if tool_ids:
+        from .source_mcp import validate_captures
+        validate_captures(project, graph, tool_ids, claim.get('fact_ids', []))
+    if claim.get('status') == 'not_applicable' and relevant:
+        fail('IOS.NA_CONTRADICTION', subject, 'Source signals require treatment: ' + ','.join(f['id'] for f in relevant))
+    if claim.get('status') == 'known':
+        if not isinstance(claim.get('value'), dict) or not claim['value']:
+            fail('IOS.CLAIM_TYPED_VALUE', subject, 'v2 known values must be structured objects')
+        refs = claim.get('fact_ids')
+        if (not isinstance(refs, list) or not refs or any(not isinstance(r, str) for r in refs)
+                or len(set(refs)) != len(refs)
+                or any(r not in facts or facts[r]['anchor']['path'] not in anchors for r in refs)):
+            fail('IOS.CLAIM_FACT_LINK', subject, 'Known claims need machine fact IDs within document source anchors')
+        elif relevant and not {f['id'] for f in relevant} <= set(refs):
+            fail('IOS.CLAIM_SIGNAL_MISSING', subject, 'Known dimension omitted a detected source signal')
+        else:
+            evidence = claim.get('evidence')
+            if (not isinstance(evidence, list) or not evidence or any(not isinstance(e, dict)
+                    or not isinstance(e.get('path'), str) or type(e.get('line')) is not int for e in evidence)):
+                fail('IOS.CLAIM_UNRELATED_LINE', subject, 'Known claims require source evidence with path and integer line')
+            elif any(not any(e['path'] == facts[r]['anchor']['path'] and facts[r]['anchor']['line'] <= e['line'] <= facts[r]['anchor']['end_line'] for r in refs) for e in evidence):
+                fail('IOS.CLAIM_UNRELATED_LINE', subject, 'Evidence must intersect the linked fact spans')
+        if dimension == 'state_ownership' and relevant:
+            expected = [{'fact_id': f['id'], 'owner': f['owner'], **f['value']} for f in relevant if f['kind'] == 'state']
+            if claim.get('value') != {'states': expected}:
+                fail('IOS.STATE_VALUE_CONTRADICTION', subject, 'State owner/storage/type/initializer must match extracted declarations')
 
 
 def check(project: Path, *, report_only=False):
@@ -176,34 +221,110 @@ def check(project: Path, *, report_only=False):
     def fail(rule, subject, detail):
         issues.append(queue.make(rule, 'spec', subject, detail))
 
-    try:
-        if read_json(project / '.migbot/config.json').get('ios_harness', {}).get('version') != 2:
+    checks = {}
+    values = {}
+
+    def stage(name, action, *, dependencies=(), subject=None):
+        """Independent diagnostics run even when a preceding contract failed.
+
+        A skipped consumer is explicitly blocked, never counted as a passing
+        validation. Only the original queue writer below persists the result.
+        """
+        blocked = [dep for dep in dependencies if checks[dep]['status'] != 'PASS']
+        if blocked:
+            checks[name] = {'status': 'not_run', 'blocked_dependencies': blocked}
+            return
+        before = len(issues)
+        try:
+            values[name] = action()
+        except (MigrationError, OSError, ValueError, TypeError, AttributeError,
+                KeyError, IndexError) as exc:
+            fail('IOS.HARNESS_CONTRACT', subject or name, str(exc))
+        checks[name] = {'status': 'FAIL' if len(issues) != before else 'PASS',
+                        'finding_count': len(issues) - before}
+
+    def configuration():
+        cfg = read_json(project / '.migbot/config.json')
+        if cfg.get('ios_harness', {}).get('version') != 2:
             raise MigrationError('Initialize v2 harness; legacy check results are not harness acceptance')
-        # Original ownership/AC contracts still run. v2 semantics are checked below.
+
+    def source_contract():
+        # Retain original ownership/AC/native semantics checks, without writes.
         result, _ = check_source(project, report_only=True)
         issues.extend(result['findings'])
-        graph, obs = validate_graph(source, project)
+
+    def extraction():
+        nonlocal extraction_dispositions
         from .manifest_scope import issue_dispositions
-        extraction_dispositions = issue_dispositions(graph)
+        extraction_dispositions = issue_dispositions(values['graph'][0])
         for disposition in extraction_dispositions:
             if disposition['blocking']:
                 issue = disposition['issue']
                 from .finding_identity import extraction_finding
                 issues.append(extraction_finding(queue, issue))
+
+    def expertise():
         from .expertise import check as check_expertise
-        expertise = check_expertise(project, source, graph)
+        return check_expertise(project, source, values['graph'][0])
+
+    def literals():
         from .ios_literals import extract as extract_literals
         if read_json(project / 'spec/baseline/literal-ledger.json') != extract_literals(source):
             raise MigrationError('Literal ledger must be extracted from current iOS source; spec-only empty scans are insufficient')
-        facts = {f['id']: f for f in graph['facts']}
+
+    def semantics_input():
         semantics = read_json(project / 'spec/baseline/ios-semantics.json')
-        if semantics.get('schema_version') != 2:
-            raise MigrationError('v1 free-text semantics cannot satisfy v2 gates; import and review')
-        validate_native_claims(project, graph, semantics, fail)
+        if (not isinstance(semantics, dict) or semantics.get('schema_version') != 2
+                or semantics.get('source_platform') != 'ios'
+                or not isinstance(semantics.get('documents'), list)):
+            raise MigrationError('Native claims require v2 semantics with source_platform=ios and a documents list')
+        # Validate consumer input shape before any graph-linked claim comparison.
+        # Full source ownership, required dimensions and evidence remain checked
+        # by source_contract; malformed objects must not abort other stages.
+        for doc in semantics['documents']:
+            if (not isinstance(doc, dict) or not isinstance(doc.get('id'), str)
+                    or doc.get('kind') not in ('page', 'feature')
+                    or not isinstance(doc.get('facts'), dict)):
+                raise MigrationError('Semantic documents require id, kind and facts object')
+            for claim in doc['facts'].values():
+                if not isinstance(claim, dict) or claim.get('status') not in ('known', 'unknown', 'not_applicable'):
+                    raise MigrationError('Semantic claims require known, unknown or not_applicable status')
+                for field in ('fact_ids', 'tool_evidence_ids'):
+                    if field in claim and (not isinstance(claim[field], list)
+                            or any(not isinstance(v, str) for v in claim[field])):
+                        raise MigrationError(field + ' must be a list of strings')
+                if 'evidence' in claim and (not isinstance(claim['evidence'], list)
+                        or any(not isinstance(e, dict) or not isinstance(e.get('path'), str)
+                               or type(e.get('line')) is not int for e in claim['evidence'])):
+                    raise MigrationError('Semantic evidence requires path and integer line objects')
+        return semantics
+
+    def coverage_input():
         coverage = read_json(project / 'spec/baseline/ios-coverage.json')
-        if coverage.get('schema_version') != 2 or coverage.get('graph_sha256') != digest(json_bytes(graph)) or not isinstance(coverage.get('mappings'), list):
+        if (not isinstance(coverage, dict) or coverage.get('schema_version') != 2
+                or not isinstance(coverage.get('graph_sha256'), str)
+                or not isinstance(coverage.get('mappings'), list)):
             raise MigrationError('Coverage requires v2 mappings and current graph_sha256')
-        acs, seen = ac_inventory(project), set()
+        for mapping in coverage['mappings']:
+            if not isinstance(mapping, dict) or not isinstance(mapping.get('obligation_id'), str):
+                raise MigrationError('Coverage mappings require an obligation_id string')
+            if ('ac_ids' in mapping and (not isinstance(mapping['ac_ids'], list)
+                    or any(not isinstance(ident, str) for ident in mapping['ac_ids']))):
+                raise MigrationError('Coverage ac_ids must be a list of strings')
+            if 'skip_ref' in mapping and not isinstance(mapping['skip_ref'], str):
+                raise MigrationError('Coverage skip_ref must be a string')
+            if 'responsibility_ref' in mapping and not isinstance(mapping['responsibility_ref'], str):
+                raise MigrationError('Coverage responsibility_ref must be an exact boundary ID string')
+        return coverage
+
+    def coverage_check():
+        graph, obs = values['graph']
+        coverage = values['coverage_input']
+        if coverage['graph_sha256'] != digest(json_bytes(graph)):
+            raise MigrationError('Coverage requires v2 mappings and current graph_sha256')
+        facts = {f['id']: f for f in graph['facts']}
+        acs, seen = values['acceptance'], set()
+        projection = values['responsibility']
         expected = {o['id']: o for o in obs['obligations']}
         for mapping in coverage['mappings']:
             if not isinstance(mapping, dict):
@@ -213,11 +334,17 @@ def check(project: Path, *, report_only=False):
                 fail('IOS.OBLIGATION_ID', str(ident), 'Unknown or duplicate obligation mapping'); continue
             seen.add(ident)
             ids = mapping.get('ac_ids', [])
-            from .source_scope import preview_lines
+            treatment = projection.treatments.get(ident) if projection is not None else None
+            if treatment is not None:
+                if ids or mapping.get('responsibility_ref') != treatment['boundary_ref']:
+                    fail('IOS.RESPONSIBILITY_MAPPING', ident, 'Historical obligation needs its exact validated boundary ID and no target ACs')
+            elif 'responsibility_ref' in mapping:
+                fail('IOS.RESPONSIBILITY_MAPPING', ident, 'Product obligation cannot claim a historical boundary')
+            from .source_scope import preview_source_lines
             source_fact = facts[expected[ident]['fact_id']]
             anchor = source_fact['anchor']
             if anchor['path'] not in preview_cache:
-                preview_cache[anchor['path']] = preview_lines(safe_child(source, anchor['path']).read_text(encoding='utf-8-sig'))
+                preview_cache[anchor['path']] = preview_source_lines(safe_child(source, anchor['path']))
             preview = preview_cache[anchor['path']]
             is_preview = set(range(anchor['line'], anchor['end_line'] + 1)) <= preview
             if is_preview or mapping.get('disposition') == 'preview-only':
@@ -237,6 +364,8 @@ def check(project: Path, *, report_only=False):
                 else:
                     fail('IOS.PREVIEW_REVIEW_REQUIRED', ident, 'Keep the original obligation; exclude only exact Preview spans with current file hash, source review and skip-list heading, without product ACs')
                 continue
+            if treatment is not None:
+                continue
             if not isinstance(ids, list) or not ids or any(not isinstance(a, str) or a not in acs for a in ids):
                 fail('IOS.OBLIGATION_AC_MISSING', ident, 'Bind obligation to real stable acceptance criteria'); continue
             for ac_id in ids:
@@ -254,17 +383,52 @@ def check(project: Path, *, report_only=False):
                 fail('IOS.SOURCE_REVIEW_MISSING', ident, 'Review input -> processing -> observable outcome against source')
         for ident in sorted(expected.keys() - seen):
             fail('IOS.OBLIGATION_UNCOVERED', ident, expected[ident]['obligation'])
+
+    def spec_contract():
         from .spec_contract import check as check_contract
         content, _ = check_contract(project)
         issues.extend(content['findings'])
-    except (MigrationError, OSError, ValueError, TypeError, AttributeError) as exc:
-        fail('IOS.HARNESS_CONTRACT', 'harness', str(exc))
+
+    stage('configuration', configuration, subject='.migbot/config.json')
+    stage('source_contract', source_contract)
+    stage('graph', lambda: validate_graph(source, project),
+          subject='spec/baseline/ios-facts.json + ios-obligations.json')
+    stage('extraction', extraction, dependencies=('graph',))
+    stage('expertise', expertise, dependencies=('graph',),
+          subject='spec/ref/ios-expertise-plan.json + ios-expertise-reviews.json')
+    stage('literals', literals, subject='spec/baseline/literal-ledger.json')
+    stage('semantics_input', semantics_input, subject='spec/baseline/ios-semantics.json')
+    stage('coverage_input', coverage_input, subject='spec/baseline/ios-coverage.json')
+    stage('responsibility', lambda: responsibility(project, source=source, graph=values.get('graph', (None, None))[0],
+          obligations=values.get('graph', (None, None))[1], semantics=values.get('semantics_input')),
+          dependencies=('graph', 'semantics_input') if (project / 'spec/baseline/ios-responsibility.json').exists() else (),
+          subject='spec/baseline/ios-responsibility.json')
+    stage('acceptance', lambda: ac_inventory(project, projection=values.get('responsibility')), subject='spec/baseline/features')
+    stage('native_claims', lambda: validate_native_claims(
+        project, values['graph'][0], values['semantics_input'], fail, projection=values['responsibility']),
+        dependencies=('configuration', 'source_contract', 'graph', 'semantics_input') +
+        (('responsibility',) if (project / 'spec/baseline/ios-responsibility.json').exists() else ()))
+    stage('coverage', coverage_check,
+          dependencies=('configuration', 'graph', 'coverage_input', 'acceptance') +
+          (('responsibility',) if (project / 'spec/baseline/ios-responsibility.json').exists() else ()))
+    # This independent stage is attempted even when source or graph checks fail;
+    # its own input error is reported rather than hiding the remaining contract.
+    stage('spec_contract', spec_contract)
     if not report_only:
         queue.replace_section(str(project), 'spec.ios-harness', issues)
     report = {'schema_version': 2, 'status': 'FAIL' if issues else 'PASS', 'findings': issues,
               'scope': 'source contract and obligation coverage', 'behavior_verified': False,
               'excluded_obligation_ids': sorted(excluded_obligations),
-              'extraction_issue_dispositions': extraction_dispositions}
+              'extraction_issue_dispositions': extraction_dispositions, 'checks': checks}
+    projection = values.get('responsibility')
+    if projection is not None:
+        report.update(responsibility_counts=projection.counts,
+                      acceptance_counts={scope: len(rows) for scope, rows in projection.acceptance.items()},
+                      historical_obligation_ids=list(projection.historical_obligation_ids),
+                      product_obligation_ids=list(projection.product_obligation_ids),
+                      obligation_treatments=projection.treatments,
+                      source_history_acceptance_ids=list(projection.acceptance['source_history']),
+                      target_acceptance_ids=list(projection.target_acceptance_ids))
     if not report_only:
         write_json(project / 'spec/reports/ios-harness-check.json', report)
     return report, 2 if issues else 0

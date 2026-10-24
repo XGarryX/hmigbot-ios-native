@@ -1,6 +1,6 @@
 {
   "name": "hmigbot-ios",
-  "version": "0.11.0",
+  "version": "0.13.0",
   "description": "Self-contained HMigBot fork: native iOS source understanding in the original a2h spec/plan/execute/verify/retrospect pipeline.",
   "author": {
     "name": "Local developer"

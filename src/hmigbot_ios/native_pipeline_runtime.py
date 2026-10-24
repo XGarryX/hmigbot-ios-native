@@ -1,3 +1,4 @@
+# OPTIMIZED_FOR_MACOS_XCODE_NATIVE: retains Python orchestration only; compiler/build facts come from Xcode CLI.
 """Run the unchanged compiled structural pipeline in its expected skill layout.
 
 Nuitka resolves ``__file__`` beside its executable.  The shipping launcher puts
@@ -18,6 +19,8 @@ import subprocess
 import tempfile
 
 from .core import io_path
+from .init_environment import check_runtime_ready
+from .portable_helper import quarantine_free_launcher
 from .scheduler_windows_runtime import run as run_owned_process
 from .windows_python_runtime import stage_base_python
 from .runtime_timeouts import timeout_for
@@ -39,7 +42,14 @@ def _platform():
     return system, architecture
 
 
-def _copy_scripts(source, destination, system, architecture):
+def _copy_scripts(source, destination, system, architecture, *, project_root=None, permission_receipts=None):
+    payload = source / 'bin' / (system + '-' + architecture) / '_entry.dist'
+    if not payload.is_dir():
+        raise ValueError('Complete original structural payload is missing: ' + str(payload))
+    if system == 'macos':
+        receipt = check_runtime_ready(project_root, payload)
+        if permission_receipts is not None:
+            permission_receipts.append(receipt)
     destination.mkdir(parents=True)
     for path in source.iterdir():
         if path.name in {'bin', 'tests', '__pycache__'}:
@@ -48,22 +58,32 @@ def _copy_scripts(source, destination, system, architecture):
             shutil.copytree(path, destination / path.name, ignore=shutil.ignore_patterns('__pycache__'))
         else:
             shutil.copy2(path, destination / path.name)
-    payload = source / 'bin' / (system + '-' + architecture) / '_entry.dist'
-    if not payload.is_dir():
-        raise ValueError('Complete original structural payload is missing: ' + str(payload))
-    shutil.copytree(payload, destination / 'bin' / (system + '-' + architecture) / '_entry.dist')
+            if system == 'macos' and path.suffix == '.py':
+                text = path.read_text(encoding='utf-8')
+                safe = quarantine_free_launcher(text)
+                if safe != text:
+                    (destination / path.name).write_text(safe, encoding='utf-8')
+    copied = destination / 'bin' / (system + '-' + architecture) / '_entry.dist'
+    shutil.copytree(payload, copied)
+    # macOS preserves vendor mode bits; Nuitka entrypoints must be executable.
+    if system == 'macos':
+        for entry in (copied / '_entry.bin',):
+            if entry.exists():
+                entry.chmod(entry.stat().st_mode | 0o111)
     return payload
 
 
 @contextmanager
-def runtime_layout():
+def runtime_layout(*, project_root=None, permission_receipts=None):
     """Yield an isolated original engine; never mutate the installed bundle."""
     system, architecture = _platform()
-    with tempfile.TemporaryDirectory(prefix='native-pipeline-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='native-pipeline-', dir='/private/tmp' if system == 'macos' else None) as temporary:
         skills = Path(temporary) / 'skills'
         closure = skills / 'arkts-structural-closure/scripts'
-        payload = _copy_scripts(VENDOR / 'arkts-structural-closure/scripts', closure, system, architecture)
-        _copy_scripts(VENDOR / 'a2h-execute/scripts', skills / 'a2h-execute/scripts', system, architecture)
+        payload = _copy_scripts(VENDOR / 'arkts-structural-closure/scripts', closure, system, architecture,
+                                project_root=project_root, permission_receipts=permission_receipts)
+        _copy_scripts(VENDOR / 'a2h-execute/scripts', skills / 'a2h-execute/scripts', system, architecture,
+                      project_root=project_root, permission_receipts=permission_receipts)
         for skill, names in HELPERS.items():
             for name in names:
                 if not (skills / skill / 'scripts' / name).is_file():
@@ -99,38 +119,31 @@ def runtime_layout():
 def _invoke_raw(arguments, original=None):
     """Return the original pipeline's exact stdout/stderr/exit disposition."""
     arguments = list(map(str, arguments))
-    # The suspended-process / host-interpreter repair is Windows-specific.
-    # Preserve the established launcher on platforms that do not need it.
-    if os.name != 'nt' and original is not None:
-        timeout_for('structural')  # Validate inherited policy before the legacy callback.
-        return original('arkts-structural-closure', 'structural_loop.py', arguments)
+    # All platforms need the same sibling-helper layout.
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--project-root', type=Path)
     probe, _ = parser.parse_known_args(arguments)
     project = io_path(probe.project_root or Path.cwd()).resolve()
-    command = ['structural_loop', *arguments]
-    tree = None
-    try:
-        timeout_for('structural')
-        with runtime_layout() as (executable, env):
-            command = [str(executable), 'structural_loop', *arguments]
+    permission_receipts = []
+    with runtime_layout(project_root=project, permission_receipts=permission_receipts) as (executable, env):
+        command = [str(executable), 'structural_loop', *arguments]
+        try:
             limit = timeout_for('structural', env=env)
             if os.name == 'nt':
                 result = run_owned_process(command, cwd=project, env=env, timeout=limit)
             else:
                 result = subprocess.run(command, cwd=project, env=env, capture_output=True,
                                         timeout=limit, shell=False)
-    except subprocess.TimeoutExpired as exc:
-        # The Windows owned runner already terminates and reaps its Job tree.
-        tree = getattr(exc, 'ios_process_tree', None)
-        result = subprocess.CompletedProcess(command, 124, exc.output or b'',
-            (exc.stderr or b'') + f'\nOriginal structural pipeline timed out after {exc.timeout:g} seconds.\n'.encode())
-    decoded = subprocess.CompletedProcess(result.args, result.returncode,
+        except subprocess.TimeoutExpired as exc:
+            # The owned runner already terminates and reaps its Job tree.
+            # Relay actual partial output instead of losing child evidence.
+            result = subprocess.CompletedProcess(command, 124, exc.output or b'',
+                (exc.stderr or b'') + b'\nOriginal structural pipeline timed out.\n')
+    process = subprocess.CompletedProcess(result.args, result.returncode,
         result.stdout.decode('utf-8', errors='replace'),
         result.stderr.decode('utf-8', errors='replace'))
-    if tree is not None:
-        decoded.ios_process_tree = tree
-    return decoded
+    process.macos_permission_receipts = permission_receipts
+    return process
 
 
 def invoke(arguments, original=None):

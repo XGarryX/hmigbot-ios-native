@@ -133,7 +133,8 @@ def run_helper(script: Path, args) -> HelperResult:
     environment['PYTHONUTF8'] = '1'
     environment['PYTHONIOENCODING'] = 'utf-8'
     environment.setdefault('A2H_TELEMETRY_OFF', '1')
-    completed = subprocess.run(command, shell=False, env=environment, capture_output=True)
+    from .portable_helper import run
+    completed = run(script, args, env=environment, capture_output=True)
     return HelperResult(completed.returncode, completed.stdout, completed.stderr)
 
 
@@ -571,12 +572,12 @@ def validate_traceability_index(payload, discovery: spec_discovery.Discovery,
     if meta.get('active') != active:
         raise ObjectContractError(
             'INDEX_META', '_meta.active=%r but %d entries are active' % (meta.get('active'), active))
-    with_oracle = sum(1 for item in requirements if item.get('oracle') is not None)
+    with_oracle = sum(1 for item in requirements if item.get('status') == 'active' and item.get('oracle') is not None)
     if meta.get('with_oracle') != with_oracle:
         raise ObjectContractError(
             'INDEX_META', '_meta.with_oracle=%r but %d entries have an oracle'
             % (meta.get('with_oracle'), with_oracle))
-    with_truth = sum(1 for item in requirements if item.get('truth_source') is not None)
+    with_truth = sum(1 for item in requirements if item.get('status') == 'active' and item.get('truth_source') is not None)
     if meta.get('with_truth_source') != with_truth:
         raise ObjectContractError(
             'INDEX_META', '_meta.with_truth_source=%r but %d entries have a truth source'

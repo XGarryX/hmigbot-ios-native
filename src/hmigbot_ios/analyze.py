@@ -56,7 +56,7 @@ def analyze(root: Path):
                         ".h": "C-family-header", ".cpp": "C++", ".c": "C"}[suffix]
                 languages[lang] += 1
                 text = path.read_text(encoding="utf-8-sig")
-                tokens = tokenize(text)
+                tokens = tokenize(text, skip_pragma_marks=suffix != ".swift")
                 for i, token in enumerate(tokens):
                     if token.kind == "string":
                         continue

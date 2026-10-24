@@ -101,7 +101,7 @@ def _interpolation_end(text, start, depth):
     raise MigrationError(f"Unterminated interpolation at line {text.count(chr(10), 0, start) + 1}")
 
 
-def _string_end(text, start, depth=0):
+def _string_end(text, start, depth=0, *, swift=True):
     hashes, quotes = _string_opening(text, start)
     closing = '"' * quotes + '#' * hashes
     escape = '\\' + '#' * hashes
@@ -112,12 +112,12 @@ def _string_end(text, start, depth=0):
             return pos + len(closing), hashes, quotes
         if text.startswith(escape, pos):
             following = pos + len(escape)
-            if quotes == 1 and following < len(text) and text[following] in '\r\n':
+            if swift and quotes == 1 and following < len(text) and text[following] in '\r\n':
                 # Swift's escaped-newline production belongs only to multiline
                 # strings; an escape cannot continue a single-line literal.
                 raise MigrationError(
                     f"Unterminated string at line {text.count(chr(10), 0, start) + 1}")
-            if following < len(text) and text[following] == '(':
+            if swift and following < len(text) and text[following] == '(':
                 if depth + 1 > SUPPORTED_STRING_NESTING_DEPTH:
                     raise RequiresSyntaxProvider(
                         f"Deep string interpolation nesting exceeds supported bound of "
@@ -127,7 +127,7 @@ def _string_end(text, start, depth=0):
             else:
                 pos = following + 1
         else:
-            if quotes == 1 and text[pos] in '\r\n':
+            if swift and quotes == 1 and text[pos] in '\r\n':
                 # A raw newline inside a single-line string means the closing
                 # quote is missing on this line: genuinely unterminated.
                 raise MigrationError(
@@ -142,7 +142,7 @@ def _string_end(text, start, depth=0):
     raise MigrationError(f"Unterminated string at line {text.count(chr(10), 0, start) + 1}")
 
 
-def tokenize(text: str) -> list[Token]:
+def tokenize(text: str, *, skip_pragma_marks: bool = False, language: str = "swift") -> list[Token]:
     result, pos, line = [], 0, 1
     while pos < len(text):
         char = text[pos]
@@ -158,10 +158,25 @@ def tokenize(text: str) -> list[Token]:
             line += text[start:pos].count("\n")
         elif _string_opening(text, pos) is not None:
             start, start_line = pos, line
-            pos, hashes, quotes = _string_end(text, pos, 0)
+            pos, hashes, quotes = _string_end(text, pos, 0, swift=language == "swift" and not skip_pragma_marks)
             value = text[start:pos]
             line += value.count("\n")
             result.append(Token(value, start_line, "string", hashes, quotes, line, start, pos))
+        elif (skip_pragma_marks and char == "#"
+              and not text[text.rfind("\n", 0, pos) + 1:pos].strip()
+              and re.match(r"#[ \t]*pragma[ \t]+mark\b", text[pos:])):
+            # C/Objective-C section headings are metadata, not executable tokens.
+            # Recognize them only outside comments/strings and preserve source lines.
+            while pos < len(text):
+                end = text.find("\n", pos)
+                if end == -1:
+                    pos = len(text)
+                    break
+                continued = text[pos:end].removesuffix("\r").endswith("\\")
+                pos = end + 1
+                line += 1
+                if not continued:
+                    break
         else:
             match = re.match(r"[A-Za-z_][A-Za-z_0-9]*|[0-9]+(?:\.[0-9]+)?|\+=|-=|==|->", text[pos:])
             value = match.group() if match else char

@@ -20,7 +20,9 @@ UNKNOWN = re.compile(r'(?im)^\s*(?:unknown|TBD|TODO|待确定|待补充)\s*[:：
 
 
 def _primary_feature(path):
-    return bool(re.match(r'F\d+', path.name)) and not re.match(r'F\d+[-_].+\..+\.md$', path.name)
+    from .spec_discovery import classify_name
+    document = classify_name(path.name)
+    return document is not None and document.is_main
 
 
 def _artifact_paths(project, entry):
@@ -588,6 +590,15 @@ def check_artifacts(project, source, fail, inputs):
                 except (MigrationError, OSError, UnicodeError) as exc:
                     fail('ARTIFACT_META_EVIDENCE', subject, str(exc))
 
+    projection = None
+    try:
+        from .ios_harness import responsibility
+        projection = responsibility(project, source=source)
+        if projection is not None:
+            inputs.update(projection.frozen_inputs())
+    except (MigrationError, OSError, ValueError, TypeError, KeyError) as exc:
+        fail('RESPONSIBILITY_INVALID', 'ios-responsibility.json', str(exc))
+    history_actions = set(projection.historical_action_ids) if projection is not None else set()
     definitions, uses, by_document = {}, [], {}
     for path, text in all_docs.items():
         try:
@@ -649,7 +660,7 @@ def check_artifacts(project, source, fail, inputs):
                                 raise MigrationError('Skipped action needs the existing current reviewed Preview disposition; action scope never removes obligations')
                 except (MigrationError, OSError, UnicodeError, KeyError, TypeError) as exc:
                     fail('ACTION_SKIPPED_SCOPE', ident, str(exc))
-            if value['target'] not in declared_symbols(sections(text)):
+            if ident not in history_actions and value['target'] not in declared_symbols(sections(text)):
                 # A definition can share the ordinary contract_refs closure.
                 try:
                     refs = references(project, path, text)
@@ -676,6 +687,9 @@ def check_artifacts(project, source, fail, inputs):
             if ident not in definitions or definitions[ident][0] != target or definitions[ident][1]['heading'] != heading:
                 raise MigrationError('Action use must reference the exact unique definition heading')
             definition = definitions[ident][2]
+            if ident in history_actions:
+                if any(a in projection.target_acceptance_ids for a in value['ac_ids']):
+                    fail('ACTION_HISTORY', ident, 'Active target consumer cannot depend on a historical source action')
             if definition['scope'] == 'skipped':
                 fail('ACTION_SKIPPED', ident, 'Active consumer cannot depend on an excluded action')
             for ac in value['ac_ids']:

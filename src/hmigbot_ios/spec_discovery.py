@@ -25,6 +25,7 @@ identifiers that do not belong to their document are reported as errors
 instead of being silently dropped.
 """
 from __future__ import annotations
+from .core import trusted_system_alias
 
 from dataclasses import dataclass
 import re
@@ -49,7 +50,7 @@ def reject_links(path: Path) -> None:
     """Inspect the lexical path before resolve can hide a link or junction."""
     path = Path(path).absolute()
     for part in (path, *path.parents):
-        if part.is_symlink() or (hasattr(part, 'is_junction') and part.is_junction()):
+        if (part.is_symlink() or (hasattr(part, 'is_junction') and part.is_junction())) and not trusted_system_alias(part):
             raise DiscoveryError('INPUT_LINK', 'materialize linked input before gating: %s' % part)
 
 

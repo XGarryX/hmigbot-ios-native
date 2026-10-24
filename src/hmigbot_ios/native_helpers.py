@@ -25,8 +25,8 @@ def original(skill, helper, arguments, *, cwd=None):
         result = run_owned_process(command, cwd=cwd, env=os.environ.copy(), timeout=limit)
         return subprocess.CompletedProcess(result.args, result.returncode,
             result.stdout.decode('utf-8', errors='replace'), result.stderr.decode('utf-8', errors='replace'))
-    return subprocess.run(command, cwd=cwd, timeout=limit,
-                          capture_output=True, encoding='utf-8', errors='replace', shell=False)
+    from .portable_helper import run
+    return run(path, arguments, cwd=cwd, timeout=limit, capture_output=True, encoding='utf-8', errors='replace')
 
 
 def feature_inputs(arguments):

@@ -18,12 +18,16 @@ from .core import MigrationError, atomic_write, digest, io_path, json_bytes, rea
 from .ios_facts import validate_graph
 from .ios_harness import ac_inventory, check
 from .harness_schema import validate
+from .macos_permissions import PermissionRepairError
+from .init_environment import check_runtime_ready
+from .portable_helper import quarantine_free_launcher
 
 ROOT = Path(__file__).resolve().parents[2]
 UPSTREAM = ROOT / 'vendor/hmigbot-1.7.0/skills/a2h-execute/scripts'
 
 
 def baseline_inputs(project, wave):
+    project = Path(project).resolve()
     mutable = {'spec/baseline/' + name for name in ('ui-manifest.md', 'feature-index.md', 'verification.json', 'impl-claims.json', 'ios-source-check.json')}
     from .plan_contract import profile, structural_digest
     projected = {'spec/baseline/ui-manifest.md', 'spec/baseline/feature-index.md'} if profile(project) >= 2 else set()
@@ -32,7 +36,17 @@ def baseline_inputs(project, wave):
             if (f['path'].startswith('spec/baseline/') and f['path'] not in mutable
                 or f['path'].startswith(('spec/ref/ios-expertise-', 'spec/ref/ios-mcp-', 'spec/ref/mcp-runs/', 'spec/ref/ios-analysis-provenance.json', 'spec/ref/ios-manifest-evidence/')))
             and (wave != 'understand' or Path(f['path']).name in {'ios-facts.json', 'ios-obligations.json', 'ios-source-index.json'})}
+    graph_path = project / 'spec/baseline/ios-facts.json'
+    if graph_path.is_file():
+        from .conditional_evidence import frozen_inputs
+        inputs.update(frozen_inputs(project, read_json(graph_path)))
+    from .source_analysis import frozen_inputs as analysis_inputs
+    inputs.update(analysis_inputs(project))
     if wave == 'domains':
+        from .ios_harness import responsibility
+        projection = responsibility(project)
+        if projection is not None:
+            inputs.update(projection.frozen_inputs())
         from .spec_contract import dependency_inputs
         inputs.update({path: value for path, value in dependency_inputs(project).items()
                        if path not in mutable})
@@ -61,6 +75,8 @@ def _execution_evidence(path):
         '.idea/.deveco/cxx/.clang-format', '.idea/.deveco/module/entry.cache.json',
         '.idea/.deveco/project.cache.json', '.idea/.gitignore',
         'build_out.log', 'build_temp.bat', 'spec/migration-report.md',
+        'spec/reports/init-environment.json',
+        'spec/ui-coverage-report.md', 'spec/verify-report.md',
         'spec/placeholder-registry.md', 'spec/execution/base-contracts.md',
         'spec/execution/capability-manifest.json',
         'spec/a2h/_work/join-ledger.jsonl',
@@ -79,11 +95,14 @@ def _execution_evidence(path):
         r'spec/waves/results/(?:understand|domains)/[a-z0-9_-]+\.json',
         r'spec/reports/(?:ios-|spec-|migration-)[a-z0-9_-]+\.(?:json|md)',
         r'spec/reports/scheduler/[a-z_]+\.(?:(?:stdout|stderr)\.log|failure\.json)',
+        r'spec/reports/scheduler/[a-z_]+\.permissions\.json',
         r'spec/reports/scheduler/[a-z_]+\.cleanup-[0-9a-f]{32}\.json',
         r'spec/reports/static-runtime/land-[a-z0-9_-]+\.json',
         r'spec/reports/ios-blocked-recovery/[0-9a-f]{64}/[a-z-]+\.json',
         r'spec/reports/ios-blocked-receipts/(?:understand|domains)/[a-z0-9_-]+/[0-9a-f]{64}\.json',
-        r'spec/reports/derived/(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.(?:json|md)',
+        r'spec/reports/derived/(?:[A-Za-z0-9_.-]+/)*(?:spec-summary|product-literals|source-analysis|spec-scaffold|spec-authoring|spec-upgrade|usage-budget)\.json',
+        r'spec/reports/derived/(?:[A-Za-z0-9_.-]+/)*(?:ui-plan|feature-plan|migration-report)\.md',
+        r'spec/reports/derived/a2h-join/[A-Za-z0-9_.-]+/[0-9a-f]{64}\.json',
         r'spec/reports/derived/(?:[A-Za-z0-9_.-]+/)*usage-budget\.json\.lock',
         r'spec/reports/behavior/[A-Za-z0-9_-]+/(?:stdout|stderr)\.log',
         r'spec/reports/host-oracle/(?:support/)?[A-Za-z0-9_.-]+\.(?:py|cjs|mjs|js|json|log|md)',
@@ -245,7 +264,7 @@ def _cleanup_windows_runtime(project, program, directory, parent):
 @contextmanager
 def _runtime_directory(project, program, *, windows, cleanup_reports=None):
     if not windows:
-        with tempfile.TemporaryDirectory(prefix='ios-scheduler-python-') as temp:
+        with tempfile.TemporaryDirectory(prefix='ios-scheduler-python-', dir='/private/tmp' if platform.system() == 'Darwin' else None) as temp:
             yield temp
         return
     parent = Path(tempfile.gettempdir()).resolve()
@@ -262,7 +281,7 @@ def invoke(project, program, args):
     from .runtime_timeouts import timeout_for
     from .scheduler_windows_runtime import run as run_owned_process
     env = {**os.environ, 'PYTHONUTF8': '1', 'ARKTS_SKILL_DIR': str(UPSTREAM.parent)}
-    windows, cleanup_reports = os.name == 'nt', []
+    windows, cleanup_reports, permission_receipts = os.name == 'nt', [], []
     if windows:
         project = io_path(project)
         args = list(args)
@@ -280,6 +299,36 @@ def invoke(project, program, args):
         # never repair vendor bytes in place or replace original state algorithms.
         with _runtime_directory(project, program, windows=windows, cleanup_reports=cleanup_reports) as temp:
             command = [sys.executable, str(UPSTREAM / (program + '.py')), *args]
+            if platform.system() == 'Darwin':
+                import shlex
+                architecture = 'arm64' if platform.machine().lower() in {'arm64', 'aarch64'} else 'x64'
+                payload = UPSTREAM / 'bin' / ('macos-' + architecture) / '_entry.dist'
+                permission_receipts.append(check_runtime_ready(project, payload))
+                scripts = Path(temp) / 'a2h-execute/scripts'
+                scripts.mkdir(parents=True)
+                for source in UPSTREAM.glob('*.py'):
+                    shutil.copy2(source, scripts / source.name)
+                    text = source.read_text(encoding='utf-8')
+                    safe = quarantine_free_launcher(text)
+                    if safe != text:
+                        (scripts / source.name).write_text(safe, encoding='utf-8')
+                directory = scripts / 'bin' / ('macos-' + architecture) / '_entry.dist'
+                shutil.copytree(payload, directory, ignore=shutil.ignore_patterns('Python'))
+                # macOS commonly has case-insensitive paths: Python is a dylib,
+                # while frozen sys.executable is python. Keep the original dylib
+                # outside the staged directory and resolve it through dyld.
+                interpreter = directory / 'python'
+                bootstrap = ("import os,runpy,sys; os.environ['DYLD_LIBRARY_PATH']=" + repr(str(payload)) +
+                             "; sys.argv=sys.argv[1:]; runpy.run_path(sys.argv[0],run_name='__main__')")
+                interpreter.write_text('#!/bin/sh\nunset DYLD_LIBRARY_PATH\nexec ' +
+                                       shlex.quote(sys.executable) + ' -c ' + shlex.quote(bootstrap) +
+                                       ' "$@"\n', encoding='utf-8')
+                interpreter.chmod(0o755)
+                executable = directory / '_entry.bin'
+                executable.chmod(executable.stat().st_mode | 0o111)
+                env['DYLD_LIBRARY_PATH'] = str(payload)
+                env['ARKTS_SKILL_DIR'] = str(scripts.parent)
+                command = [str(executable), program, *args]
             if windows:
                 if platform.machine().lower() not in {'amd64', 'x86_64', 'x64'}:
                     raise MigrationError('Bundled Windows kernel requires x64')
@@ -294,7 +343,7 @@ def invoke(project, program, args):
             else:
                 proc = subprocess.run(command,
                                       cwd=project, env=env, capture_output=True, timeout=limit, shell=False)
-    except (subprocess.TimeoutExpired, OSError) as exc:
+    except (subprocess.TimeoutExpired, OSError, PermissionRepairError) as exc:
         directory = project / 'spec/reports/scheduler'
         atomic_write(directory / (program + '.stdout.log'), getattr(exc, 'output', None) or b'')
         atomic_write(directory / (program + '.stderr.log'), getattr(exc, 'stderr', None) or b'')
@@ -302,6 +351,8 @@ def invoke(project, program, args):
         report = {'program': program, 'error': str(exc), 'status': 'FAIL',
                   'process_tree': getattr(exc, 'ios_process_tree', None),
                   'timeout_policy': getattr(exc, 'ios_timeout_policy', None)}
+        if isinstance(exc, PermissionRepairError):
+            report['tool_runtime_permissions'] = exc.receipt
         if cleanup_reports:
             report['runtime_cleanup'] = cleanup_reports
         write_json(log, report)
@@ -314,6 +365,10 @@ def invoke(project, program, args):
     import json
     try:
         result = json.loads(proc.stdout)
+        if permission_receipts:
+            write_json(directory / (program + '.permissions.json'),
+                       {'schema_version': 1, 'kind': 'tool_runtime_permissions',
+                        'program': program, 'receipts': permission_receipts, 'product_verified': False})
         if isinstance(result, dict) and any('stderr_error' in report for report in cleanup_reports):
             result['ios_runtime_cleanup'] = cleanup_reports
         return result
@@ -334,7 +389,13 @@ def generate(project, input_path, *, validate_only=False):
         raise MigrationError('Expected typed v2 plan for understand or domains wave')
     wave = request['wave']
     plan_contract = validate_plan(project, request)
-    graph, _ = validate_graph(source, project)
+    graph, obligations = validate_graph(source, project)
+    projection = None
+    if wave == 'domains':
+        from .ios_harness import responsibility
+        projection = responsibility(project, source=source, graph=graph, obligations=obligations)
+        if projection is not None and projection.candidate:
+            raise MigrationError('Candidate responsibility cannot authorize planning or dispatch')
     if wave == 'domains':
         report, code = check(project, report_only=validate_only)
         if code:
@@ -389,12 +450,18 @@ def generate(project, input_path, *, validate_only=False):
         mapping = read_json(project / 'spec/baseline/ios-coverage.json')['mappings']
         obs = read_json(project / 'spec/baseline/ios-obligations.json')['obligations']
         by_obligation = {o['id']: o for o in obs}
+        owned_obligations = set()
         for row in mapping:
+            if projection is not None and row['obligation_id'] in projection.historical_obligation_ids:
+                continue
             if row['obligation_id'] in report.get('excluded_obligation_ids', []):
                 continue  # Only source-harness-validated Preview reviews are non-product obligations.
             fact_id = by_obligation[row['obligation_id']]['fact_id']
             if not any(fact_id in t['fact_ids'] and set(t['ac_ids']) & set(row['ac_ids']) for t in tasks):
                 raise MigrationError('Obligation has no implementation owner: ' + row['obligation_id'])
+            owned_obligations.add(row['obligation_id'])
+        if projection is not None:
+            projection.validate_target_ownership(covered, owned_obligations)
     completed = set()
     while len(completed) < len(tasks):
         ready = [t['id'] for t in tasks if t['id'] not in completed and isinstance(t.get('parents', []), list) and set(t.get('parents', [])) <= completed]
@@ -422,6 +489,7 @@ def generate(project, input_path, *, validate_only=False):
         'ownership.json': {'version': 1, 'owners': {t['id']: t['ownership'] for t in planned}, 'mainloop_owned': []},
         'contracts.json': {'version': 1, 'ios_adapter_version': 2, 'source_sha256': graph['source_sha256'],
                            'graph_sha256': graph_hash, 'input_hashes': input_hashes, 'ios_tasks': tasks, 'modules': [], 'wires': [],
+                           **({'responsibility_enabled': True} if projection is not None else {}),
                            'spec_contract_version': contract_profile, 'contract_revision': contract_revision(project),
                            'task_inputs': plan_contract['task_inputs']},
         'decisions.json': {'version': 1, 'decisions': request.get('decisions', [])},

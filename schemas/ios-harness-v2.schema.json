@@ -489,6 +489,14 @@
             "pages": {
               "type": "integer",
               "minimum": 0
+            },
+            "acceptance_all": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "acceptance_source_history": {
+              "type": "integer",
+              "minimum": 0
             }
           },
           "additionalProperties": false
@@ -502,6 +510,145 @@
         "scope": {
           "type": "string",
           "minLength": 1
+        },
+        "source_responsibility": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "counts",
+            "behavior_verified"
+          ],
+          "properties": {
+            "enabled": {
+              "const": true
+            },
+            "counts": {
+              "type": "object"
+            },
+            "behavior_verified": {
+              "const": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalBuildIdentity": {
+      "type": "object",
+      "required": [
+        "project",
+        "scheme",
+        "target",
+        "configuration",
+        "sdk",
+        "architecture"
+      ],
+      "properties": {
+        "project": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scheme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "configuration": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sdk": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalConfig": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "build_evidence",
+        "expected_build"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "build_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_build": {
+          "$ref": "#/$defs/conditionalBuildIdentity"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalManifest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "source_sha256",
+        "build_evidence",
+        "build_manifest_sha256",
+        "expected_build",
+        "artifacts",
+        "scope",
+        "capture_authenticity",
+        "behavior_equivalence"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "clang_directives_only"
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "build_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "expected_build": {
+          "$ref": "#/$defs/conditionalBuildIdentity"
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "scope": {
+          "const": "textually_observed_compilation_units_and_include_occurrences"
+        },
+        "capture_authenticity": {
+          "const": "not_verified"
+        },
+        "behavior_equivalence": {
+          "const": "not_verified"
         }
       },
       "additionalProperties": false

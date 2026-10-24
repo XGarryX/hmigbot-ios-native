@@ -17,6 +17,8 @@ metadata:
 
 # ios-ui-analyzer — iOS 界面、状态与导航事实
 
+适用的 Apple 官方技能与 Xcode MCP 优先。先读取 `spec/ref/ios-expertise-plan.json` 与 `ios-official-analysis.json` 中为本类选择的资源，按原始摘要完成审阅；官方资料、只读 MCP、CLI 和编译器分别记录来源、用途、读写范围及实际结果。无官方证据时记录降级原因，保持相关 unknown；不把第三方资料或自编规程称为 Apple 官方。设备远程控制不在默认调用范围，界面授权由用户自行完成。
+
 ## 0. 定位与纪律
 
 - **前置**：上游（a2h-spec / ios-source-analysis）已跑 `harness-init` + `source-index` + `facts`，`<target>/spec/baseline/ios-facts.json` 与 `ios-obligations.json` 存在。缺 → 提示先跑上游（ios-source-analysis §1 或 a2h-spec §1），**不代跑**。本 skill 先加载 `../ios-source-analysis/references/harness-v2.md` 确定机器产物/状态写者与门禁语义。

@@ -22,6 +22,7 @@ def filesystem_path(path):
 
 
 ROOT = filesystem_path(Path(__file__).resolve().parents[1])
+sys.path.insert(0, str(ROOT / 'src'))
 BEGIN = '<!-- hmigbot-ios:begin -->'
 END = '<!-- hmigbot-ios:end -->'
 BLOCK = f'''{BEGIN}
@@ -33,6 +34,8 @@ and read the native source skills. Keep the shared spec/baseline contracts,
 indexed plans, execution briefs, AC traceability and spec/.a2h/open-findings.json.
 Use source_anchors and ios-semantics.json to retain SwiftUI/UIKit and language facts.
 Load ios-source-analysis/references/harness-v2.md for the control contract.
+Read rules/tool-project-status-separation.md in the bundled runtime. Record tool
+fix/release/install evidence separately from project gates and conversion progress.
 Load references/external-expertise.md in that skill for pinned iOS expertise.
 Run expertise-plan/review before the source gate; MCP responses stay tool evidence.
 Generate machine facts/obligations and run source-check --harness before plan-ir.
@@ -105,7 +108,7 @@ def payload():
                 if path.is_symlink():
                     raise ValueError('Install source contains links')
                 files['.hmigbot-ios/plugin/' + path.relative_to(ROOT).as_posix()] = path
-    for name in ('.gitattributes', '.gitignore', 'README.md', 'CHANGELOG.md', 'pyproject.toml', 'install.ps1', 'install.sh', 'uninstall.ps1', 'uninstall.sh'):
+    for name in ('.gitattributes', '.gitignore', 'README.md', 'CHANGELOG.md', 'pyproject.toml', 'install.ps1', 'install.sh', 'uninstall.ps1', 'uninstall.sh', 'runtime-entrypoints.json'):
         files['.hmigbot-ios/plugin/' + name] = ROOT / name
     for skill in (ROOT / 'skills').iterdir():
         if not skill.is_dir() or not (skill / 'SKILL.md').is_file():
@@ -228,34 +231,51 @@ def manage(workspace, mode, hmigbot_root=None):
         else:
             backup[name] = None
     prior_metadata = metadata.read_bytes() if metadata.exists() else None
+    new_version = json.loads((ROOT / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))['version']
+    from hmigbot_ios.upgrade_cleanup import prepare_upgrade_cleanup
+    cleanup = prepare_upgrade_cleanup(workspace, old.get('version') if old else None, new_version,
+                                      tool_changed=bool(old and (changes or set(owned) - set(new) or old.get('version') != new_version)))
+    permission_receipts = []
     try:
+        cleanup.apply()
         for name in changes:
             put(child(workspace, name), new[name])
         for name in set(owned) - set(new):
             child(workspace, name).unlink(missing_ok=True)
         agent_path.write_bytes(updated_agents.encode('utf-8'))
-        manifest = {'schema_version': 1, 'owner': 'hmigbot-ios', 'version': json.loads((ROOT / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))['version'],
+        from hmigbot_ios.macos_permissions import ensure_runtime_permissions
+        for relative in ['.hmigbot-ios/plugin', *sorted(n for n in new if n.startswith('.migbot/bin/'))]:
+            target = child(workspace, relative)
+            if target.exists():
+                permission_receipts.append(ensure_runtime_permissions(workspace, target))
+        manifest = {'schema_version': 1, 'owner': 'hmigbot-ios', 'version': new_version,
                     'files': hashes, 'agent_block': BLOCK,
                     'agent_original_base64': old.get('agent_original_base64') if old else (base64.b64encode(agent_bytes).decode() if agent_bytes is not None else None),
                     'agent_installed_sha256': checksum(agent_path.read_bytes())}
+        cleanup.commit()
+        manifest['last_upgrade_cleanup'] = cleanup.receipt
+        manifest['permission_repairs'] = permission_receipts
         metadata.parent.mkdir(parents=True, exist_ok=True)
         metadata.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     except Exception:
-        for name, original in backup.items():
-            path = child(workspace, name)
-            if original is None:
-                path.unlink(missing_ok=True)
+        try:
+            cleanup.rollback()
+        finally:
+            for name, original in backup.items():
+                path = child(workspace, name)
+                if original is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    put(path, original)
+            if agent_bytes is None:
+                agent_path.unlink(missing_ok=True)
             else:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                put(path, original)
-        if agent_bytes is None:
-            agent_path.unlink(missing_ok=True)
-        else:
-            agent_path.write_bytes(agent_bytes)
-        if prior_metadata is None:
-            metadata.unlink(missing_ok=True)
-        else:
-            metadata.write_bytes(prior_metadata)
+                agent_path.write_bytes(agent_bytes)
+            if prior_metadata is None:
+                metadata.unlink(missing_ok=True)
+            else:
+                metadata.write_bytes(prior_metadata)
         raise
     finally:
         # Files inside rollback can exceed MAX_PATH even when the workspace
@@ -281,7 +301,8 @@ def manage(workspace, mode, hmigbot_root=None):
     return {'status': 'upgraded' if old else 'installed', 'workspace': display_workspace,
             'skills': sum(1 for key in new if key.startswith('.agents/skills/') and key.endswith('/SKILL.md')),
             'hmigbot': 'bundled', 'agents': sum(key.startswith('.codex/agents/') for key in new),
-            'version': manifest['version']}
+            'version': manifest['version'], 'upgrade_cleanup': cleanup.receipt,
+            'permission_repairs': permission_receipts}
 
 
 def main():
@@ -296,7 +317,10 @@ def main():
         print(json.dumps(manage(args.workspace, args.mode), ensure_ascii=False, indent=2))
         return 0
     except (ValueError, OSError) as exc:
-        print(json.dumps({'status': 'error', 'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
+        error = {'status': 'error', 'error': str(exc)}
+        if isinstance(getattr(exc, 'receipt', None), dict):
+            error['permission_repair'] = exc.receipt
+        print(json.dumps(error, ensure_ascii=False), file=sys.stderr)
         return 2
 
 

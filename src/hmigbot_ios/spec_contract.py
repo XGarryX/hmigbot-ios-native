@@ -99,6 +99,7 @@ def references(project, document, text):
 
 def dependency_inputs(project):
     """Freeze explicit shared contracts transitively, including references under ref/."""
+    project = Path(project).resolve()
     base = project / 'spec/baseline'
     pending = [base / name for name in COMMON]
     pending += list((base / 'features').glob('*.md')) + list((base / 'ui').glob('*.md'))
@@ -172,6 +173,15 @@ def check(project):
     graph_path = base / 'ios-facts.json'
     state_paths = {f['anchor']['path'] for f in read_json(graph_path).get('facts', []) if f.get('kind') == 'state'} if graph_path.is_file() else set()
     source_views = {}
+    projection = None
+    try:
+        from .ios_harness import responsibility
+        projection = responsibility(project, source=source)
+        if projection is not None:
+            inputs.update(projection.frozen_inputs())
+    except (MigrationError, OSError, ValueError, TypeError, KeyError) as exc:
+        # Keep inspecting independent source and Markdown contracts below.
+        findings.append(queue.make('IOS.SPEC_RESPONSIBILITY_INVALID', 'spec', 'ios-responsibility.json', str(exc)))
 
     def fail(rule, subject, detail):
         full_rule = 'IOS.SPEC_' + rule
@@ -276,7 +286,8 @@ def check(project):
             seen.add(ident)
             target = re.search(r'标:\s*([^`\s]+)', body)
             symbol = target[1].split('(', 1)[0].rstrip(',;') if target else ''
-            if not symbol or symbol not in symbols:
+            historical = projection is not None and ident in projection.acceptance['source_history']
+            if not historical and (not symbol or symbol not in symbols):
                 fail('TARGET_UNDEFINED', ident, 'Declare target owner.symbol in this feature or an explicitly referenced target contract: ' + symbol)
             expected = re.search(r'判:(?:static|unit|contract|route|ui|visual|device)\s*\|\s*([^`]+)', body)
             if not expected or not expected[1].strip() or re.match(r'真:', expected[1].strip()):

@@ -226,7 +226,13 @@ def check_source(project: Path, *, after_repair=False, report_only=False):
             fail('IOS.SOURCE_UNACCOUNTED', path, 'Map to a page/feature source anchor or record a reviewed disposition')
     if not features:
         fail('IOS.FEATURES_MISSING', 'features', 'No original-format feature specs exist')
-    validate_native_facts(source, project, documents, known, fail)
+    from .ios_harness import responsibility
+    projection = None
+    try:
+        projection = responsibility(project, source=source)
+    except (MigrationError, OSError, ValueError, TypeError, KeyError) as exc:
+        fail('IOS.RESPONSIBILITY_INVALID', 'ios-responsibility.json', str(exc))
+    validate_native_facts(source, project, documents, known, fail, projection=projection)
     result = {'status': 'FAIL' if issues else 'PASS', 'checks': 'source provenance, AC format, file ownership and native semantic contract; not semantic equivalence',
               'findings': issues, 'source_platform': 'ios', 'behavior_verified': False}
     if not report_only:
@@ -288,6 +294,23 @@ def build_project(project: Path):
     return result, 0 if result['status'] == 'build_passed' else 1
 
 
+def _maybe_spec_gates(project: Path):
+    """Refresh generated spec gates when facts already exist.
+
+    Gate generation is additive and intentionally does not turn an incomplete
+    source review into a passing result.  A malformed/partial workspace keeps
+    the original command's diagnostics while exposing the generation error in
+    the command receipt.
+    """
+    try:
+        from .gate_artifacts import generate_spec_gates, generate_plan_gates
+        result = generate_spec_gates(project)
+        result['next_stage'] = generate_plan_gates(project)
+        return result
+    except (MigrationError, OSError, ValueError, KeyError, TypeError) as exc:
+        return {'status': 'not_generated', 'stage': 'spec', 'error': str(exc)}
+
+
 def main(argv=None):
     configure_utf8(sys.stdout, sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__)
@@ -296,9 +319,15 @@ def main(argv=None):
     init.add_argument('--source', required=True, type=Path)
     init.add_argument('--project', required=True, type=Path)
     commands.add_parser('expertise-audit')
-    for name in ('source-index', 'source-analysis', 'spec-scaffold', 'source-refresh', 'source-check', 'spec-check', 'spec-authoring', 'spec-summary', 'migration-report', 'spec-upgrade', 'validate', 'build', 'literals', 'product-literals', 'harness-init', 'import-legacy', 'facts', 'facts-view', 'harness-check', 'behavior-check', 'plan-check', 'plan-ir', 'replan', 'recover-blocked', 'next-batch', 'land-results', 'expertise-plan', 'expertise-review', 'mcp-query', 'manifest-evaluate', 'usage-start', 'usage-record', 'usage-reserve', 'usage-release', 'usage-summary', 'usage-check', 'usage-finish'):
+    for name in ('verify-scope', 'init-environment', 'repair-permissions', 'source-index', 'source-refresh', 'source-check', 'spec-check', 'spec-authoring', 'spec-summary', 'migration-report', 'verify-report', 'gate-artifacts', 'spec-upgrade', 'validate', 'build', 'literals', 'product-literals', 'harness-init', 'import-legacy', 'facts', 'facts-view', 'harness-check', 'behavior-check', 'plan-check', 'plan-ir', 'replan', 'recover-blocked', 'next-batch', 'land-results', 'expertise-plan', 'expertise-review', 'mcp-query', 'manifest-evaluate', 'conditional-capture', 'source-analysis', 'spec-scaffold', 'usage-start', 'usage-record', 'usage-reserve', 'usage-release', 'usage-summary', 'usage-check', 'usage-finish'):
         p = commands.add_parser(name)
         p.add_argument('--project', required=True, type=Path)
+        if name == 'verify-scope':
+            p.add_argument('--input', type=Path, required=True)
+        if name == 'init-environment':
+            p.add_argument('--prepare', action='store_true')
+        if name == 'repair-permissions':
+            p.add_argument('--path', type=Path, help='Exact in-project directory/file; defaults to this project root')
         if name.startswith('usage-'):
             p.add_argument('--ledger', type=Path, help='Project spec/reports/derived/.../usage-budget.json')
             if name in {'usage-start', 'usage-finish'}:
@@ -318,12 +347,23 @@ def main(argv=None):
             p.add_argument('--variant', type=Path)
             p.add_argument('--providers', type=Path)
             p.add_argument('--manifest-evidence', type=Path)
+            p.add_argument('--brief', action='store_true')
+        if name == 'verify-report':
+            p.add_argument('--scope', type=Path, help='Explicit normalized verification scope request')
+        if name == 'gate-artifacts':
+            p.add_argument('--stage', choices=['spec', 'plan', 'execute', 'verify', 'all'], default='all')
+            p.add_argument('--input', type=Path)
         if name == 'source-analysis':
             p.add_argument('--apply-scaffold', action='store_true', help='Create only missing canonical, unreviewed scaffold files')
+            p.add_argument('--analysis-config', type=Path, help='Explicit analysis scope and evidence; default auto')
+            p.add_argument('--plan-only', action='store_true', help='Read-only context decisions without executing stages')
         if name == 'spec-scaffold':
             p.add_argument('--apply', type=Path, help='Apply a previously derived candidate; never approves it')
             p.add_argument('--brief', action='store_true', help='With --output, print only the artifact receipt')
         if name == 'manifest-evaluate':
+            p.add_argument('--config', required=True, type=Path)
+            p.add_argument('--output', required=True, type=Path)
+        if name == 'conditional-capture':
             p.add_argument('--config', required=True, type=Path)
             p.add_argument('--output', required=True, type=Path)
         if name == 'facts-view':
@@ -343,11 +383,12 @@ def main(argv=None):
             p.add_argument('--review', type=Path, required=True)
         if name in {'literals', 'product-literals', 'spec-summary', 'migration-report', 'spec-upgrade', 'spec-authoring', 'spec-scaffold'}:
             p.add_argument('--output', type=Path)
-        if name in {'spec-summary', 'migration-report'}:
+        if name in {'spec-summary', 'migration-report', 'verify-report', 'gate-artifacts'}:
             p.add_argument('--build-evidence', type=Path)
+        if name in {'spec-summary', 'migration-report'}:
             p.add_argument('--brief', action='store_true',
                            help='With --output, write the same full file but print only a small receipt (status/path/sha256/counts).')
-        if name == 'migration-report':
+        if name in {'migration-report', 'verify-report'}:
             p.add_argument('--check', type=Path)
         if name == 'spec-upgrade':
             p.add_argument('--apply', type=Path)
@@ -374,7 +415,27 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         code = 0
-        if args.command.startswith('usage-'):
+        if args.command == 'verify-scope':
+            from .verification_scope import resolve as resolve_scope
+            result = resolve_scope(read_json(args.input))
+        elif args.command == 'init-environment':
+            from .init_environment import run
+            result = run(args.project, ROOT, prepare=args.prepare)
+            code = 0 if result['status'] == 'ready' else 2
+        elif args.command == 'repair-permissions':
+            from .macos_permissions import ensure_runtime_permissions
+            project = args.project.resolve()
+            install_path = project / '.hmigbot-ios/install.json'
+            config_path = project / '.migbot/config.json'
+            installed = install_path.is_file() and read_json(install_path).get('owner') == 'hmigbot-ios'
+            configured = config_path.is_file() and read_json(config_path).get('source_platform') == 'ios'
+            if not installed and not configured:
+                raise MigrationError('Permission repair requires the current configured or installed migration project')
+            target = args.path if args.path is not None else project
+            if not target.is_absolute():
+                target = project / target
+            result = ensure_runtime_permissions(project, target)
+        elif args.command.startswith('usage-'):
             from . import usage_budget
             project = args.project.resolve()
             ledger = _derived_output(project, args.ledger or project / 'spec/reports/derived/usage-budget.json', 'usage-budget.json')
@@ -429,7 +490,10 @@ def main(argv=None):
             from .source_analysis import run
             result = run(args.project, variant=read_json(args.variant) if args.variant else None,
                          providers=args.providers, manifest_evidence=args.manifest_evidence,
-                         apply_scaffold=args.apply_scaffold)
+                         apply_scaffold=args.apply_scaffold, analysis_config=args.analysis_config,
+                         plan_only=args.plan_only,
+                         progress=lambda event: print(json.dumps(event, ensure_ascii=True), file=sys.stderr))
+            code = 2 if result.get('status') in {'needs_input', 'failed'} else 0
         elif args.command == 'spec-scaffold':
             from .native_scaffold import scaffold, apply_scaffold
             if args.apply:
@@ -483,7 +547,14 @@ def main(argv=None):
                 if not args.output:
                     raise MigrationError('--brief requires --output; refusing to discard the report body')
             if args.check:
-                validate_report(args.project, args.check.read_text(encoding='utf-8'), build_evidence=args.build_evidence)
+                contents = args.check.read_text(encoding='utf-8')
+                from .gate_artifacts import MARKER, generate_execution_gates
+                if MARKER in contents and 'gate_status: BLOCKED' in contents:
+                    expected = generate_execution_gates(args.project, build_evidence=args.build_evidence, write=False)
+                    if contents != expected['markdown']:
+                        raise MigrationError('Blocked migration report is edited or stale; regenerate it')
+                else:
+                    validate_report(args.project, contents, build_evidence=args.build_evidence)
                 result = {'status': 'current', 'report': str(args.check)}
             else:
                 report = summary(args.project, build_evidence=args.build_evidence)
@@ -503,6 +574,28 @@ def main(argv=None):
                         result = {'status': 'generated', 'report': str(args.output), 'markdown': text}
                 else:
                     result = {'status': 'generated', 'report': None, 'markdown': text}
+        elif args.command == 'verify-report':
+            from .gate_artifacts import generate_verify_report
+            result = generate_verify_report(args.project, build_evidence=args.build_evidence, write=not args.check, scope=read_json(args.scope) if args.scope else None)
+            if args.check:
+                if args.check.read_text(encoding='utf-8') != result.pop('markdown'):
+                    raise MigrationError('Verification report is stale or edited; regenerate from current evidence')
+                result['status'] = 'current'
+        elif args.command == 'gate-artifacts':
+            from .gate_artifacts import generate_spec_gates, generate_plan_gates, generate_execution_gates, generate_verify_report
+            if args.input:
+                from .ios_scheduler import generate
+                generate(args.project, args.input, validate_only=True)
+            generated = []
+            if args.stage in {'spec', 'all'}:
+                generated.append(generate_spec_gates(args.project))
+            if args.stage in {'plan', 'all'}:
+                generated.append(generate_plan_gates(args.project, args.input))
+            if args.stage in {'execute', 'all'}:
+                generated.append(generate_execution_gates(args.project, build_evidence=args.build_evidence))
+            if args.stage in {'verify', 'all'}:
+                generated.append(generate_verify_report(args.project, build_evidence=args.build_evidence))
+            result = {'status': 'generated', 'stages': generated, 'behavior_verified': False}
         elif args.command in {'product-literals', 'spec-summary'}:
             from .quality_views import product_literals, summary
             if args.command == 'spec-summary' and args.brief and not args.output:
@@ -520,6 +613,9 @@ def main(argv=None):
                               'counts': {'acceptance': counts.get('acceptance'),
                                          'features': counts.get('features'),
                                          'pages': counts.get('pages')}}
+        elif args.command == 'conditional-capture':
+            from .conditional_evidence import capture
+            result = capture(args.project.resolve(), args.config, args.output)
         elif args.command == 'spec-check':
             from .spec_contract import check as check_contract
             result, code = check_contract(args.project)
@@ -531,14 +627,28 @@ def main(argv=None):
                 result, code = check_source(args.project, after_repair=args.after_repair, report_only=args.report_only)
                 result['harness_ready'] = False
                 result['compatibility_only'] = True
+            if not args.report_only:
+                from .gate_artifacts import refresh_spec_reports
+                try:
+                    result['gate_artifacts'] = refresh_spec_reports(args.project, result if args.harness else None)
+                except (MigrationError, OSError, ValueError) as exc:
+                    result['gate_artifacts'] = {'status': 'not_generated', 'error': str(exc)}
         elif args.command in {'harness-init', 'import-legacy'}:
             from .ios_harness import initialize
             result = initialize(args.project, import_legacy=args.command == 'import-legacy')
+            if args.command == 'import-legacy':
+                result['gate_artifacts'] = _maybe_spec_gates(args.project)
         elif args.command == 'facts':
             from .ios_facts import refresh
             source, project = context(args.project)
             result = refresh(project, source, read_json(args.variant) if args.variant else None, args.providers,
                              args.manifest_evidence)
+            gate = _maybe_spec_gates(project)
+            if gate['status'] != 'generated':
+                code = 2
+            result = ({'status': 'extracted', 'source_sha256': result['source_sha256'],
+                       'facts': len(result['facts'])} if args.brief else dict(result))
+            result['gate_artifacts'] = gate
         elif args.command == 'manifest-evaluate':
             from .manifest_evidence import capture
             source, project = context(args.project)
@@ -555,6 +665,8 @@ def main(argv=None):
         elif args.command == 'harness-check':
             from .ios_harness import check
             result, code = check(args.project)
+            from .gate_artifacts import generate_verify_report
+            result['gate_artifacts'] = generate_verify_report(args.project)
         elif args.command == 'behavior-check':
             from .ios_facts import validate_graph
             from .ios_harness import ac_inventory
@@ -562,20 +674,30 @@ def main(argv=None):
             source, project = context(args.project)
             graph, _ = validate_graph(source, project)
             result, code = verify(project, source, graph, ac_inventory(project), run=args.run)
+            from .gate_artifacts import generate_verify_report
+            result['gate_artifacts'] = generate_verify_report(project)
         elif args.command in {'plan-check', 'plan-ir'}:
             from .ios_scheduler import generate
             result = generate(args.project, args.input, validate_only=args.command == 'plan-check')
+            if args.command == 'plan-ir':
+                from .gate_artifacts import generate_plan_gates
+                result['gate_artifacts'] = generate_plan_gates(args.project, args.input)
         elif args.command == 'recover-blocked':
             from .replan_recovery import recover_blocked
             result = recover_blocked(args.project, args.review)
         elif args.command == 'replan':
             from .ios_scheduler import replan
             result = replan(args.project, args.input)
+            from .gate_artifacts import generate_plan_gates
+            result['gate_artifacts'] = generate_plan_gates(args.project, args.input)
         elif args.command in {'next-batch', 'land-results'}:
             from .ios_scheduler import step
             options = ({'usage_ledger': args.usage_ledger, 'usage_run_id': args.usage_run_id}
                        if args.command == 'next-batch' else {})
             result, code = step(args.project, args.wave, landing=args.command == 'land-results', **options)
+            if args.command == 'land-results':
+                from .gate_artifacts import generate_execution_gates
+                result['gate_artifacts'] = generate_execution_gates(args.project)
         elif args.command == 'validate': result, code = validate_tools(args.project)
         elif args.command == 'build': result, code = build_project(args.project)
         elif args.command == 'doctor':
@@ -589,5 +711,8 @@ def main(argv=None):
         emit_json(result)
         return code
     except (MigrationError, OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
-        emit_json({'status': 'FAIL', 'error': str(exc)}, indent=None)
+        error = {'status': 'FAIL', 'error': str(exc)}
+        if isinstance(getattr(exc, 'receipt', None), dict):
+            error['permission_repair'] = exc.receipt
+        emit_json(error, indent=None)
         return 2

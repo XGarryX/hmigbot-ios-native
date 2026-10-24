@@ -181,9 +181,10 @@ class ScaffoldIntegrationTests(unittest.TestCase):
         self.assertNotIn('CounterViewModel', manifest)
         self.assertNotIn('UIColor', manifest)
         index = (self.base / 'feature-index.md').read_text(encoding='utf-8')
-        self.assertIn('CounterViewController', index)
+        self.assertIn('F001', index)
+        self.assertIn('CounterViewController', manifest)
         for pid in cand['inventory_diff']['new_pages']:
-            self.assertTrue(list(self.base.glob(f'ui/{pid}_*.md')))
+            self.assertTrue(list(self.base.glob(f'ui/{pid}*.md')))
 
     def test_stable_ids_across_calls(self):
         self.source, self.project = build_fixture(self.root)

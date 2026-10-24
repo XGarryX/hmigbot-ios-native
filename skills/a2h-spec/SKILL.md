@@ -11,9 +11,16 @@ metadata:
   layer: pipeline
 ---
 
+本统一版本先读 [单一流程、环境前置与兼容范围](../a2h-run/references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
+
+
 > **调用关系**：本 skill 主会话执行，**不直接 spawn 迁移 worker**。四类源分析由主会话按 `ios-source-analysis` 技能组织（工程=ios-project-inspector、UI=ios-ui-analyzer、功能=ios-feature-analyzer、API=ios-api-inventory）。若宿主支持 subagent，可把四类分析按 `a2h-ios-analyzer` 角色派发；此时一律 `fork_turns:"none"`（任务书自足，写清源锚点、输出契约），并遵守 Join 协议：完成的唯一合法信号是 `agent_status=completed`，绝不是产物文件存在；completed≠验收通过，join 点跑本 skill 门禁验产物；谁派谁收；最终报告前必须收口全部句柄。
 >
 > 路径约定：`$IOS_SRC` 从 `<target>/.migbot/config.json` 的 `ios` 字段读取（缺配置文件 → 先执行 a2h-init）；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。产物一律落 `<target>/spec/`（baseline/ref/reports/.a2h），**禁落会话临时目录**。本 skill 自有脚本：`scripts/lint_addenda_closure.py`、`scripts/lint_divergence.py`、`scripts/extract_literals.py`、`scripts/build_traceability_index.py`。
+
+工具修复与项目源事实补全分别按 [结果分离规则](../a2h-run/references/tool-project-status-separation.md) 记录；库/历史范围只能经当前受审责任合同投影，不删除机器义务或把源未知改成已知。
+
+先读取 [iOS Harness v2](../ios-source-analysis/references/harness-v2.md)，以该协议决定输入、机器门禁和状态写者。以下原领域规程继续用于规格内容、indexed 计划、接线和真实验证；不得再手工调度或写入三份控制账本。
 
 # a2h-spec — 从 iOS 源事实生成迁移规格
 
@@ -26,17 +33,21 @@ metadata:
 - **第一条可见输出必须是一行阶段计划**（harness 门 → 源分析 → UI baseline → 功能 baseline → 门禁 → Gate C），然后才执行 §1。
 - **恢复与已有 baseline**：先读 `spec/.a2h/open-findings.json`（findings 只能由产生它的检查重跑后关闭，不同阶段队列分开，不能把整个文件重写成空）。已有完整 baseline → 比较源版本走增量规程（a2h-incremental-migration/arkts-spec-evolver）；部分 baseline 只续缺/受影响部分，**保留稳定 page/F/AC/decision ID**。
 
+需要依赖内部或批准替代责任投影时，先读 [源责任合同](references/source-responsibility.md)。原 facts/obligations、源 unknown 和历史 AC 必须保留；未审 payload 不能授权排除或派发。
+
+生成baseline前读取 [产物目录](references/artifact-contracts.md) 与 [交付合同](references/spec-delivery-contract.md)：先确定profile/适用产物/唯一作者，源事实、目标设计、批准差异分段，先形成行为模型和公共目标接口，再按模板生成文档与具体AC。不要从源码信号直接套通用句式。
+
 ## 1. 基线启动（顺序执行；每步带产物与 exit code）
 
 | # | 命令 | 产物 | 失败处置 |
 |---|---|---|---|
-| 1.1 | `python <runtime>/scripts/a2h_ios.py harness-init --project <target>` | config 写入 `ios_harness.version=2` + `spec_contract_version` | exit 1 读错误修配置重跑，最多 2 轮（§0 阶梯） |
-| 1.2 | `python <runtime>/scripts/a2h_ios.py source-index --project <target>`（仅首次；存在时先比较源 sha256，变化走 `source-refresh` 需复核记录） | `spec/baseline/ios-source-index.json` | exit 1 = 源在索引期间变化或索引已存在；按提示处置，禁删旧索引硬建 |
-| 1.3 | `python <runtime>/scripts/a2h_ios.py facts --project <target>` | `spec/baseline/ios-facts.json`（身份/词法/结构事实） | FAIL 重跑；数据不完整不阻塞视图，缺处标 unknown |
-| 1.4 | `python <runtime>/scripts/a2h_ios.py literals --project <target>` | `spec/baseline/literal-ledger.json` | 同 1.3 |
-| 1.5 | `python <runtime>/scripts/a2h_ios.py expertise-plan --project <target>` | `spec/ref/ios-expertise-plan.json`（按清单定本轮必读上游资料） | 缺 vendor 快照 → 记 `apple_skills.status=not_loaded` 继续 |
-| 1.6 | `python <runtime>/scripts/a2h_ios.py facts-view --project <target> --scope {project,ui,feature,api}`（四类各跑一次） | 四类事实视图 | 任一 FAIL → 对应分析 skill 补事实后重跑 |
-| 1.7 | 按 1.5 清单实际读取上游资料，沿源实现形成观察，`python <runtime>/scripts/a2h_ios.py expertise-review --project <target> --input <review.json>` | 审阅记录（resources 摘要必须与清单一致） | 空壳"已处理"不代替分析；按 §0 阶梯 |
+| 1.1 | `python <runtime>/scripts/a2h_ios.py source-analysis --project <target> --plan-only` | 只读自动编排计划和确切缺失输入 | 依据工程及已确认范围补足真实歧义 |
+| 1.2 | `python <runtime>/scripts/a2h_ios.py source-analysis --project <target>` | harness、索引、官方技能/MCP、适用原生/冻结证据、facts、literals、expertise-plan 与待审候选 | 查看逐步进度及失败收据；过期索引走 source-refresh，禁止删除旧证据硬建 |
+| 1.3 | 读取 `spec/reports/derived/source-analysis.json` 与 `spec/ref/analysis-runs/*/{plan,progress}.json` | 决策理由、实际调用、产物、处理/失败/阻塞数 | 缺失官方证据明确降级，不能改标通过 |
+| 1.4 | `python <runtime>/scripts/a2h_ios.py facts-view --project <target> --scope {project,ui,feature,api}`（四类各跑） | 四类事实视图 | 对应分析作者补事实并重跑 |
+| 1.5 | 按 `ios-expertise-plan.json` 读取适用官方资源和明确的备用资料，沿源码形成观察，再用 expertise-review 记录 | 真实来源、固定摘要与源观察 | 不用“已处理”替代分析；官方资料加载不代表语义审阅完成 |
+
+自动编排字段、选择与恢复规则见 [自动编排协议](../ios-source-analysis/references/auto-orchestration.md)。优先适用 Apple 官方技能、只读 Xcode MCP、CLI 和 Swift/Clang；各项说明来源、用途、读写范围及真实结果。远程控制设备类能力排除在默认调用范围。
 
 - **harness v2 协议**：本 skill 先加载 `../ios-source-analysis/references/harness-v2.md`（它决定输入、机器门禁与状态写者）。事实/义务/计划/回执由随包命令检查；本正文的分析责任继续适用，v2 协议决定机器产物和状态——旧版 source-check 不能代替新版门禁。
 - **MCP 证据（可选项）**：需要符号证据时 `python <runtime>/scripts/a2h_ios.py mcp-query --project <target> --server <server.json> --request <query.json>`。只有固定源读工具白名单可调用；失败/超时写 failure.json，绝不写成功索引；真实服务缺工具保留 unavailable/unknown，**禁止换假服务凑通过**。返回标记 `resolution=tool_response`、`build_context=unverified`，不自动升级为 compiler_binding/runtime。

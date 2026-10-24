@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import ctypes
+import os
 from ctypes import wintypes
 import subprocess
 
 
 def run(command, *, cwd, env, timeout):
     """Resume only after job assignment; timeout always terminates the whole job."""
+    if os.name != 'nt':
+        return subprocess.run(command, cwd=cwd, env=env, capture_output=True, timeout=timeout, shell=False)
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
 
     class BasicLimits(ctypes.Structure):

@@ -309,3 +309,15 @@ def write_new_tree(output: Path, files: dict[str, bytes]):
             if publication_failure is None:
                 raise
             publication_failure.add_note(f"Temporary tree cleanup failed at {temp}: {cleanup_error}")
+
+
+def trusted_system_alias(path):
+    """Known Darwin root aliases are directory identities, not project link grants."""
+    import platform
+    path = Path(path)
+    if platform.system() != 'Darwin' or str(path) not in {'/var', '/tmp', '/etc'}:
+        return False
+    try:
+        return path.resolve(strict=True) == Path('/private') / path.name
+    except OSError:
+        return False

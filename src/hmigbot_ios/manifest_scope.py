@@ -115,7 +115,7 @@ def classify(source, snap, variant, context):
         require(not any(Path(f['path']).suffix.lower() in {'.h','.modulemap'} for f in snap['files']), 'implicit headers/module maps remain unresolved')
         for relative in variant['source_files']:
             require(Path(relative).suffix=='.swift','non-Swift dependency/include bridges remain unresolved')
-            parsed=tokenize((proof.source/relative).read_text(encoding='utf-8-sig'))
+            parsed=tokenize((proof.source/relative).read_text(encoding='utf-8-sig'), skip_pragma_marks=Path(relative).suffix != '.swift')
             for at,token in enumerate(parsed):
                 if token.kind=='string' or token.value!='import': continue
                 following=at+1

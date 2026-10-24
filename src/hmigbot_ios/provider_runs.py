@@ -69,6 +69,8 @@ class ProviderRun:
     """One provider try: fresh directory, traceable run id, no overwrite of earlier evidence."""
 
     def __init__(self, project, operation, source_sha256, *, config=None, input_path=None):
+        from .provider_plan import consumed_inputs
+        config, input_path = consumed_inputs(operation, config, input_path)
         self.project = io_path(project)
         self.operation = operation
         self.source_sha256 = source_sha256
@@ -241,6 +243,16 @@ class ProviderRun:
             raise MigrationError('Provider attempt already has a terminal record')
         record = {**self._base_record('failed'), 'error': str(error),
                   'retry': 'a new attempt is allowed; this record is retained for review'}
+        diagnostics = getattr(error, 'provider_diagnostics', {})
+        if isinstance(diagnostics, dict) and diagnostics:
+            from .core import atomic_write
+            saved = {}
+            for name, raw in diagnostics.items():
+                if name not in {'xcodebuild.stdout.log', 'xcodebuild.stderr.log'} or not isinstance(raw, bytes):
+                    raise MigrationError('Invalid provider failure diagnostics contract')
+                atomic_write(self.directory / name, raw)
+                saved[name] = digest(raw)
+            record['diagnostics'] = saved
         write_json(self.failure_path, record)
         write_json(self.directory / RUN_RECORD_NAME, record)
         self.finished = True

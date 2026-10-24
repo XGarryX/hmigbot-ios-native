@@ -100,7 +100,7 @@ python scripts/a2h_ios.py next-batch --project 'D:/Projects/cuike-harmony' --usa
 
 [分阶段超时与截止时间](runtime-timeouts.md) 可覆盖原调度的 60 秒和结构流水线的 180 秒执行限制，并保留超时前的原始输出。默认值兼容旧行为；这些执行保护与用量账本分别使用，不自动证明两小时达标。
 
-[三类中性宿主评估](../evaluations/wb-0.9.1/neutral/README.md) 补充 Binding/导航状态、UIKit 事件/资源与异步取消/持久化/异常的回归。正常业务和变异守卫分别统计，空操作坏候选作为正式输入会被真实行为消费者拒绝。宿主 PASS 只覆盖给定逻辑用例，不能替代真机 UI、源执行或完整源分析链。
+三类中性宿主评估（本地过程记录：`../evaluations/wb-0.9.1/neutral/README.md`） 补充 Binding/导航状态、UIKit 事件/资源与异步取消/持久化/异常的回归。正常业务和变异守卫分别统计，空操作坏候选作为正式输入会被真实行为消费者拒绝。宿主 PASS 只覆盖给定逻辑用例，不能替代真机 UI、源执行或完整源分析链。
 
 [规模基准](fact-capture-benchmark.md) 可在 100k、200k、500k 合成源码上测 facts 采集的时间、内存及逻辑读取量；它不运行模型、编译、转换或视觉/功能验收，不能外推端到端两小时/20M 达标。
 

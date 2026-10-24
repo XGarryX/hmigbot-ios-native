@@ -36,6 +36,10 @@ identity 信号保留原有 ID 与数量，附加可重提回放的 token_index/
 
 ## 模型事实与覆盖
 
+依赖/测试/批准替代范围按 [单一源责任合同](../../a2h-spec/references/source-responsibility.md) 消费；原 helper 重建活动与历史 AC，所有门禁/计划/调度统一验证和冻结，不能只补文件名。
+
+工具审计和项目执行必须遵循 [结果分离规则](../../a2h-run/references/tool-project-status-separation.md)。批准替代保留 source_history 与源 unknown，活动目标 AC 来自原 helper 重新计算；投影输入与规则代码均进入计划冻结。
+
 页面/功能清单确定后先按 [原生规格生成协议](../../a2h-spec/references/native-authoring.md) 运行 `spec-authoring`，让工具枚举全部文档、条件维度、处置必填字段和各AC允许的源位置。候选不写baseline或控制账本；原作者复核落盘后仍运行原门禁。
 
 逐 page/feature 维护 `ios-semantics.json` v2，每个必需维度仍按 native-facts.md 枚举。known 的 value 必须是对象，fact_ids 指向所属源码的机器事实，evidence 必须落在这些事实片段内。复杂语义说明放 value 中，但须解释操作、状态、错误和观察结果。

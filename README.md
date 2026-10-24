@@ -1,6 +1,11 @@
-# HMigBot-iOS 0.11.0
+# HMigBot-iOS 0.13.0
 
-0.11.0 修正规程与准入冲突，接通已有prompt_scope作者入口，减少同次调度重复hash，增加显式在途token预留及完整provider计划预检。源分析回执记录当前host发现，仍不自动执行Xcode或证明符号绑定。见 [Windows改造合同](docs/WINDOWS-FOUNDATION-20261022.md)、[预留操作](docs/USAGE-RESERVATIONS.md) 与自足的 [Mac交接](docs/MAC-HANDOFF-20261022.md)。旧源基线仍需按原流程重提/复审；首个预留将usage账本升级为schema 2，旧运行时应拒读而非忽略在途额度。工具测试不代表真实App双100%、2小时或20M目标达标。
+0.13.0 补齐 source-analysis 的上下文自动编排：按宿主、工程、既定范围和当前证据实际选择并执行原生采集或冻结回放；自动衔接 SwiftSyntax、Clang、条件编译、资源和规格候选。适用 Apple 官方技能、只读 Xcode MCP 与官方 CLI 优先，保留实际授权失败和备用来源；远程控制设备排除在默认范围。每轮输出逐步进度、原始日志和下游消费证据。见 [自动编排协议](skills/ios-source-analysis/references/auto-orchestration.md) 与 [能力目录](docs/integration/CAPABILITIES.md)。93 项能力数量保持不变，编排器不重复计数。
+
+
+统一原生流程见 [使用规程](docs/WORKFLOW.md)，能力对应的实现和回归入口见 [机器目录](src/hmigbot_ios/semantic_capabilities.json)。开发过程报告、合并验收证据和历史评估留在本地，通过 `.gitignore` 排除；代码、技能、schema、运行依赖及固定测试夹具继续纳入版本管理。
+
+0.11.0 修正规程与准入冲突，接通已有prompt_scope作者入口，减少同次调度重复hash，增加显式在途token预留及完整provider计划预检。源分析回执记录当前host发现，仍不自动执行Xcode或证明符号绑定。见 Windows改造合同（本地过程记录：`docs/WINDOWS-FOUNDATION-20261022.md`）、[预留操作](docs/USAGE-RESERVATIONS.md) 与自足的 Mac交接（本地过程记录：`docs/MAC-HANDOFF-20261022.md`）。旧源基线仍需按原流程重提/复审；首个预留将usage账本升级为schema 2，旧运行时应拒读而非忽略在途额度。工具测试不代表真实App双100%、2小时或20M目标达标。
 
 0.10.1 区分模型 `.id` 值读取与 SwiftUI 身份调用，保留真实 UI 身份判据及保守未知分支。升级须按原 `facts` 流程重提并复审旧基线，不能继承旧门禁结果。
 
@@ -8,9 +13,9 @@
 
 0.9.2 修复 Xcode 自动自引用 workspace/用户状态引起的源快照误报，增加与正式门禁共享字段、完整性及锚点合同的只读规格生成辅助。共享 Scheme、锁文件、真实工程引用和源码继续参与摘要；未知语义继续阻断。见[修复范围与升级步骤](docs/SOURCE-AUTHORING-0.9.2.md)。
 
-0.9.1 修复 WorkBuddy 评估中独立复现的解析、冻结和 raw 字符串问题，同步 Spec/Plan/Execute/Verify 的 MD 规则与检查器；增加受控旧规格诊断及真正由当前逐页证据生成、可检查是否过期的报告。见 [整改对应表](docs/WORKBUDDY-0.9.1.md) 与 [旧规格升级步骤](docs/SPEC-UPGRADE.md)。
+0.9.1 修复 WorkBuddy 评估中独立复现的解析、冻结和 raw 字符串问题，同步 Spec/Plan/Execute/Verify 的 MD 规则与检查器；增加受控旧规格诊断及真正由当前逐页证据生成、可检查是否过期的报告。见 整改对应表（本地过程记录：`docs/WORKBUDDY-0.9.1.md`） 与 [旧规格升级步骤](docs/SPEC-UPGRADE.md)。
 
-已合入main的iOS对齐工作：① 六个流水线技能（a2h-init/spec/plan/execute/verify/retrospect）参照原版 HMigBot 1.7.0 的写作方法论整体重写——统一「精确命令表 / 黑体硬约束 / 无人值守处置阶梯 / 读取时机表 / 交接闸 / mark-stage 收尾」骨架，全部命令核对真实 `a2h_ios.py` flags；a2h-verify 补回原版 CHECK-5 行为验证语义（`behavior-check` 只报告、不参与整体判定）。② 七个 ios-* 技能深化到安卓原版对应技能的等价深度（接口接缝框架、pbxproj 分层、状态装饰器分类、行为链六维度、xcassets 全表等），iOS 语义红线逐条保留。③ `doctor` 输出新增 `host_profile` 宿主能力协商：macOS+Xcode → 原生能力候选，Windows/Linux → static候选；可用性不代表已执行原生解析，Apple skill/Xcode MCP 按 available/configured/executed 三态记录。④ 明确维护原则：原版共享技能（arkts-*/hmos-* 等）冻结不改，只改 iOS 版新增/修改的技能。审计与写作基线见 [对齐审计](docs/IOS-ALIGNMENT-1.7-AUDIT.md) 与 [技能写法方法论](docs/SKILL-AUTHORING-METHODOLOGY.md)。
+已合入main的iOS对齐工作：① 六个流水线技能（a2h-init/spec/plan/execute/verify/retrospect）参照原版 HMigBot 1.7.0 的写作方法论整体重写——统一「精确命令表 / 黑体硬约束 / 无人值守处置阶梯 / 读取时机表 / 交接闸 / mark-stage 收尾」骨架，全部命令核对真实 `a2h_ios.py` flags；a2h-verify 补回原版 CHECK-5 行为验证语义（`behavior-check` 只报告、不参与整体判定）。② 七个 ios-* 技能深化到安卓原版对应技能的等价深度（接口接缝框架、pbxproj 分层、状态装饰器分类、行为链六维度、xcassets 全表等），iOS 语义红线逐条保留。③ `doctor` 输出新增 `host_profile` 宿主能力协商：macOS+Xcode → 原生能力候选，Windows/Linux → static候选；可用性不代表已执行原生解析，Apple skill/Xcode MCP 按 available/configured/executed 三态记录。④ 明确维护原则：原版共享技能（arkts-*/hmos-* 等）冻结不改，只改 iOS 版新增/修改的技能。审计与写作基线见 对齐审计（本地过程记录：`docs/IOS-ALIGNMENT-1.7-AUDIT.md`） 与 [技能写法方法论](docs/SKILL-AUTHORING-METHODOLOGY.md)。
 
 读取原生 iOS 源码与功能特征，按原 HMigBot 五阶段生成 spec、计划和原生鸿蒙代码。
 本工具保留独立 HMigBot CodeX 1.6.1 的实施/验证资源，并接入 1.7.0 调度核心；所需资源随包提供，无需原插件目录。
@@ -159,7 +164,7 @@ flowchart TD
 
 | 细分步骤 | Skill / MCP / 工具 | 主要产物 |
 |---|---|---|
-| 1.1 建快照、提取源信号/义务和字面量 | ios-source-analysis；source-index、facts、literals；按需 SwiftSyntax/Clang/IB/资源 provider | `spec/baseline/ios-source-index.json`、`ios-facts.json`、`ios-obligations.json`、`literal-ledger.json`；provider 原始产物在 `spec/ref/provider-runs/` |
+| 1.1 自动选择证据、建快照、提取信号/义务和字面量 | ios-source-analysis；source-analysis 自动衔接适用原生/冻结证据、官方资料和 provider；保留低层入口 | `spec/baseline/ios-source-index.json`、`ios-facts.json`、`ios-obligations.json`、`literal-ledger.json`；provider 原始产物在 `spec/ref/provider-runs/` |
 | 1.2 确定本轮专业资料；读取实际文件并分配分析 owner | expertise-plan；AvdLee/Axiom 固定资料 | `spec/ref/ios-expertise-plan.json`，给出上游文件摘要、源范围、事实 ID 和 UI/功能主题 |
 | 1.3 识别工程/target/scheme/configuration、依赖与语言边界 | ios-project-inspector；Concurrency 工程配置规程；可选 Xcode/SourceKit MCP | `spec/ref/ios-project.md`、`module-index.md`、`ios-project-signals.json`；有效构建成员未确认则保留 unresolved |
 | 1.4 沿入口分析 SwiftUI/UIKit/IB、状态、事件、导航和布局 | ios-ui-analyzer；AvdLee SwiftUI、Axiom UIKit/内存资料；可选源 MCP | `spec/ref/ios-ui-facts.md`、`ios-ui-signals.json`；页面/状态矩阵、source anchors、原生语义候选 |
@@ -305,14 +310,17 @@ Xcode 也提供外部 agent MCP 接入。两者可作为具备 Mac/Xcode 环境�
 
 ## 开发与复现
 
+直接在 `hmigbot-ios-main` 维护代码、技能、文档和测试。该目录是交付源；临时目录只保存日志、测试夹具和输出，不维护另一套待合并实现。ZIP 从当前目录的脚本生成，保留当前目录名、文件内容、权限、修改时间和空目录；逐项清单列出缓存与本地状态排除项。
+
 ```powershell
 python -X utf8 scripts/sync_skill_catalog.py
 python -m pip install '.[test]'
 python -X utf8 -m pytest -q -p no:cacheprovider
 python -X utf8 scripts/audit_native_surface.py
 python -X utf8 scripts/validate_release.py --output work/release-check
-python scripts/package_plugin.py --output dist/hmigbot-ios-0.11.0.zip
-python scripts/smoke_package.py --package dist/hmigbot-ios-0.11.0.zip --output work/package-check.json
+python scripts/package_plugin.py --output ../releases/hmigbot-ios-git-0.13.0.zip
+python scripts/verify_package.py --package ../releases/hmigbot-ios-git-0.13.0.zip --source . --output ../releases/source-package-check.json
+python scripts/smoke_package.py --package ../releases/hmigbot-ios-git-0.13.0.zip --output ../releases/package-check.json
 ```
 
 仓库根目录未指定路径时，pytest 通过 `pyproject.toml` 的
@@ -327,8 +335,10 @@ vendor 自带的命令脚本。显式指定文件、目录或测试 ID 仍可选
 技能正文、参考和模板直接维护，同步脚本只更新目录。旧实验 CLI 与 provider 用于按需机械任务，
 其受限生成器不承担通用迁移。包不包含 DevEco SDK、用户工程、证书或 Apple 账号凭据。
 
-[架构与改造边界](docs/HMIGBOT-ARCHITECTURE-AUDIT.md) · [完整技能目录](docs/SKILLS.md) ·
-[流水线](docs/WORKFLOW.md) · [实施状态](docs/IMPLEMENTATION-STATUS.md) ·
+架构与改造边界（本地过程记录：`docs/HMIGBOT-ARCHITECTURE-AUDIT.md`） · [完整技能目录](docs/SKILLS.md) ·
+[流水线](docs/WORKFLOW.md) · 实施状态（本地过程记录：`docs/IMPLEMENTATION-STATUS.md`） ·
 [来源清单](docs/THIRD-PARTY-NOTICES.md) · [变更记录](CHANGELOG.md)
 
-[GitHub 版本基线与提交范围](docs/VERSION-HISTORY.md) · [验证复现](docs/VALIDATION.md)
+[GitHub 版本基线与提交范围](docs/VERSION-HISTORY.md) · 验证复现（本地过程记录：`docs/VALIDATION.md`）
+
+Objective-C属性/实例变量的提取边界与typed消费合同见[状态事实说明](docs/objc-state-facts.md)。

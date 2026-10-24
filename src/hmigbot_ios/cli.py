@@ -248,7 +248,15 @@ def dispatch(args):
         write_json(args.output, result)
         return result
     if command == "capabilities":
-        return read_json(Path(__file__).with_name("capabilities.json"))
+        from .core import safe_child
+        result = read_json(Path(__file__).with_name("capabilities.json"))
+        package = Path(__file__).resolve().parent
+        canonical = read_json(safe_child(package, result['canonical_catalog']))
+        entries = canonical['capabilities']
+        unique = {entry['id'] for entry in entries if entry.get('independent') is True}
+        if len(unique) != len(entries) or canonical['count'] != len(unique):
+            raise MigrationError('Canonical semantic capability catalog is duplicated or inconsistent')
+        return {**result, 'independent_capability_count': len(unique), 'canonical_capabilities': entries}
     if command == "check-facts":
         report = validate_facts(read_json(args.input))
         return {"contract_valid": True, "facts": len(report["facts"]), "behavior": "not_verified"}

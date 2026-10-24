@@ -260,9 +260,9 @@ def main(argv=None, *, helper):
         project = io_path(Path(args.project_root)).resolve()
         manifest = read_json(Path(args.manifest))
         checks, before, touched = preflight(project, manifest)
-        result = subprocess.run([sys.executable, str(helper), str(Path(args.manifest).resolve()),
-                                 '--project-root', str(project), *(['--dry-run'] if args.dry_run else [])],
-                                capture_output=True, shell=False)
+        from .portable_helper import run
+        result = run(helper, [str(Path(args.manifest).resolve()),
+                     '--project-root', str(project), *(['--dry-run'] if args.dry_run else [])], capture_output=True)
         _emit(sys.stdout, result.stdout)
         _emit(sys.stderr, result.stderr)
         if result.returncode:

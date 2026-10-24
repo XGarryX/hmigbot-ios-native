@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get('HMIGBOT_TEST_RUNTIME', Path(__file__).resolve().parents[1])).resolve()
 sys.path.insert(0, str(ROOT / 'src'))
 from hmigbot_ios.core import MigrationError, read_json, snapshot, write_json
 from hmigbot_ios.native_pipeline import configure, index_source
@@ -33,6 +33,8 @@ struct Counter: View {
 }
 ''', encoding='utf-8')
         configure(self.source, self.project)
+        # Unit tests use the explicit static scope; native orchestration is tested separately.
+        write_json(self.project / 'spec/ref/ios-analysis-config.json', {'schema_version': 1, 'mode': 'static'})
 
     def test_fresh_entry_produces_candidates_without_approving_them(self):
         result = run(self.project, apply_scaffold=True)
@@ -89,7 +91,7 @@ struct Counter: View {
         self.assertFalse(report['spec_complete'])
         self.assertFalse((self.project / 'spec/baseline/ios-facts.json').exists())
 
-    def test_current_host_discovery_is_receipted_without_execution_claims(self):
+    def test_current_host_and_explicit_static_execution_are_separate(self):
         from hmigbot_ios.host import detect_host_profile
         run(self.project)  # existing harness initialization may add expertise config
         config_before = (self.project / '.migbot/config.json').read_bytes()
@@ -100,9 +102,10 @@ struct Counter: View {
                 result = run(self.project)
             self.assertEqual(result['host_profile'], profile)
             selection = result['source_provider_selection']
-            self.assertTrue(selection['discovery_only'])
+            self.assertFalse(selection['discovery_only'])
             self.assertEqual(selection['provider'], profile['source']['provider'])
-            self.assertEqual(selection['execution'], 'explicit_provider_plan_required')
+            self.assertEqual(selection['execution'], 'automatic_context_plan')
+            self.assertEqual(selection['selected_backend'], 'static')
             self.assertEqual(selection['compiler_binding'], 'unresolved')
             self.assertEqual(result['build'], 'not_run')
             self.assertFalse(result['behavior_verified'])

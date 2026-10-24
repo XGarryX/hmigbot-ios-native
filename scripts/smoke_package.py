@@ -10,6 +10,7 @@ import sys
 import tempfile
 import zipfile
 from manage_install import filesystem_path
+from package_tree import verify_package
 
 
 def sha(path):
@@ -25,10 +26,14 @@ def main():
     if args.output.exists():
         raise SystemExit('Use a new validation report path')
     package = args.package.resolve()
+    package_report = verify_package(package)
+    if package_report['status'] != 'passed':
+        raise SystemExit('Package source manifest verification failed')
     checksum = sha(package)
     if checksum != package.with_suffix(package.suffix + '.sha256').read_text().split()[0]:
         raise SystemExit('Package checksum mismatch')
-    report = {'package': package.name, 'sha256': checksum, 'status': 'failed', 'checks': [],
+    report = {'package': package.name, 'sha256': checksum, 'status': 'failed', 'checks': [{'name': 'archive-source-manifest', 'passed': True,
+                  'files': package_report['files'], 'directories': package_report['directories']}],
               'platform': platform.platform(), 'architecture': platform.machine(),
               'scope': 'Standalone installation, original consumers and installed iOS harness adversarial/four-beat contracts on this host; no device behavior acceptance'}
     evidence = args.output.resolve().parent / (args.output.stem + '-evidence')
@@ -44,15 +49,21 @@ def main():
                         raise RuntimeError('Unsafe ZIP path or link')
                 if archive.testzip(): raise RuntimeError('Package CRC failure')
                 archive.extractall(root)
-            plugin = root / 'hmigbot-ios'
+            plugin = root / package_report['source_root_name']
             workspace = root / '安装 workspace'
             workspace.mkdir()
             original = b'# User rules\r\nPreserve these exact bytes.\r\n'
             (workspace / 'AGENTS.md').write_bytes(original)
             env = {**os.environ, 'PYTHONUTF8': '1', 'PYTHON': sys.executable, 'A2H_TELEMETRY_OFF': '1'}
 
-            def execute(name, command, cwd=root):
-                result = subprocess.run(command, cwd=cwd, env=env, capture_output=True, timeout=300, shell=False)
+            def execute(name, command, cwd=root, timeout=300):
+                try:
+                    result = subprocess.run(command, cwd=cwd, env=env, capture_output=True, timeout=timeout, shell=False)
+                except subprocess.TimeoutExpired as exc:
+                    (evidence / (name + '.stdout.log')).write_bytes(exc.stdout or b'')
+                    (evidence / (name + '.stderr.log')).write_bytes(exc.stderr or b'')
+                    report['checks'].append({'name': name, 'passed': False, 'timed_out': True, 'timeout_seconds': timeout})
+                    raise RuntimeError(name + ': timed out; partial diagnostics retained') from exc
                 (evidence / (name + '.stdout.log')).write_bytes(result.stdout)
                 (evidence / (name + '.stderr.log')).write_bytes(result.stderr)
                 report['checks'].append({'name': name, 'exit_code': result.returncode, 'passed': result.returncode == 0})
@@ -86,6 +97,7 @@ def main():
             execute('installed-expertise-audit', [sys.executable, '-X', 'utf8', str(runtime / 'scripts/a2h_ios.py'), 'expertise-audit'])
             execute('installed-native-surface', [sys.executable, '-X', 'utf8', str(runtime / 'scripts/audit_native_surface.py')])
             env['HMIGBOT_TEST_RUNTIME'] = str(runtime)
+            env['PYTHONPATH'] = str(runtime / 'src') + os.pathsep + str(plugin / 'tests')
             execute('installed-ios-harness', [sys.executable, '-X', 'utf8', '-m', 'unittest', 'discover',
                     '-s', str(plugin / 'tests'), '-p', 'test_ios_harness.py', '-v'])
             execute('installed-spec-contract', [sys.executable, '-X', 'utf8', '-m', 'unittest', 'discover',
@@ -93,12 +105,26 @@ def main():
             for pattern in ('test_artifact_contract.py', 'test_plan_contract.py', 'test_quality_views.py',
                             'test_markdown_gates.py', 'test_freeze_contract.py', 'test_raw_strings.py',
                             'test_spec_upgrade.py', 'test_spec_upgrade_cli.py', 'test_page_evidence.py',
-                            'test_evidence_review.py', 'test_xcode_snapshot.py', 'test_native_authoring.py'):
+                            'test_evidence_review.py', 'test_xcode_snapshot.py', 'test_native_authoring.py',
+                            'test_gate_artifacts.py', 'test_conditional_evidence.py',
+                            'test_ios_harness_diagnostics.py', 'test_xcode_direct_provider.py',
+                            'test_scheduler_failure_receipts.py', 'test_native_pipeline_runtime.py', 'test_portable_helper.py', 'test_resource_preview_routing.py', 'test_package_tree.py'):
                 execute('installed-' + pattern.removesuffix('.py'), [sys.executable, '-X', 'utf8', '-m', 'unittest', 'discover',
                         '-s', str(plugin / 'tests'), '-p', pattern, '-v'])
             execute('installed-expertise-mcp', [sys.executable, '-X', 'utf8', '-m', 'unittest', 'discover',
                     '-s', str(plugin / 'tests'), '-p', 'test_expertise_mcp.py', '-v'])
+            for name in (
+                         'test_source_responsibility.py', 'test_responsibility_consumers.py',
+                         'test_source_responsibility_consumers.py', 'test_source_resource_coordinates.py',
+                         'test_gate_artifact_projection.py', 'test_contract_root_aliases.py',
+                         'test_macos_permissions.py', 'test_upgrade_cleanup.py',
+                         'test_upgrade_install_integration.py', 'test_permissions_cli.py', 'test_objc_state_facts.py', 'test_objc_state_contract.py',
+                         'test_source_analysis.py', 'test_auto_orchestration.py'):
+                execute('installed-' + name.removesuffix('.py'),
+                        [sys.executable, '-X', 'utf8', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', str(plugin / 'tests' / name)],
+                        timeout=900)
             del env['HMIGBOT_TEST_RUNTIME']
+            del env['PYTHONPATH']
             fixture_project = evidence / 'native-pipeline/harmony'
             native = workspace / '.migbot/bin' / ('a2h.exe' if os.name == 'nt' else 'a2h')
             execute('offline-runtime-init', [str(native), 'init-run', '--consent', 'denied'], cwd=fixture_project)

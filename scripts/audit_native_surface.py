@@ -103,7 +103,7 @@ def audit(root=ROOT):
             'reviewed_context_policy': {'path': CONTEXT_POLICY, 'sha256': policy_sha256,
                                         'binding': 'exact path + complete text + original line bytes SHA256'},
             'scope': 'All maintained skills, references, templates, roles and text entrypoints',
-            'archive': 'vendor/hmigbot contains 3516 byte-identical original resources, outside active discovery; original platform names are retained there',
+            'archive': 'vendor/hmigbot contains 3516 imported resources (byte equality audited separately), outside active discovery; original platform names are retained there',
             'other_occurrences': 'Historical documentation and negative compatibility tests retain truthful names. This lexical gate does not prove semantic or application equivalence.'}
 
 

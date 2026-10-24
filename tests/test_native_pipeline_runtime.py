@@ -52,8 +52,9 @@ class PipelineLayoutTests(unittest.TestCase):
                         self.assertIn('native_pipeline_semantics import assembly_main',
                                       (skills / skill / 'scripts' / name).read_text(encoding='utf-8'))
                     else:
-                        self.assertEqual((skills / skill / 'scripts' / name).read_bytes(),
-                                         (VENDOR / skill / 'scripts' / name).read_bytes())
+                        from hmigbot_ios.portable_helper import quarantine_free_launcher
+                        self.assertEqual((skills / skill / 'scripts' / name).read_text(),
+                                         quarantine_free_launcher((VENDOR / skill / 'scripts' / name).read_text()))
             icon = (skills / 'arkts-icon-sizing/scripts/icon_autofix.py').read_text(encoding='utf-8')
             self.assertIn('native_icon_scope import autofix_main', icon)
 

@@ -12,6 +12,7 @@ from .artifact_contract import markdown_tables, validate_json
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
 from .native_contract import source_truth, validate_literal_exclusion
 from .native_semantics import COMMON, PAGE, FEATURE, SWIFTUI, UIKIT, SWIFT, OBJC, required_facts, validate_native_payload
+from .source_scope import source_anchor_info
 
 
 def _inventory(project):
@@ -57,7 +58,7 @@ def _inventory(project):
                 if anchor not in known or not actual.is_file():
                     raise MigrationError('Authoring source anchor is outside the index: ' + anchor)
                 sources.append({'path': anchor, 'sha256': known[anchor]['sha256'],
-                                'line_count': len(actual.read_text(encoding='utf-8-sig').splitlines())})
+                                **source_anchor_info(actual)})
                 owned.add(anchor)
             documents[ident] = {'id': ident, 'kind': kind, 'spec': path, 'source_anchors': sources,
                                'required_common_facts': sorted(COMMON | (PAGE if kind == 'page' else FEATURE))}
@@ -87,6 +88,13 @@ def _inventory(project):
         raise MigrationError('Write the page/feature inventory before preparing authoring')
     inputs['.migbot/config.json'] = digest((project / '.migbot/config.json').read_bytes())
     inputs['spec/baseline/ios-source-index.json'] = digest((base / 'ios-source-index.json').read_bytes())
+    for name in ('ios-facts.json', 'ios-obligations.json', 'ios-responsibility.json'):
+        path = base / name
+        if path.is_file():
+            inputs[path.relative_to(project).as_posix()] = digest(path.read_bytes())
+    if (base / 'ios-responsibility.json').exists():
+        from .ios_harness import responsibility
+        inputs.update(responsibility(project, source=source).frozen_inputs())
     inventory = {'source_sha256': current['sha256'], 'inputs': inputs,
                  'documents': list(documents.values()), 'acceptance': acs,
                  'unaccounted_sources': sorted(p for p in known if Path(p).suffix.lower() in CODE and p not in owned),
@@ -129,6 +137,15 @@ def render(project, request):
     if (not isinstance(records, list) or any(not isinstance(d, dict) or not isinstance(d.get('id'), str) for d in records)
             or len(records) != len(expected) or {d['id'] for d in records} != set(expected)):
         raise MigrationError('Native documents must cover every page/feature exactly once; no missing, extra or duplicate documents')
+    semantics = {'schema_version': 2, 'source_platform': 'ios', 'documents': deepcopy(records)}
+    from .ios_facts import validate_graph
+    from .ios_harness import responsibility
+    graph, obs = validate_graph(source, project)
+    candidate = request.get('responsibility')
+    if 'responsibility' in request and not isinstance(candidate, dict):
+        raise MigrationError('Responsibility candidate must be an explicit object')
+    projection = responsibility(project, source=source, graph=graph, obligations=obs,
+                                semantics=semantics, candidate=candidate)
     for doc in records:
         if doc.get('kind') != expected[doc['id']]['kind']:
             raise MigrationError('Native document kind differs from its spec: ' + doc['id'])
@@ -142,7 +159,10 @@ def render(project, request):
             missing = required - facts.keys() if isinstance(facts, dict) else required
             raise MigrationError('Missing native dimensions for ' + doc['id'] + ': ' + ', '.join(sorted(missing)))
         for dimension, claim in facts.items():
-            if not isinstance(claim, dict) or claim.get('status') == 'unknown':
+            if not isinstance(claim, dict):
+                raise MigrationError('Native source review is incomplete: ' + doc['id'] + ':' + dimension)
+            if claim.get('status') == 'unknown' and (projection is None or
+                    projection.semantic_requirement(doc['id'], dimension, claim)['target_required']):
                 raise MigrationError('Native source review is incomplete: ' + doc['id'] + ':' + dimension)
             if claim.get('status') == 'known' and (not isinstance(claim.get('value'), dict) or not claim['value']
                     or not isinstance(claim.get('fact_ids'), list) or not claim['fact_ids']
@@ -165,13 +185,13 @@ def render(project, request):
     native_issues = []
     validate_native_payload(source, project,
         {ident: (d['kind'], [a['path'] for a in d['source_anchors']]) for ident, d in expected.items()},
-        set(known), lambda *issue: native_issues.append(issue), semantics)
+        set(known), lambda *issue: native_issues.append(issue), semantics, projection=projection)
     if native_issues:
         raise MigrationError('Native authoring rejected: ' + '; '.join(': '.join(i) for i in native_issues))
     from .ios_facts import validate_graph
     graph, _ = validate_graph(source, project)
     from .ios_harness import validate_native_claims
-    validate_native_claims(project, graph, semantics, lambda *issue: native_issues.append(issue))
+    validate_native_claims(project, graph, semantics, lambda *issue: native_issues.append(issue), projection=projection)
     if native_issues:
         raise MigrationError('Native authoring rejected: ' + '; '.join(': '.join(i) for i in native_issues))
     truths = request.get('truth_anchors')
@@ -181,6 +201,8 @@ def render(project, request):
         raise MigrationError('Supply one exact source truth for every source-based AC; no duplicates or unowned truths')
     files = {'spec/baseline/ios-semantics.json': semantics,
              'spec/baseline/ios-source-disposition.json': {'source_sha256': inventory['source_sha256'], 'files': deepcopy(dispositions)}}
+    if candidate is not None:
+        files['spec/baseline/ios-responsibility.json'] = deepcopy(candidate)
     for truth in truths:
         ac = expected_truths[truth['ac_id']]
         token = source_truth(source, [a['path'] for a in ac['allowed_sources']], truth.get('path'), truth.get('line'))
@@ -201,7 +223,27 @@ def render(project, request):
         else:
             lines[n] = lines[n].rstrip('\r\n') + ' `' + token + '`\n'
         files[path] = ''.join(lines)
+    input_hashes = dict(inventory['inputs'])
+    candidate_hashes = {'native_semantics': digest(json_bytes(semantics))}
+    if projection is not None:
+        projection.validate_frozen_inputs(project)
+        input_hashes.update(projection.frozen_inputs())
+        # A truth edit must not silently invalidate the independent review and
+        # original supersedes/emits closure that authorized this projection.
+        for relative, value in files.items():
+            if isinstance(value, str) and relative in projection.frozen_inputs():
+                if digest(value.encode('utf-8')) != projection.frozen_inputs()[relative]:
+                    raise MigrationError('Responsibility-bound source contract changed; re-review the proof before rendering: ' + relative)
+        if candidate is not None:
+            candidate_hashes['responsibility'] = digest(json_bytes(candidate))
+    for relative, expected_hash in input_hashes.items():
+        if digest(safe_child(project, relative).read_bytes()) != expected_hash:
+            raise MigrationError('Authoring input changed during rendering: ' + relative)
+    if snapshot(source)['sha256'] != inventory['source_sha256']:
+        raise MigrationError('Authoring source changed during rendering')
     return {'schema_version': 1, 'status': 'candidate', 'inventory_sha256': request['inventory_sha256'],
             'source_sha256': inventory['source_sha256'], 'files': files,
+            'input_hashes': input_hashes, 'candidate_hashes': candidate_hashes,
+            'responsibility_candidate': candidate is not None,
             'required_checks': ['independent source/content review', 'spec-check', 'source-check --harness'],
             'spec_complete': False, 'behavior_verified': False}

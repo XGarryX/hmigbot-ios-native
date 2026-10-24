@@ -34,7 +34,7 @@ def audit():
     return manifest, files
 
 
-def make_plan(source, graph):
+def make_plan(source, graph, *, project=None):
     manifest, files = audit()
     groups = {'swiftui': [], 'concurrency': [], 'uikit': []}
     tokens_by_path = {}
@@ -45,7 +45,7 @@ def make_plan(source, graph):
     for item in snapshot(source)['files']:
         path = item['path']
         if Path(path).suffix in {'.swift', '.m', '.mm', '.h'}:
-            tokens = {t.value for t in tokenize((source / path).read_text(encoding='utf-8-sig')) if t.kind != 'string'}
+            tokens = {t.value for t in tokenize((source / path).read_text(encoding='utf-8-sig'), skip_pragma_marks=Path(path).suffix != '.swift') if t.kind != 'string'}
             tokens_by_path[path] = tokens
             if 'SwiftUI' in tokens or 'View' in tokens and 'body' in tokens:
                 groups['swiftui'].append(path)
@@ -85,9 +85,26 @@ def make_plan(source, graph):
                         'source_paths': sorted(paths), 'fact_ids': [f['id'] for f in facts],
                         'resources': [{'path': p, 'sha256': files[p]} for p in resources],
                         'mode': 'read_only_source_analysis'})
-    return {'schema_version': 1, 'source_sha256': graph['source_sha256'],
+    official_sha = None
+    if project is not None:
+        from .apple_capabilities import preferred_reviews, GUIDANCE
+        # App Intents has an official export but no bundled third-party pack.
+        # Include it in the required read contract when that actual resource exists.
+        guidance = read_json(project / GUIDANCE) if (project / GUIDANCE).is_file() else {}
+        intent_paths = sorted(path for path, tokens in tokens_by_path.items()
+                              if tokens & {'AppIntents', 'AppIntent', 'AppEntity', 'IntentResult'})
+        if intent_paths and guidance.get('official_resources', {}).get('app_intents'):
+            reviews.append({'id': 'expertise-app_intents', 'pack': 'app_intents', 'scope': 'api',
+                            'source_paths': intent_paths,
+                            'fact_ids': [f['id'] for f in graph['facts'] if f['anchor']['path'] in intent_paths],
+                            'resources': [], 'mode': 'read_only_source_analysis'})
+        reviews, official_sha = preferred_reviews(project, source, graph, reviews)
+    result = {'schema_version': 1, 'source_sha256': graph['source_sha256'],
             'graph_sha256': digest(json_bytes(graph)), 'bundle_sha256': digest(json_bytes(manifest)),
             'reviews': reviews, 'behavior_verified': False}
+    if official_sha is not None:
+        result['official_guidance_sha256'] = official_sha
+    return result
 
 
 def prepare(project):
@@ -95,7 +112,7 @@ def prepare(project):
     from .ios_facts import validate_graph
     source, project = context(project)
     graph, _ = validate_graph(source, project)
-    plan = make_plan(source, graph)
+    plan = make_plan(source, graph, project=project)
     path = project / PLAN
     if path.exists() and read_json(path) != plan:
         old = read_json(path)
@@ -113,7 +130,11 @@ def prepare(project):
 
 
 def validate_reviews(source, project, graph, *, require=True):
-    expected = make_plan(source, graph)
+    expected = make_plan(source, graph, project=project)
+    return _validate_reviews(source, project, expected, require=require)
+
+
+def _validate_reviews(source, project, expected, *, require=True):
     if read_json(project / PLAN) != expected:
         raise MigrationError('Expertise plan is stale or edited; regenerate and re-review')
     if not expected['reviews']:
@@ -161,7 +182,7 @@ def record(project, input_path):
     from .ios_facts import validate_graph
     source, project = context(project)
     graph, _ = validate_graph(source, project)
-    plan = make_plan(source, graph)
+    plan = make_plan(source, graph, project=project)
     if read_json(project / PLAN) != plan:
         raise MigrationError('Prepare current expertise plan first')
     candidate = read_json(input_path)
@@ -173,7 +194,7 @@ def record(project, input_path):
         staging = Path(tmp)
         write_json(staging / PLAN, plan)
         write_json(staging / REVIEWS, candidate)
-        validate_reviews(source, staging, graph, require=False)
+        _validate_reviews(source, staging, plan, require=False)
     old = read_json(project / REVIEWS) if (project / REVIEWS).exists() else {'reviews': []}
     retained = {r['id']: r for r in old['reviews']} if old.get('plan_sha256') == candidate['plan_sha256'] else {}
     retained.update({r['id']: r for r in candidate['reviews']})

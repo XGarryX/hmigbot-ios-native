@@ -19,7 +19,7 @@ from hmigbot_ios.behavior import verify
 from hmigbot_ios.ios_literals import run as literal_index
 
 
-def fixture(root, source_suffix=''):
+def fixture(root, source_suffix='', *, resources=None):
     source, project = root / 'source', root / 'target'
     source.mkdir(); project.mkdir()
     (source / 'Counter.swift').write_text('''import SwiftUI
@@ -33,6 +33,10 @@ struct Counter: View {
     }
 }
 ''' + source_suffix, encoding='utf-8')
+    for relative, data in (resources or {}).items():
+        resource = source / relative
+        resource.parent.mkdir(parents=True, exist_ok=True)
+        resource.write_bytes(data)
     configure(source, project); initialize(project); index_source(project)
     base = project / 'spec/baseline'
     for folder, name, ident in [('features', 'F001-counter.md', 'F001'), ('ui', 'page_0001_Counter.md', 'page_0001')]:

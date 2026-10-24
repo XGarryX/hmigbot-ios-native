@@ -11,6 +11,9 @@ metadata:
   layer: pipeline
 ---
 
+本统一版本先读 [单一流程、环境前置与兼容范围](../a2h-run/references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
+
+
 > **调用关系**：本 skill **不派发 subagent**，全部步骤在主会话执行。只读取上游产物做分析、按三条件把沉淀写进各目标 skill 的 `references/`——不调用 Domain Skill 改代码、不亲自 alter 迁移产物。分析即记录：`hmos-fix-build-errors`（编译 pattern）/ `arkts-knowledge-verifier`（API 修正）/ `a2h-execute` 派发记录（skill 覆盖）→ 沉淀到目标 `references/` + 回顾报告。
 >
 > **路径约定**：`<target>` = 鸿蒙目标工程根；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。输入读 `<target>/spec/` 下 plan / brief / 回执 / 派生报告；输出回顾报告落 `<target>/docs/retrospect-report-YYYY-MM-DD.md`，临时计数落 `<target>/spec/retrospect-counter.json`，Staged Patch 落 `.agents/skills/<target>/references/`。禁落会话临时目录。

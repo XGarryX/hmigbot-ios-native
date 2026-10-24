@@ -85,4 +85,4 @@ python scripts/a2h_ios.py usage-release --project /absolute/target --input /abso
 
 主线程/子代理/失败尝试的完整调用清单与自动run绑定仍需宿主集成和独立对账，账本PASS不证明没有遗漏。也不证明UI、功能、应用规模或2小时整体迁移成功。
 
-当前真实boot identity仅Windows/Linux可验证；Darwin尚未实现，Mac严格计时保持UNKNOWN并拒绝reserve。必须按 [Mac交接](MAC-HANDOFF-20261022.md) 的6.4节用真实OS身份扩展并验证，不可跳过检查取得PASS。
+当前真实boot identity仅Windows/Linux可验证；Darwin尚未实现，Mac严格计时保持UNKNOWN并拒绝reserve。必须按 Mac交接（本地过程记录：`MAC-HANDOFF-20261022.md`） 的6.4节用真实OS身份扩展并验证，不可跳过检查取得PASS。

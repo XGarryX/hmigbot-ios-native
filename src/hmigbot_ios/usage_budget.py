@@ -248,6 +248,18 @@ def _boot_id() -> str | None:
                 value, kind = winreg.QueryValueEx(key, "BootId")
             if kind == winreg.REG_DWORD and type(value) is int and value >= 0:
                 return "windows_registry_boot_id:" + str(value)
+        elif system == "Darwin":
+            import ctypes
+            libc = ctypes.CDLL(None, use_errno=True)
+            probe = libc.sysctlbyname
+            probe.argtypes = [ctypes.c_char_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t), ctypes.c_void_p, ctypes.c_size_t]
+            probe.restype = ctypes.c_int
+            size = ctypes.c_size_t(256)
+            buffer = ctypes.create_string_buffer(size.value)
+            if probe(b"kern.bootsessionuuid", buffer, ctypes.byref(size), None, 0) == 0:
+                value = UUID(buffer.value.decode("ascii"))
+                if value.int:
+                    return "darwin_boot_uuid:" + str(value)
         elif system == "Linux":
             value = UUID(Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip())
             if value.int:

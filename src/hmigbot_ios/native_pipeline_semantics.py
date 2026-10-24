@@ -799,7 +799,8 @@ def assembly_main(arguments=None):
             process = subprocess.CompletedProcess(raw.args, raw.returncode,
                 raw.stdout.decode('utf-8', errors='replace'), raw.stderr.decode('utf-8', errors='replace'))
         else:
-            process = subprocess.run(command, capture_output=True, encoding='utf-8', errors='replace', timeout=limit)
+            from .portable_helper import run
+            process = run(original, command[2:], capture_output=True, encoding='utf-8', errors='replace', timeout=limit)
     except subprocess.TimeoutExpired as exc:
         evidence = timeout_evidence(exc)
         sys.stdout.write(evidence['stdout'])

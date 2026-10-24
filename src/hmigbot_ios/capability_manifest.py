@@ -72,7 +72,8 @@ def main(kind='gate', legacy=None, argv=None):
     # Legacy is intentionally the unchanged process protocol, including help.
     if '-h' in arguments or '--help' in arguments or profile(known.project_root)<2:
         if legacy is None: return 2
-        return subprocess.run([sys.executable,str(legacy),*arguments],shell=False).returncode
+        from .portable_helper import run
+        return run(legacy, arguments).returncode
     parser=argparse.ArgumentParser()
     parser.add_argument('--project-root',type=Path,default=Path.cwd())
     parser.add_argument('--output-json',type=Path)

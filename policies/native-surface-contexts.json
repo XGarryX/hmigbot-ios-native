@@ -7,7 +7,7 @@
       "id": "NATIVE-CONTEXT-001",
       "path": "skills/a2h-init/SKILL.md",
       "text": "**iOS 源不必在本机可编译**（iOS 与 Android 的实质差异）：源在 Mac/Xcode 编译属正常；init 只确认路径与工程 marker。识别 Xcode project/scheme/target 的入口语义留给 `source-index`（a2h-spec 阶段）。",
-      "line_sha256": "41e2a1e9df192fc14348a43e4374eb522156ae3c7cb470b7be75a75d74bbf61f",
+      "line_sha256": "61188bf0c6746fb709d07bc2a6845519ad9d72ee996ae018f05984b903f657a9",
       "kind": "comparison",
       "reason": "Compares source-build requirements; iOS source inspection does not require a local iOS build."
     },
@@ -15,7 +15,7 @@
       "id": "NATIVE-CONTEXT-002",
       "path": "skills/a2h-init/SKILL.md",
       "text": "- 命令报错（典型：Android 旧配置、源根改变）→ 读错误原文按 §4/§5 修正后重跑，最多 2 轮；仍失败 → 记欠账并如实呈报，不硬闯。",
-      "line_sha256": "e7490e1f9f6d231aee7546bac479b86b3f03ff193fb8ab795a870356f493b941",
+      "line_sha256": "c4a9d321ad88962e2d802243e08d0502970a649c15699311beba7a80ef16db2c",
       "kind": "prohibition",
       "reason": "Describes rejection of an old Android configuration, not permission to reuse it."
     },
@@ -23,7 +23,7 @@
       "id": "NATIVE-CONTEXT-003",
       "path": "skills/a2h-spec/SKILL.md",
       "text": "- 原 Android 源语言专用画像检查**不用于 iOS**（口径坑：不得把 android-* 检查套在 iOS 规格上）。",
-      "line_sha256": "41e707297205850acbcd6c97938f25be4144abd10886c8c15da1cda7d3ec2f89",
+      "line_sha256": "b3dce47518a64059b80fc9bec153d17ca2b44cd6e116639a0424a794b509b82b",
       "kind": "prohibition",
       "reason": "Explicitly prohibits applying Android-only source rules to an iOS project."
     },

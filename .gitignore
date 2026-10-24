@@ -6,6 +6,11 @@ build/
 dist/
 .hmigbot-ios/
 work/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.build/
+.swiftpm/
 
 # Local projects, credentials, generated evidence and delivery packages
 .migbot/
@@ -24,6 +29,39 @@ work/
 logs/
 docs/validation/
 docs/design-baseline/
+
+# Local development reports, evidence, snapshots and historical evaluation runs.
+# Rooted rules keep runtime vendor assets and tests/fixtures available to Git.
+# Already tracked files must be removed from the index manually; ignore is not untrack.
+/reports/
+/artifacts/
+/evidence/
+/receipts/
+/test-results/
+/benchmark-results/
+/.coverage
+/.coverage.*
+/coverage.xml
+/junit.xml
+/htmlcov/
+/docs/reports/
+/evaluations/
+/tests/evaluations/
+
+# Integration audit outputs stay local. Keep the public capability declarations.
+/docs/integration/*
+!/docs/integration/CAPABILITIES.md
+!/docs/integration/capabilities.json
+!/docs/integration/public-routes.json
+
+# One-off implementation, validation, audit and handoff records.
+/docs/IMPLEMENTATION-STATUS.md
+/docs/VALIDATION.md
+/docs/*-AUDIT.md
+/docs/*-HANDOFF-*.md
+/docs/*-FOUNDATION-20*.md
+/docs/WORKBUDDY-*.md
+
 .DS_Store
 ._*
 .idea/

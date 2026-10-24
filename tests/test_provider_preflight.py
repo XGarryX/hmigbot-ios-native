@@ -72,7 +72,7 @@ def test_any_explicit_input_must_be_a_bundle_before_earlier_provider_runs(tmp_pa
     plan = tmp_path / 'providers.json'
     write_json(plan, {'schema_version': 2, 'providers': [
         {'operation': 'interface-builder'},
-        {'operation': 'asset-inventory', 'input': str(input_path)},
+        {'operation': 'build-settings', 'input': str(input_path)},
     ]})
     with patch('hmigbot_ios.atoms.run_atom', wraps=run_atom) as atom:
         with pytest.raises(MigrationError, match='Provider plan'):

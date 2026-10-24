@@ -11,6 +11,9 @@ metadata:
   layer: pipeline
 ---
 
+本统一版本先读 [单一流程、环境前置与兼容范围](../a2h-run/references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
+
+
 > **派发约定**：本 skill 在四拍循环中**派发 subagent 执行任务书**（Stage 1 converter=`a2h-ios-converter`；Stage 2/3 worker=`a2h-migration-worker`；各级收尾=`a2h-closer`（mode=batch/base/group/final）；编译=`hmos-builder`）。按本轮授权读取随包角色规程、使用宿主实际支持的派发/等待接口，**不照抄不存在的 agent_type 参数**；具名角色不可用时按同样文件所有权顺序在主会话自行执行，写同样回执，不另造计划。派发变体只由 batch 元素与派发点模板决定，主会话零开放决策。
 >
 > **Join 协议（收口五条款）**：① **循环 wait**：完成的唯一合法信号 = 代理完成状态，绝不是产物文件存在/条数（文件会中途落盘，读半截=事故）；② **死句柄与验收**：超时后核对句柄，可探产物活性；已 completed 且摘要可读 → 消费；completed≠验收通过，join 点跑门禁验产物（v2 由 `land-results` 落账门禁验真，FAIL 视同未取回）；③ **收口锚点**：最终报告前必须收口全部句柄；④ **放行≠遗弃**：非阻塞放行只推迟收口时机，不豁免收口义务；⑤ **fire-and-forget**：仅正文显式声明“结果丢弃、不 gate”的派发（如 Stage 0 env-prewarm）免收口。

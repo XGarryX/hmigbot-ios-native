@@ -102,4 +102,4 @@
 主控为a2h-run；iOS新增源分析、页面转换和资源前置能力，目标侧复用原领域技能。
 62项原子清单保留在src/hmigbot_ios/capabilities.json，不能用数量表示完成度。
 
-[原架构核对与改造](HMIGBOT-ARCHITECTURE-AUDIT.md)
+原架构核对与改造（本地过程记录：`HMIGBOT-ARCHITECTURE-AUDIT.md`）

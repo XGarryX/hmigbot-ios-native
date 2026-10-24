@@ -1,3 +1,4 @@
+# OPTIMIZED_FOR_MACOS_XCODE_NATIVE: retains Python orchestration only; compiler/build facts come from Xcode CLI.
 """Small independently callable source operations with common provenance."""
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -6,7 +7,7 @@ from . import __version__
 from .core import SCHEMA, MigrationError, digest, json_bytes, read_json, snapshot, write_new_tree
 from .xcode import project_inventory, dependency_inventory
 from .resources import asset_inventory, localization_inventory, convert_assets, convert_localization
-from .providers import swift_syntax, normalize_build_settings, clang_ast
+from .providers import swift_syntax, normalize_build_settings, xcodebuild_settings, clang_ast
 
 OPERATIONS = {
     'project-inventory': ['A02', 'A03', 'A06'],
@@ -92,18 +93,24 @@ def run_atom(operation, root, output, *, provider_config=None, input_path=None, 
             value, gaps, payload = convert_localization(value, default_locale)
             issues.extend(gaps)
     elif operation == 'build-settings':
-        if not input_path:
-            raise MigrationError('build-settings requires a source evidence bundle via --input')
-        from .evidence import validate
-        evidence = validate(root, input_path)
-        if evidence['kind'] != 'source_build':
-            raise MigrationError('Build settings require source_build evidence')
-        manifest = read_json(input_path / 'manifest.json')
-        if 'artifacts/build-settings.json' not in manifest['artifacts']:
-            raise MigrationError('Bundle must contain hashed artifacts/build-settings.json')
-        value = normalize_build_settings(read_json(input_path / 'artifacts/build-settings.json'))
-        issues = []
-        extra = {'input_manifest_sha256': digest((input_path / 'manifest.json').read_bytes())}
+        if provider_config:
+            value = xcodebuild_settings(root, read_json(provider_config))
+            issues = []
+            extra = {'input_mode': 'direct_xcodebuild'}
+        else:
+            if not input_path:
+                raise MigrationError('build-settings requires --provider-config for direct Xcode or --input for frozen evidence')
+
+            from .evidence import validate
+            evidence = validate(root, input_path)
+            if evidence['kind'] != 'source_build':
+                raise MigrationError('Build settings require source_build evidence')
+            manifest = read_json(input_path / 'manifest.json')
+            if 'artifacts/build-settings.json' not in manifest['artifacts']:
+                raise MigrationError('Bundle must contain hashed artifacts/build-settings.json')
+            value = normalize_build_settings(read_json(input_path / 'artifacts/build-settings.json'))
+            issues = []
+            extra = {'input_manifest_sha256': digest((input_path / 'manifest.json').read_bytes()), 'input_mode': 'frozen_evidence'}
     if snapshot(root)['sha256'] != before['sha256']:
         raise MigrationError('Source changed during atomic operation; retry with a stable snapshot')
     report = {'schema_version': SCHEMA, 'tool_version': __version__, 'operation': operation,

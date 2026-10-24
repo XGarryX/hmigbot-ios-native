@@ -59,8 +59,10 @@ def main():
     def command(name, arguments, *, timeout_seconds=600):
         env = {**os.environ, 'PYTHONUTF8': '1', 'PYTHONDONTWRITEBYTECODE': '1',
                'HMIGBOT_TEST_RUNTIME': str(ROOT),
-               'PYTHONPATH': str(ROOT / 'src') + os.pathsep + os.environ.get('PYTHONPATH', '')}
+               'PYTHONPATH': str(ROOT / 'src') + os.pathsep + str(ROOT / 'tests') + os.pathsep + os.environ.get('PYTHONPATH', '')}
         timed_out = False
+        if sys.platform == 'darwin':
+            env['TMPDIR'] = str(Path('/tmp').resolve())
         try:
             result = subprocess.run(arguments, cwd=ROOT, env=env, capture_output=True, timeout=timeout_seconds, shell=False)
             stdout, stderr, code = result.stdout, result.stderr, result.returncode

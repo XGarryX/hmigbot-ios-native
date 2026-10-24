@@ -16,7 +16,7 @@ def extract(source):
         if Path(file['path']).suffix not in {'.swift', '.m', '.mm', '.h'}:
             continue
         ledger['files_scanned'] += 1
-        tokens = tokenize((source / file['path']).read_text(encoding='utf-8-sig'))
+        tokens = tokenize((source / file['path']).read_text(encoding='utf-8-sig'), skip_pragma_marks=Path(file['path']).suffix != '.swift')
         for i, token in enumerate(tokens):
             anchor = {'sources': [file['path'] + ':' + str(token.line)], 'file_sha256': file['sha256']}
             if token.kind == 'string':

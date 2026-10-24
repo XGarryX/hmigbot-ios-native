@@ -1,297 +1,10 @@
-"""Schema-driven scaffold from a reviewed source index to spec candidates.
-
-This module breaks the F001 missing-prerequisite deadlock. ``native_authoring.prepare``
-refuses to run while ``feature-index.md`` / ``ui-manifest.md`` reference documents that
-do not yet exist ("Indexed authoring document is missing"). It also refuses documents
-without real ``source_anchors``. The scaffold derives real candidate skeletons
-(pages / components / bridges / extensions) straight from the reviewed source index
-and facts, so ``prepare`` can discover them.
-
-Classification is scoped to each declaration's OWN header tokens (comments and string
-literals are skipped by the tokenizer), so a model struct in the same file as a View,
-or ``: View`` / ``UIViewController`` appearing only in a comment or string, never
-becomes a UI page.
-
-Every artifact is explicitly unreviewed:
-
-* ``candidate = True``, ``needs_review = True``
-* ``spec_complete = False``, ``behavior_verified = False``
-* ``enterable_plan = False``
-
-so the spec/harness never mistakes a scaffold candidate for an enterable plan. Unknown
-templates (a struct with no UI conformance/subclass/bridge) are listed in the candidate
-JSON but are never written as pages and never entered into ``ui-manifest.md``.
-
-The module only reads the source index and source files; it never changes the baseline,
-source, findings or scheduler ledger. ``apply_scaffold`` never trusts the supplied
-candidate: it re-derives the canonical candidate from the current reviewed source,
-compares identity / content / source hash against the supplied one, and refuses any
-foreign artifact, path escape, content/path change, stale index or duplicate FID.
-"""
-from __future__ import annotations
-
-import os
-import re
+"""Compatibility candidate adapter to the sole native gate content producer."""
 from pathlib import Path
+import os,re
+from .core import MigrationError,digest,json_bytes,read_json,safe_child,snapshot
+from .native_pipeline import context
+from .source_candidates import discover_candidates, classify_type, _top_level_types
 
-from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
-from .native_pipeline import CODE, context
-from .swiftui import tokenize
-
-DECL_KEYWORDS = {'struct', 'class', 'enum', 'actor', 'extension'}
-BRIDGE_SYMBOLS = ('UIViewRepresentable', 'UIViewControllerRepresentable', 'UIHostingController')
-UIKIT_BASE = ('UIViewController', 'UINavigationController', 'UITableViewController',
-              'UICollectionViewController', 'UIView')
-SCAFFOLD_BANNER = (
-    "脚手架候选（scaffold candidate）。非已验收规格：spec_complete=false，"
-    "behavior_verified=false，needs_review=true。"
-    "未经独立源码/内容审查与 source-check --harness 不得进入 plan。"
-)
-UNKNOWN_BANNER = (
-    "未知模板(Unknown template)：未识别为 UI 页面，不列入可进入 plan 的页面，"
-    "需审查者确认其 UI 语义后再决定是否成页。"
-)
-
-
-# --------------------------------------------------------------------------- #
-# Source discovery (header-scoped, comment/string immune)
-# --------------------------------------------------------------------------- #
-def _header_values(tokens, start, end):
-    """Non-string token values of a declaration header (keyword .. opening brace)."""
-    return [t.value for t in tokens[start:end] if t.kind != 'string']
-
-
-def _top_level_types(text):
-    """Return ``(name, decl_kind, line, header_values)`` for each top-level type.
-
-    Uses the token stack discipline from ``ios_facts``: a declaration only becomes a
-    candidate when its opening brace lifts the depth 0 -> 1, so nested types are
-    ignored. ``header_values`` carries only the declaration's own signature tokens,
-    excluding comments and string literals.
-    """
-    tokens = tokenize(text)
-    found, pending_owner, decl_kind, decl_start, depth = [], None, None, None, 0
-    for i, tok in enumerate(tokens):
-        v = tok.value
-        if v in DECL_KEYWORDS and i + 1 < len(tokens) and tokens[i + 1].kind != 'string':
-            name = None
-            for nxt in tokens[i + 1:i + 4]:
-                if nxt.kind == 'string' or nxt.value in {':', 'where'}:
-                    break
-                if re.match(r'^[A-Za-z_]\w*$', nxt.value):
-                    name = nxt.value
-                    break
-            if name:
-                pending_owner, decl_kind, decl_start = name, v, i
-        if v == '{':
-            depth += 1
-            if pending_owner is not None and depth == 1:
-                found.append((pending_owner, decl_kind, tok.line, _header_values(tokens, decl_start, i)))
-            pending_owner = None
-        elif v == '}':
-            if depth > 0:
-                depth -= 1
-    return found
-
-
-def _file_imports(text):
-    """Token-based file-level import detection (comment/string immune)."""
-    tokens = tokenize(text)
-    swiftui = uikit = False
-    for i, tok in enumerate(tokens):
-        if tok.value == 'import' and i + 1 < len(tokens) and tokens[i + 1].kind != 'string':
-            mod = tokens[i + 1].value
-            if mod == 'SwiftUI':
-                swiftui = True
-            elif mod == 'UIKit':
-                uikit = True
-    return swiftui, uikit
-
-
-def _has_conformance(header_values, name):
-    """True only if ``name`` is an inherited type in THIS declaration's header.
-
-    Conformances appear as ``: Name`` or ``, Name`` in the inheritance list, so the
-    preceding token must be ``:`` or ``,``. Comments/strings are already excluded.
-    """
-    for i, v in enumerate(header_values):
-        if v == name and i > 0 and header_values[i - 1] in (':', ','):
-            return True
-    return False
-
-
-def classify_type(name, decl_kind, header_values, imports_swiftui, imports_uikit):
-    """Classify a single declaration from its OWN header evidence.
-
-    Returns ``(candidate_type, framework, confidence, is_ui, is_extension, is_bridge,
-    unknown_template)``. A declaration with no UI conformance / UIKit subclass / bridge
-    symbol is ``unknown`` even when the file imports SwiftUI/UIKit -- a model struct in
-    a UI file stays ``unknown`` and is never turned into a page.
-    """
-    is_view = imports_swiftui and _has_conformance(header_values, 'View')
-    subclass_uikit = any(_has_conformance(header_values, base) for base in UIKIT_BASE)
-    is_bridge = any(symbol in header_values for symbol in BRIDGE_SYMBOLS)
-
-    if decl_kind == 'extension':
-        return ('extension', 'unknown', 'low', False, True, False, False)
-    if is_bridge:
-        framework = 'uikit' if (imports_uikit or subclass_uikit) else ('swiftui' if imports_swiftui else 'unknown')
-        return ('bridge', framework, 'low', True, False, True, False)
-    if subclass_uikit:
-        return ('page', 'uikit', 'low', True, False, False, False)
-    if is_view:
-        screenish = bool(re.search(r'(Screen|Page|ViewController|Root|Main|Home|Detail|Scene|Flow)$', name))
-        if screenish:
-            return ('page', 'swiftui', 'low', True, False, False, False)
-        return ('component', 'swiftui', 'low', True, False, False, False)
-    return ('unknown', 'unknown', 'none', False, False, False, True)
-
-
-def discover_candidates(source, index):
-    """Discover candidate types from the reviewed source index, deterministically."""
-    known = {f['path']: f for f in index.get('files', [])}
-    candidates = []
-    for path, meta in known.items():
-        if Path(path).suffix.lower() not in CODE:
-            continue
-        file = safe_child(source, path)
-        if not file.is_file():
-            continue
-        text = file.read_text(encoding='utf-8-sig')
-        imports_swiftui, imports_uikit = _file_imports(text)
-        for name, decl_kind, line, header in _top_level_types(text):
-            (ctype, framework, confidence, is_ui, is_ext, is_bridge, unknown) = classify_type(
-                name, decl_kind, header, imports_swiftui, imports_uikit)
-            candidates.append({
-                'name': name, 'decl_kind': decl_kind,
-                'anchor': {'path': path, 'line': line, 'sha256': meta['sha256']},
-                'candidate_type': ctype, 'framework': framework, 'confidence': confidence,
-                'is_ui': is_ui, 'is_extension': is_ext, 'is_bridge': is_bridge, 'unknown_template': unknown,
-            })
-    # Stable ordering: same source -> same IDs. Source change detection is separate.
-    candidates.sort(key=lambda c: (c['anchor']['path'], c['anchor']['line'], c['name']))
-    return candidates
-
-
-def assign_ids(candidates):
-    """Assign stable page_/F IDs. Every UI candidate gets one feature (its behavior)."""
-    page_n = feat_n = 0
-    for c in candidates:
-        if c['is_ui']:
-            page_n += 1
-            c['page_id'] = f'page_{page_n:04d}'
-            feat_n += 1
-            c['feature_id'] = f'F{feat_n:03d}'
-        else:
-            c['page_id'] = None
-            c['feature_id'] = None
-    return candidates
-
-
-# --------------------------------------------------------------------------- #
-# Markdown rendering
-# --------------------------------------------------------------------------- #
-def _yaml_block(anchor, candidate_type):
-    return (
-        "```yaml\n"
-        "source_platform: ios\n"
-        f"candidate_type: {candidate_type}\n"
-        "scaffold: true\n"
-        "needs_review: true\n"
-        "spec_complete: false\n"
-        "behavior_verified: false\n"
-        "source_anchors:\n"
-        f'  - path: "{anchor}"\n'
-        "```\n"
-    )
-
-
-def render_feature_md(c):
-    return (
-        f"# {c['feature_id']}: {c['name']}\n\n"
-        + _yaml_block(c['anchor']['path'], 'feature')
-        + f"> {SCAFFOLD_BANNER}\n\n"
-        "## 范围\n"
-        f"涉及页面: {c['page_id'] or '待审查'}。由审查者填写功能范围与依赖。\n\n"
-        "## 对接点\n"
-        "待审查（scaffold 不推断业务行为/AC）。\n"
-    )
-
-
-def render_page_md(c):
-    banner = SCAFFOLD_BANNER
-    if c['unknown_template']:
-        banner = banner + ' ' + UNKNOWN_BANNER
-    return (
-        f"# {c['page_id']}: {c['name']}\n\n"
-        + _yaml_block(c['anchor']['path'], c['candidate_type'])
-        + f"> {banner}\n\n"
-        "## 溯源\n"
-        f"- iOS {c['framework']} {c['decl_kind']}: {c['name']}\n"
-        f"- 源码布局: {c['anchor']['path']} (line {c['anchor']['line']})\n"
-        "- 输出文件: 待审查（未生成 ArkTS 路径）\n\n"
-        "## 页面结构\n"
-        "待审查（scaffold 不推断布局/业务行为）。\n\n"
-        "## 状态接口\n"
-        "待审查。\n\n"
-        "## 导航关系\n"
-        "待审查。\n"
-    )
-
-
-def render_feature_index(candidates):
-    rows = []
-    for c in candidates:
-        if c.get('feature_id'):
-            rows.append(f"| {c['feature_id']} | {c['name']} | feature | {c['page_id']} | pending |")
-    table = "\n".join(rows)
-    return (
-        "# Feature Index\n\n"
-        "source_platform: ios。脚手架候选索引，由 native_scaffold 从已审查源码索引派生；非已验收规格，待独立审查。\n\n"
-        "## 功能清单\n"
-        "| ID | 功能 | 候选类型 | 涉及页面 | 状态 |\n"
-        "|----|------|---------|---------|------|\n"
-        f"{table}\n"
-    )
-
-
-def render_ui_manifest(candidates):
-    rows = []
-    for c in candidates:
-        if c['is_ui']:
-            rows.append(f"| {c['page_id']} | {c['name']} | 待审查 | {c['candidate_type']} | {c['confidence']} | pending |")
-    table = "\n".join(rows)
-    return (
-        "# UI Manifest\n\n"
-        "source_platform: ios。脚手架候选清单，由 native_scaffold 派生；非已验收规格。"
-        "未知模板(Unknown)不列入，避免被误当可进入 plan 的页面。\n\n"
-        "## 页面清单\n"
-        "| page_id | iOS | ArkTS 产出 | 候选类型 | confidence | 状态 |\n"
-        "|---------|---------|-----------|---------|-----------|------|\n"
-        f"{table}\n\n"
-        "### 页面状态生命周期\n"
-        "pending -> converted -> verified。只有实际执行和验收后才能更新状态。\n"
-    )
-
-
-def build_files(candidates):
-    """Map output-relative paths to rendered content for every derived artifact."""
-    files = {}
-    for c in candidates:
-        if c.get('feature_id'):
-            path = f"spec/baseline/features/{c['feature_id']}-{c['name']}.md"
-            files[path] = {'kind': 'feature', 'content': render_feature_md(c), 'candidate_id': c['feature_id']}
-        if c['is_ui']:
-            path = f"spec/baseline/ui/{c['page_id']}_{c['name']}.md"
-            files[path] = {'kind': 'page', 'content': render_page_md(c), 'candidate_id': c['page_id']}
-    files['spec/baseline/feature-index.md'] = {'kind': 'index', 'content': render_feature_index(candidates)}
-    files['spec/baseline/ui-manifest.md'] = {'kind': 'manifest', 'content': render_ui_manifest(candidates)}
-    return files
-
-
-# --------------------------------------------------------------------------- #
-# Public API
-# --------------------------------------------------------------------------- #
 def _reviewed_snapshot(source, project, expected_sha256=None):
     index_path = project / 'spec/baseline/ios-source-index.json'
     if not index_path.is_file():
@@ -304,109 +17,54 @@ def _reviewed_snapshot(source, project, expected_sha256=None):
         raise MigrationError('Provided source_sha256 does not match current source')
     return index, current
 
-
 def scaffold(project, *, source_sha256=None):
-    """Build the canonical derived scaffold candidate for a reviewed project.
-
-    Does not write any file. Raises ``MigrationError`` if the source index is missing,
-    the source changed since the index, or no UI surface candidate was discovered
-    (we never fabricate a feature/page to fill the gap).
-    """
+    from .gate_artifacts import render_spec_inputs
     source, project = context(project)
     index, current = _reviewed_snapshot(source, project, source_sha256)
-
-    candidates = assign_ids(discover_candidates(source, index))
+    candidates = discover_candidates(source, index)
     if not any(c['is_ui'] for c in candidates):
-        raise MigrationError('Scaffold found no UI surface candidate; author features/pages manually '
-                             'rather than fabricating them')
-    files = build_files(candidates)
+        raise MigrationError('Scaffold found no UI surface candidate; author features/pages manually rather than fabricating them')
+    rendered = render_spec_inputs(project)
+    files = {path: text for path, text in sorted(rendered['files'].items(), key=lambda row: (0 if '/features/' in row[0] else 1 if '/ui/' in row[0] else 2, row[0])) if _allowed_path(path)}
     _reviewed_snapshot(source, project, current['sha256'])
-
-    ui = [c for c in candidates if c['is_ui']]
-    summary = {
-        'total_candidates': len(candidates),
-        'pages': len(ui),
-        'features': len([c for c in candidates if c.get('feature_id')]),
-        'components': len([c for c in candidates if c['candidate_type'] == 'component']),
-        'bridges': len([c for c in candidates if c['is_bridge']]),
-        'extensions': len([c for c in candidates if c['is_extension']]),
-        'unknown_templates': len([c for c in candidates if c['unknown_template']]),
-    }
-    candidate_list = [{
-        'id': c.get('feature_id') or c.get('page_id') or c['name'],
-        'name': c['name'], 'decl_kind': c['decl_kind'],
-        'candidate_type': c['candidate_type'], 'framework': c['framework'],
-        'confidence': c['confidence'], 'is_ui': c['is_ui'],
-        'is_extension': c['is_extension'], 'is_bridge': c['is_bridge'],
-        'unknown_template': c['unknown_template'], 'page_id': c.get('page_id'),
-        'feature_id': c.get('feature_id'), 'anchor': c['anchor'],
-        'stable_key': digest(json_bytes([c['decl_kind'], c['name'], c['anchor']['path'], c['anchor']['line']]))[:16],
-        'enterable_plan': False,
-    } for c in candidates]
-
-    return {
-        'schema_version': 1, 'kind': 'spec-scaffold-candidate',
-        'scaffold_schema': 'schemas/spec-scaffold.schema.json',
-        'source_platform': 'ios', 'source_sha256': current['sha256'],
-        'candidate': True, 'needs_review': True, 'spec_complete': False, 'behavior_verified': False,
-        'enterable_plan': False, 'source_change_detected': False,
-        'summary': summary, 'candidates': candidate_list,
-        'files': {path: {'kind': meta['kind'], 'candidate_id': meta.get('candidate_id')} for path, meta in files.items()},
-        'file_contents': {path: meta['content'] for path, meta in files.items()},
-        'inventory_diff': {
-            'new_pages': [c['page_id'] for c in ui],
-            'new_features': [c['feature_id'] for c in candidates if c.get('feature_id')],
-            'unknown_templates': [c['name'] for c in candidates if c['unknown_template']],
-            'extensions': [c['name'] for c in candidates if c['is_extension']],
-        },
-    }
-
-
-# --------------------------------------------------------------------------- #
-# Apply: re-derive and verify before writing anything
-# --------------------------------------------------------------------------- #
-_ALLOWED_INDEX = re.compile(r'^spec/baseline/(?:feature-index\.md|ui-manifest\.md)$')
-_ALLOWED_FEATURE = re.compile(r'^spec/baseline/features/F\d{3}-.+\.md$')
-_ALLOWED_PAGE = re.compile(r'^spec/baseline/ui/page_\d{4}_.+\.md$')
+    for item in candidates:
+        anchor = item['anchor']
+        page = next((p for p in rendered['pages'] if p['source']==anchor['path'] and p['name']==item['name']), None)
+        item.update(page_id=page['page_id'] if page else None, feature_id='F001' if page else None,
+                    stable_key=digest(json_bytes([item['decl_kind'], item['name'], anchor['path'], anchor['line']]))[:16],
+                    enterable_plan=False)
+    return {'schema_version': 2, 'kind': 'spec-scaffold-candidate', 'source_platform': 'ios',
+            'source_sha256': current['sha256'], 'candidate': True, 'needs_review': True,
+            'spec_complete': False, 'behavior_verified': False, 'enterable_plan': False,
+            'source_change_detected': False, 'candidates': candidates,
+            'summary': {'total_candidates': len(candidates), 'pages': len(rendered['pages']),
+                        'features': int(bool(rendered['pages'])),
+                        'components': sum(c['candidate_type']=='component' for c in candidates),
+                        'bridges': sum(c['is_bridge'] for c in candidates),
+                        'extensions': sum(c['is_extension'] for c in candidates),
+                        'unknown_templates': sum(c['unknown_template'] for c in candidates)},
+            'files': {path: {'kind': 'page' if '/ui/' in path else 'feature' if '/features/' in path else 'index'} for path in files},
+            'file_contents': files,
+            'inventory_diff': {'new_pages': [p['page_id'] for p in rendered['pages']],
+                               'new_features': ['F001'] if rendered['pages'] else [],
+                               'unknown_templates': [c['name'] for c in candidates if c['unknown_template']],
+                               'extensions': [c['name'] for c in candidates if c['is_extension']]}}
 
 
 def _allowed_path(path):
-    return bool(_ALLOWED_INDEX.match(path) or _ALLOWED_FEATURE.match(path) or _ALLOWED_PAGE.match(path))
+    return bool(re.fullmatch(r'spec/baseline/(?:feature-index\.md|ui-manifest\.md|feature-base\.md|api-inventory\.md)', path)
+                or re.fullmatch(r'spec/baseline/features/F\d+-.+\.md', path)
+                or re.fullmatch(r'spec/baseline/ui/page_\d+(?:_.+)?\.md', path))
 
 
 def _fid_conflict(base, path):
-    """Return the occupied ID if a different main document already owns it."""
-    target = Path(path)
-    if _ALLOWED_FEATURE.match(path):
-        fid = target.stem.split('-', 1)[0]
-        for existing in (base / 'features').glob(f'{fid}-*.md'):
-            if existing.name != target.name:
-                return fid
-    elif _ALLOWED_PAGE.match(path):
-        pid = re.match(r'page_\d{4}', target.stem)[0]
-        for existing in (base / 'ui').glob(f'{pid}_*.md'):
-            if existing.name != target.name:
-                return pid
+    match = re.match(r'(F\d+|page_\d+)', Path(path).stem)
+    if match is None:
+        return None
+    folder = base / ('features' if match[1].startswith('F') else 'ui')
+    if any(existing.name != Path(path).name for existing in folder.glob(match[1]+'*.md')):
+        return match[1]
     return None
-
-
-def _rollback_created(project, created):
-    """Remove only our unchanged exclusive creations; retain another author's edits."""
-    retained = []
-    for item in reversed(created):
-        target = item['target']
-        try:
-            if not target.exists() and not target.is_symlink():
-                continue
-            if (target.is_symlink() or safe_child(project, item['path']) != target
-                    or (target.stat().st_dev, target.stat().st_ino) != item['identity']
-                    or target.read_bytes() != item['content']):
-                retained.append(item['path'])
-                continue
-            target.unlink()
-        except (OSError, MigrationError):
-            retained.append(item['path'])
-    return sorted(retained)
 
 
 def apply_scaffold(project, candidate):
@@ -429,10 +87,20 @@ def apply_scaffold(project, candidate):
     source, project = context(project)
     if not isinstance(candidate, dict) or candidate.get('kind') != 'spec-scaffold-candidate':
         raise MigrationError('apply requires a spec-scaffold-candidate produced by native_scaffold.scaffold')
+    if candidate.get('schema_version') != 2:
+        raise MigrationError('Old candidate schema; regenerate with spec-scaffold before applying')
     # 1. reject foreign / pseudo-approved artifacts up front
     for path in candidate.get('file_contents', {}):
         if not _allowed_path(path):
             raise MigrationError('Candidate carries non-scaffold artifact (possible pseudo-approved baseline): ' + path)
+    baseline = (project / 'spec/baseline').resolve()
+    for path in candidate.get('file_contents', {}):
+        conflict = _fid_conflict(baseline, path)
+        if conflict:
+            raise MigrationError('Conflicting main document for ' + conflict)
+    conflict = _fid_conflict(baseline, 'spec/baseline/features/F001-ios-source.md')
+    if conflict:
+        raise MigrationError('Conflicting main document for ' + conflict)
     # 2. re-derive canonical candidate from current reviewed source
     rederived = scaffold(project)
     # 3. consistency: supplied candidate must match the derived identity/hash/content
@@ -440,7 +108,7 @@ def apply_scaffold(project, candidate):
         raise MigrationError('Provided candidate source_sha256 does not match currently derived source')
     if {c['stable_key'] for c in candidate.get('candidates', [])} != {c['stable_key'] for c in rederived['candidates']}:
         raise MigrationError('Candidate identity drift vs derived source candidates; refuse apply')
-    expected = rederived['file_contents']
+    expected = dict(rederived['file_contents'])
     provided = candidate.get('file_contents', {})
     if set(provided.keys()) != set(expected.keys()):
         raise MigrationError('Candidate file set differs from derived source files; refuse apply')
@@ -463,36 +131,10 @@ def apply_scaffold(project, candidate):
             skipped.append(path)
             continue
         plan.append((path, target, content.encode('utf-8')))
-    created = []
-    try:
+    from .artifact_commit import create_missing
+    def check():
         _reviewed_snapshot(source, project, rederived['source_sha256'])
-        for path, target, content in plan:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if safe_child(project, path) != target:
-                raise MigrationError('Scaffold destination changed during apply: ' + path)
-            fid = _fid_conflict(baseline, path)
-            if fid is not None:
-                raise MigrationError('Conflicting main document for ' + fid + '; refuse to create duplicate ID')
-            # Unbuffered writes let rollback track the exact prefix actually
-            # written even if a later write fails (for example, a full disk).
-            with target.open('xb', buffering=0) as stream:
-                stat = os.fstat(stream.fileno())
-                item = {'path': path, 'target': target, 'identity': (stat.st_dev, stat.st_ino), 'content': b''}
-                created.append(item)
-                while len(item['content']) < len(content):
-                    offset = len(item['content'])
-                    count = stream.write(content[offset:])
-                    if not count:
-                        raise OSError('Scaffold write made no progress: ' + path)
-                    item['content'] = content[:offset + count]
-        _reviewed_snapshot(source, project, rederived['source_sha256'])
-    except BaseException as exc:
-        retained = _rollback_created(project, created)
-        detail = '; retained changed/unremovable files: ' + ', '.join(retained) if retained else ''
-        if not isinstance(exc, (MigrationError, OSError, ValueError)):
-            if retained:
-                exc.add_note('Scaffold rollback' + detail)
-            raise
-        raise MigrationError('Scaffold apply failed; unchanged new files rolled back: ' + str(exc) + detail) from exc
-    return {'created': sorted(item['path'] for item in created), 'skipped': sorted(skipped), 'refused': [],
-            'spec_complete': False, 'behavior_verified': False}
+        for path in expected:
+            if _fid_conflict(baseline, path) is not None:
+                raise MigrationError('Conflicting main document; refuse to create duplicate ID')
+    return create_missing(project, expected, before_commit=check, strict_existing=True)

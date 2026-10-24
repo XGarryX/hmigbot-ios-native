@@ -166,9 +166,45 @@ struct CoverDemo {
 }
 ```
 
+### 4.1 同宿主互踩：sheet 关闭可带走 cover（有运行反例）
+
+`bindSheet` 与 `bindContentCover` 挂在**同一个宿主节点**上时，二者走同一宿主 targetId：初始为 `false` 的 sheet 与随后打开的 cover 并列在同一 `Stack`，sheet 侧的关闭路径可能按同一 targetId 清掉刚创建的 cover——只见到 cover `willAppear`→`willDisappear`/`onDisappear`、状态被回写 `false`、子节点 `onAppear` 从未到达，全屏流程静默不显示。这是有实测反例支持的稳健迁移模式，不是公开 API 的类型禁令，也不成立「换了宿主就一定可用」。
+
+**结构修正**：给每个需要独立存活的弹层一个**不同且稳定的宿主**——外层只承载 cover，内层保留原内容与其它 sheet，原内容 / Navigation / 业务 / 回调都不动，只多包一层无条件外层 `Stack`。
+
+示意：复用组件已有 `@Builder`，省略其定义。
+
+```typescript
+@ComponentV2
+struct Index {
+  @Local editorPresented: boolean = false   // 半模态：编辑器，常态为 false
+  @Local brewPresented: boolean = false     // 全屏：冲泡流程
+  @Builder inner() {
+    Stack() { this.homeContent() }
+      .width('100%').height('100%')
+      .bindSheet($$this.editorPresented, this.editorContent(), {   // sheet 留在内层宿主
+        onDisappear: () => { this.editorPresented = false }
+      })
+  }
+  build() {
+    Stack() { this.inner() }                // 外层只承载 cover
+      .width('100%').height('100%')
+      .bindContentCover($$this.brewPresented, this.brewContent(), {
+        onDisappear: () => { this.brewPresented = false }
+      })
+  }
+}
+```
+
+**发现顺序**（先定位再改）：① 确认真实目标 UI 是否出现（截图 / 布局，不是只看状态位）；② 比对 cover 与其子节点的 `willAppear` / `onAppear` / `onDisappear` 时序，找出把状态回写成 `false` 的关闭来源；③ 定位两个弹层的宿主节点、核对是否同 targetId；④ 再做换宿主这类定向修复。**不得**用删除真实关闭同步、忽略 `onDisappear`、清 pending / 数据、加延时或重试来掩盖呈现失败，也不为此新增字符串 lint 规则。
+
+> 机制参照：ArkUI `overlay_manager.cpp`（master 快照：OnBindSheet 取 host targetId → CloseSheet 缺 sheet key 则 DeleteModal，按同一 id 跨 sheet / modal 清理并回调消失）；未证明设备运行二进制与该 master 同源。
+> 来源：https://raw.githubusercontent.com/openharmony/arkui_ace_engine/master/frameworks/core/components_ng/pattern/overlay/overlay_manager.cpp（快照 SHA 07fdbfded1b79ce72564830686ef01c431caea9790f3a75c418ffe12ef8158b1）
+
 ## 关键规则
 
 - **V2 一律 UIContext 形式**：`this.getUIContext().getPromptAction()` —— 不要用已废弃的全局 `promptAction.showToast(...)` / `AlertDialog.show(...)`。
 - `bindSheet` / `bindContentCover` 的第一参用 **`$$this.isShow`** 双向绑定，关闭时回写 `false`（或在 `onDisappear` 里同步），否则二次打开失效。
+- 同一宿主节点上并列 `bindSheet` 与 `bindContentCover` 可能互踩（尤其初始为 false 的 sheet 关闭时），排查呈现失败按 §4.1；`$$` 回写是真实关闭同步，不能为绕过失败而删除。
 - `@CustomDialog` 弹窗内的状态用其自身组件装饰器；跨弹窗共享状态用 `AppStorageV2` / `@Provider`。
 - 选 Sheet 还是 ContentCover：半屏可交互保留背景上下文 → bindSheet；全屏独立流程 → bindContentCover。

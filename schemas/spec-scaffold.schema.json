@@ -7,7 +7,7 @@
   "required": ["schema_version", "kind", "source_platform", "source_sha256", "candidate", "needs_review", "spec_complete", "behavior_verified", "enterable_plan", "summary", "candidates", "files", "inventory_diff"],
   "additionalProperties": false,
   "properties": {
-    "schema_version": {"type": "integer", "const": 1},
+    "schema_version": {"type": "integer", "const": 2},
     "kind": {"type": "string", "const": "spec-scaffold-candidate"},
     "scaffold_schema": {"type": "string"},
     "source_platform": {"type": "string", "const": "ios"},

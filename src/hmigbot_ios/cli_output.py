@@ -1,6 +1,7 @@
 """Machine-readable CLI output that also works in legacy Windows consoles."""
 from __future__ import annotations
 
+import io
 import json
 import sys
 
@@ -24,7 +25,7 @@ def configure_utf8(*streams):
 
 def emit_json(value, *, stream=None, indent=2):
     stream = sys.stdout if stream is None else stream
-    utf8 = configure_utf8(stream)
+    utf8 = configure_utf8(stream) or isinstance(stream, io.StringIO)
     # Pure Chinese is encodable as GBK but those bytes are not UTF-8. Escape
     # proactively whenever the stream's output encoding cannot be confirmed.
     payload = json.dumps(value, ensure_ascii=not utf8, indent=indent)

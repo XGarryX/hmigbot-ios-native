@@ -1,0 +1,4 @@
+{
+  "$ref": "../../src/hmigbot_ios/semantic_capabilities.json",
+  "note": "The sole canonical semantic catalog ships inside the Python package. This file is a documentation pointer, never a second catalog or count."
+}

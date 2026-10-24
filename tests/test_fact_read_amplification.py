@@ -1,5 +1,6 @@
 """Facts must read each source file once, not once per fact, and stay byte-faithful."""
 import os
+import plistlib
 from pathlib import Path
 import sys
 import tempfile
@@ -91,8 +92,8 @@ class FactReadAmplificationTests(unittest.TestCase):
 
     def test_binary_resource_and_text_resources_use_one_view(self):
         source, graph, reads = self.extract_counted({
-            'Info.plist': b'<plist>\xff\xfe not utf-8 \x80</plist>\n',
-            'Notes.stringsdict': '<?xml version="1.0"?>\n<stringdict>\n</stringdict>\n',
+            'Info.plist': plistlib.dumps({'name': 'binary'}, fmt=plistlib.FMT_BINARY),
+            'Notes.stringsdict': plistlib.dumps({'name': 'xml'}, fmt=plistlib.FMT_XML),
             'App.swift': 'import SwiftUI\nstruct App: View { var body: some View { Text("hi") } }\n',
         })
         self.assertEqual(reads, {'Info.plist': 2, 'Notes.stringsdict': 2, 'App.swift': 2},
@@ -101,9 +102,9 @@ class FactReadAmplificationTests(unittest.TestCase):
         self.assertEqual(plist['kind'], 'resource')
         self.assertEqual(plist['anchor']['snippet'], 'binary resource sha256:' + plist['anchor']['file_sha256'])
         self.assertEqual(plist['value']['encoding'], 'binary')
-        self.assertEqual(plist['value']['content_validation'], 'unresolved')
+        self.assertEqual(plist['value']['content_validation'], 'parsed')
         strings = next(f for f in graph['facts'] if f['anchor']['path'] == 'Notes.stringsdict')
-        self.assertEqual(strings['anchor']['snippet'], '<?xml version="1.0"?>')
+        self.assertEqual(strings['anchor']['snippet'], '<?xml version="1.0" encoding="UTF-8"?>')
 
     def test_non_text_source_still_needs_an_explicit_parser(self):
         source = self.source_with({'Broken.swift': b'struct A { var x = "\xff\xfe" }\n'})

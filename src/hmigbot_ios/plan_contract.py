@@ -28,18 +28,40 @@ def profile(project):
 def contract_revision(project):
     from .artifact_contract import revision
     root = Path(__file__).resolve().parents[2]
-    paths = [root / 'schemas/ios-harness-v2.schema.json', Path(__file__),
+    paths = [root / 'schemas/ios-harness-v2.schema.json', Path(__file__).resolve(),
+             root / 'src/hmigbot_ios/source_responsibility.py',
+             root / 'src/hmigbot_ios/macos_permissions.py', root / 'src/hmigbot_ios/portable_helper.py',
+             root / 'src/hmigbot_ios/native_pipeline_runtime.py', root / 'src/hmigbot_ios/upgrade_cleanup.py',
+             root / 'src/hmigbot_ios/conditional_evidence.py',
+             root / 'src/hmigbot_ios/native_semantics.py', root / 'src/hmigbot_ios/native_authoring.py',
+             root / 'src/hmigbot_ios/native_pipeline.py', root / 'src/hmigbot_ios/quality_views.py',
+             root / 'src/hmigbot_ios/artifact_contract.py', root / 'src/hmigbot_ios/spec_contract.py',
+             root / 'src/hmigbot_ios/source_scope.py', root / 'src/hmigbot_ios/ios_harness.py',
              root / 'src/hmigbot_ios/ios_scheduler.py', root / 'src/hmigbot_ios/replan_recovery.py', root / 'src/hmigbot_ios/harness_schema.py',
              root / 'src/hmigbot_ios/capability_contract.py',
              root / 'src/hmigbot_ios/capability_manifest.py', root / 'src/hmigbot_ios/capability_runtime.py',
              root / 'src/hmigbot_ios/behavior.py',
+             root / 'src/hmigbot_ios/ios_facts.py', root / 'src/hmigbot_ios/objc_state.py',
              root / 'src/hmigbot_ios/native_pipeline_semantics.py',
              root / 'skills/arkts-structural-closure/scripts/gen_capability_manifest.py',
              root / 'skills/arkts-structural-closure/scripts/capability_ledger_gate.py',
              root / 'skills/arkts-structural-closure/SKILL.md',
              root / 'skills/a2h-plan/references/plan-delivery-contract.md']
+    paths += [root / 'src/hmigbot_ios' / name for name in ('swiftui.py', 'computed_properties.py', 'spec_discovery.py', 'spec_helpers.py', 'finding_identity.py', 'provider_plan.py', 'provider_runs.py', 'providers.py', 'gate_artifacts.py', 'native_scaffold.py', 'init_environment.py', 'source_candidates.py', 'artifact_commit.py', 'verification_scope.py', 'source_build_membership.py')]
+    paths += [root / 'runtime-entrypoints.json', root / 'schemas/source-build-membership.schema.json']
+    # All maintained readers/routers and schema adapters participate in the freeze,
+    # including old modules whose policy changed through a shared service.
+    paths += sorted((root / 'src/hmigbot_ios').glob('*.py'))
+    paths += sorted((root / 'src/hmigbot_ios').glob('*.json'))
+    paths += sorted((root / 'schemas').glob('*.json'))
+    scheduler_payload = root / 'vendor/hmigbot-1.7.0/skills/a2h-execute/scripts'
+    paths += sorted(scheduler_payload.glob('*.py'))
+    paths += sorted(scheduler_payload.glob('bin/*/_entry.dist/_entry.bin'))
+    paths += sorted(scheduler_payload.glob('bin/*/_entry.dist/_entry.exe'))
     paths += sorted((root / 'skills/a2h-plan/templates').glob('*.md'))
+    from .source_responsibility import parser_fingerprints
     return digest(json_bytes({'artifacts': revision(Path(project)),
+                              'source_responsibility_parsers': parser_fingerprints(),
                               'plan_rules': {p.relative_to(root).as_posix(): digest(p.read_bytes()) for p in paths if p.is_file()}}))
 
 
@@ -48,7 +70,8 @@ def assert_pinned(project, contract):
     pinned = contract.get('spec_contract_version', 1)
     if profile(project) != pinned:
         raise MigrationError('Frozen spec contract profile changed; restore it before reviewed replan')
-    if pinned >= 2 and contract.get('contract_revision') != contract_revision(project):
+    responsibility_enabled = contract.get('responsibility_enabled') is True or (Path(project) / 'spec/baseline/ios-responsibility.json').is_file()
+    if (pinned >= 2 or responsibility_enabled) and contract.get('contract_revision') != contract_revision(project):
         raise MigrationError('Frozen tool contract revision changed; review and explicitly replan')
 
 
@@ -249,6 +272,10 @@ def _inventory(project):
             if match[1] in pages:
                 raise MigrationError('Duplicate page spec: ' + match[1])
             pages[match[1]] = path
+    from .ios_harness import responsibility
+    projection = responsibility(project)
+    if projection is not None:
+        features = {ident: path for ident, path in features.items() if ident in projection.target_acceptance_ids}
     return features, pages
 
 
@@ -315,6 +342,7 @@ def _contract_dependencies(project, row):
 def indexed_contract_inputs(project):
     """Freeze index-only exact contracts even when no feature repeats the link."""
     from .spec_contract import references
+    project = Path(project).resolve()
     pending = [target for row in _feature_rows(project).values() for target, _, _ in _contract_dependencies(project, row)[1]]
     seen, hashes = set(), {}
     while pending:
@@ -345,7 +373,7 @@ def _indexed_links(project, index, detail_paths):
 def task_inputs(project, task, items=None):
     """Exact headings + file hashes, transitively from owned ACs/pages/contracts."""
     from .spec_contract import references
-    project = Path(project)
+    project = Path(project).resolve()
     features, pages = _inventory(project)
     seeds = {features[ac] for ac in task.get('ac_ids', []) if ac in features}
     # Contract dependencies require reading, not serialization. Follow their
@@ -395,7 +423,7 @@ def task_inputs(project, task, items=None):
 
 def plan_units(project):
     """Load the same bounded indexed responsibility authority used by validate_plan."""
-    project = Path(project)
+    project = Path(project).resolve()
     from .artifact_contract import catalog
     projections = {}
     for artifact in catalog()['plan']['artifacts']:
@@ -429,7 +457,7 @@ def plan_units(project):
 
 def validate_plan(project, request):
     """Return a read-only PASS report or raise MigrationError before state writes."""
-    project = Path(project)
+    project = Path(project).resolve()
     from .harness_schema import validate
     validate(request, 'planRequest')
     version = profile(project)

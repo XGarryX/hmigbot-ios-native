@@ -93,7 +93,7 @@ class ManifestScopeTests(unittest.TestCase):
             made=subprocess.run(['cmd','/d','/c','mklink','/J',str(link),str(folder)],capture_output=True)
             self.assertEqual(made.returncode,0,made.stderr)
             print(json.dumps({'probe':self._testMethodName,'actual_reparse_kind':'Windows directory junction','returncode':made.returncode}))
-        self.addCleanup(os.rmdir,link)
+        self.addCleanup(os.rmdir if os.name == 'nt' else os.unlink,link)
         self.assert_blocking('escapes')
 
     def test_real_package_product_and_product_ref_are_rejected_by_project_authority(self):

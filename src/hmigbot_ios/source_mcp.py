@@ -32,8 +32,14 @@ class StdioClient:
         self.deadline = time.monotonic() + timeout
         self.events, self.transcript, self.stderr = queue.Queue(maxsize=256), [], bytearray()
         self.sequence = 0
+        env = os.environ.copy()
+        supplied_env = config.get('env', {})
+        if (not isinstance(supplied_env, dict) or set(supplied_env) - {'MCP_XCODE_PID', 'MCP_XCODE_SESSION_ID'}
+                or any(not isinstance(v, str) or not v for v in supplied_env.values())):
+            raise MigrationError('MCP environment supports scoped Xcode PID/session strings only')
+        env.update(supplied_env)
         self.process = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, shell=False, env=os.environ.copy())
+                                        stderr=subprocess.PIPE, shell=False, env=env)
         self.logs = logs
         self.threads = [threading.Thread(target=self.pump, daemon=True), threading.Thread(target=self.pump_error, daemon=True)]
         for thread in self.threads:
@@ -91,6 +97,8 @@ class StdioClient:
                 if 'id' in message:
                     self.send({'jsonrpc': '2.0', 'id': message['id'], 'error': {'code': -32601, 'message': 'Client capability unavailable'}})
                 continue
+            if message.get('id') is None and 'error' in message:
+                raise MigrationError('MCP server unavailable: ' + str(message['error']))
             if message.get('id') != ident:
                 raise MigrationError('MCP returned an unexpected response ID')
             if 'error' in message:
@@ -117,6 +125,45 @@ class StdioClient:
         write_json(self.logs / 'transcript.json', self.transcript)
         (self.logs / 'stderr.log').write_bytes(self.stderr)
         self.process.stdout.close(); self.process.stderr.close()
+
+
+def discover(config, source, output):
+    """Actually negotiate the server and enumerate tools; never claim a query ran."""
+    output.mkdir(parents=True, exist_ok=False)
+    client = None
+    try:
+        client = StdioClient(config, source, output)
+        from . import __version__
+        init = client.request('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {},
+                                             'clientInfo': {'name': 'hmigbot-ios-source', 'version': __version__}})
+        if init.get('protocolVersion') not in VERSIONS or not isinstance(init.get('serverInfo'), dict) or 'tools' not in init.get('capabilities', {}):
+            raise MigrationError('MCP version or tool capability negotiation failed')
+        client.send({'jsonrpc': '2.0', 'method': 'notifications/initialized'})
+        tools, cursor = [], None
+        for _ in range(50):
+            page = client.request('tools/list', {'cursor': cursor} if cursor else {})
+            if page.get('isError'):
+                raise MigrationError('MCP tools/list failed: ' + str(page.get('content', page))[:2000])
+            if not isinstance(page.get('tools'), list):
+                raise MigrationError('MCP tools/list omitted tools')
+            tools.extend(page['tools'])
+            cursor = page.get('nextCursor')
+            if not cursor:
+                break
+        else:
+            raise MigrationError('MCP tool pagination limit exceeded')
+        result = {'status': 'discovered', 'server': init['serverInfo'],
+                  'protocol_version': init['protocolVersion'], 'tools': tools,
+                  'tool_calls_performed': False}
+        write_json(output / 'discovery.json', result)
+        return result
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        result = {'status': 'unavailable', 'error': str(exc), 'tool_calls_performed': False}
+        write_json(output / 'failure.json', result)
+        return result
+    finally:
+        if client:
+            client.close()
 
 
 def capture(project, server_path, request_path):
@@ -158,6 +205,8 @@ def capture(project, server_path, request_path):
             page = client.request('tools/list', {'cursor': cursor} if cursor else {})
             if not isinstance(page.get('tools'), list):
                 raise MigrationError('MCP tools/list omitted tools')
+            if page.get('isError'):
+                raise MigrationError('MCP tools/list failed: ' + str(page.get('content', page))[:2000])
             tools.extend(page['tools']); cursor = page.get('nextCursor')
             if not cursor:
                 break
@@ -171,7 +220,7 @@ def capture(project, server_path, request_path):
             raise MigrationError('MCP request omitted a required tool argument')
         response = client.request('tools/call', {'name': tool, 'arguments': arguments})
         if response.get('isError'):
-            raise MigrationError('MCP tool returned isError')
+            raise MigrationError('MCP tool returned isError: ' + str(response.get('content', response))[:2000])
         if not response.get('content') and not response.get('structuredContent'):
             raise MigrationError('MCP tool returned no evidence')
         if snapshot(source)['sha256'] != graph['source_sha256']:

@@ -4,4 +4,8 @@ runtime="$PWD/.hmigbot-ios/plugin"
 if [ ! -f "$runtime/scripts/a2h_ios.py" ]; then
   runtime=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 fi
-exec "${PYTHON:-python3}" "$runtime/scripts/a2h_ios.py" "${1:-validate}" --project "$PWD"
+command=${1:-validate}
+if [ "$#" -gt 0 ]; then
+  shift
+fi
+exec "${PYTHON:-python3}" "$runtime/scripts/a2h_ios.py" "$command" --project "$PWD" "$@"

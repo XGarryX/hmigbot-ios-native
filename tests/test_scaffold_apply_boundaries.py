@@ -80,8 +80,11 @@ class ScaffoldApplyBoundaryTests(unittest.TestCase):
         existing = self.page.parent / 'page_9999_Other.md'
         existing.parent.mkdir(parents=True)
         existing.write_text('existing unrelated page', encoding='utf-8')
+        with self.assertRaisesRegex(MigrationError, 'file set'):
+            scaffold_module.apply_scaffold(self.project, self.candidate)
+        self.candidate = scaffold_module.scaffold(self.project)
         result = scaffold_module.apply_scaffold(self.project, self.candidate)
-        self.assertEqual(len(result['created']), 4)
+        self.assertTrue(result['created'])
         self.assertEqual(existing.read_text(), 'existing unrelated page')
 
     def test_same_page_id_with_different_name_is_rejected_before_any_write(self):

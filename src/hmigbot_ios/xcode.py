@@ -1,4 +1,5 @@
 """Xcode/OpenStep structure, without pretending to evaluate an Xcode build."""
+from .core import trusted_system_alias
 from pathlib import Path, PurePosixPath
 import re
 
@@ -60,7 +61,7 @@ def synchronized_membership(root, project_path, objects, targets):
         candidate = base / local
         # Check before resolve so an in-repository link is also rejected.
         for part in (candidate, *candidate.parents):
-            if part.is_symlink() or (hasattr(part, 'is_junction') and part.is_junction()):
+            if (part.is_symlink() or (hasattr(part, 'is_junction') and part.is_junction())) and not trusted_system_alias(part):
                 raise MigrationError(f'Synchronized source links require materialization: {candidate}')
             if part == root:
                 break

@@ -1,7 +1,7 @@
 # Apple 官方能力与实际使用状态
 
-核查日期：2026-09-29。Apple Xcode 27 提供可导出的 agent skills，官方 WWDC 演示
-`xcrun agent skills export`。外部 agent 可通过 `xcrun mcpbridge` 连接 Xcode MCP，
+核查日期：2026-10-24。Apple Xcode 27 提供可导出的 agent skills，官方 WWDC 演示
+`xcrun agent skills export --output-dir <path>`。外部 agent 可通过 `xcrun mcpbridge` 连接 Xcode MCP，
 需要 Mac、Xcode 打开工程并启用 Intelligence 中的访问选项。
 
 - 官方 skills：从用户自己的 Xcode 导出，记录 Xcode 版本、原目录和文件 hashes；
@@ -21,3 +21,5 @@
 - https://developer.apple.com/documentation/xcode/extending-and-customizing-agents
 - https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode
 - https://www.swift.org/documentation/source-code/
+
+0.13.0 的自动选择、逐步执行与权限边界见 [自动编排协议](auto-orchestration.md)。官方技能与只读 MCP 优先，实际不可用时显式降级；设备远程控制不在默认调用范围。

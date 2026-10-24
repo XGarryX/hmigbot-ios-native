@@ -388,8 +388,8 @@ def _original(project, output):
     env['ARKTS_SKILL_DIR'] = str(ROOT / 'vendor/hmigbot/skills/a2h-execute/scripts')
     if os.name == 'nt':
         return run_owned_process(command, cwd=project, env=env, timeout=timeout_for('literal', env=env))
-    return subprocess.run(command, cwd=project, env=env, capture_output=True,
-                          timeout=timeout_for('literal', env=env), shell=False)
+    from .portable_helper import run
+    return run(command[1], command[2:], cwd=project, env=env, capture_output=True, timeout=timeout_for('literal', env=env))
 
 
 def _detector(project, output):

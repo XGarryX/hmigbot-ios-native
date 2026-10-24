@@ -12,6 +12,9 @@ metadata:
   layer: pipeline
 ---
 
+本统一版本先读 [单一流程、环境前置与兼容范围](../a2h-run/references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
+
+
 > **调用关系**：本 skill 主会话执行，**不派发三写 worker 子代理**。用户选中的视觉/UT 验证委托对应 verifier skill（CHECK-3 → `arkts-visual-verify`、CHECK-4 → `arkts-ut-verifier`），其内部测试设计、构建、设备执行与修复由各 skill 契约调度，a2h-verify 只编排与汇总、不另派同类 fixer。行为验证由本包 `behavior-check` 命令执行，**只报告、不参与整体判定**。
 >
 > **路径约定**：`$IOS_SRC` 读 `<target>/.migbot/config.json` 的 `ios` 字段；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。源端无 Mac/设备不妨碍可执行的目标检查；缺失的已选检查记 DEFERRED/PARTIAL，**不能**自动改成 SKIP。本 skill 不写产品代码；唯一主会话写的文件是 `spec/verify-report.md`（汇总结论），派生产物由 `spec-summary`/`migration-report` 命令单写。
@@ -27,7 +30,7 @@ Pipeline 第四步，负责基础检查与可选检查的编排和结果汇总�
 - **输出**：`spec/verify-report.md`（五项结果与证据汇总）+ 派生产物 `spec/reports/spec-summary.json`、`spec/migration-report.md`。
 - **唯一交互点 = 开始前的可选检查选择**（CHECK-3/4/5 选哪些，见 §1）；其余禁交互追问，机械检查由 exit code 判定（behavior-check：0=PASS，2=FAIL，3=UNVERIFIED）。
 - **第一条可见输出必须是一行执行计划**（固定 CHECK-1/2 → 已选 CHECK 的相对顺序），然后才开始 §1。
-- **硬约束**：**不手改派生报告**（`spec/migration-report.md` 由命令单写，`verify-report.md` 是验证范围叙述不是派生报告的写者）；**不把未选 CHECK 改判为已执行**；**不把结构 PASS 或安装成功升格为行为一致**；**源截图仅用真实 iPhone/Xcode/云运行材料，无源截图不生成虚假视觉一致率**；CHECK-5 不参与整体判定。
+- **硬约束**：**不手改派生报告**（`spec/migration-report.md` 由命令单写，`verify-report.md` 由 verify-report 命令单写，当前 verifier 结果与范围写入其受校验输入）；**不把未选 CHECK 改判为已执行**；**不把结构 PASS 或安装成功升格为行为一致**；**源截图仅用真实 iPhone/Xcode/云运行材料，无源截图不生成虚假视觉一致率**；CHECK-5 不参与整体判定。
 
 ## 0.1 分步命令表（实际执行的命令，每条带 exit code）
 
@@ -54,7 +57,7 @@ Pipeline 第四步，负责基础检查与可选检查的编排和结果汇总�
 
 先读取 [iOS Harness v2](../ios-source-analysis/references/harness-v2.md)，以该协议决定输入、机器门禁和状态写者。以下原领域规程继续用于规格内容、indexed 计划、接线和真实验证；不得再手工调度或写入三份控制账本。
 
-原真实验证继续执行。另运行 `behavior-check` 校验事件/持久化效果链（CHECK-5）；只有已有授权的实际用例才用 `--run`，保留独立源 oracle。未运行、未覆盖和环境不足仍为 UNVERIFIED，不受旧 PASS 或 task done 影响。
+原真实验证继续执行。行为范围已明确选中时运行 `behavior-check` 校验事件/持久化效果链（CHECK-5）；只有已有授权的实际用例才用 `--run`，保留独立源 oracle。未运行、未覆盖和环境不足仍为 UNVERIFIED，不受旧 PASS 或 task done 影响。
 
 ## 1. 开始前：选择可选检查项
 

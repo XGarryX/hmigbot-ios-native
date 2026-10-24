@@ -6,6 +6,15 @@ configuration semantics, source bindings or the authenticity of imported data.
 from .core import MigrationError, io_path, read_json
 
 
+def consumed_inputs(operation, config=None, input_path=None):
+    """Normalize the inputs actually consumed by the authoritative atom."""
+    if operation in {'swift-syntax', 'clang-ast'}:
+        return config, None
+    if operation == 'build-settings':
+        return (config, None) if config else (None, input_path)
+    return None, None
+
+
 OPERATIONS = frozenset({'swift-syntax', 'clang-ast', 'build-settings',
                         'interface-builder', 'asset-inventory', 'localization-inventory'})
 
@@ -33,12 +42,14 @@ def preflight(path):
         operation = provider.get('operation')
         if not isinstance(operation, str) or operation not in OPERATIONS:
             raise MigrationError(label + ' has unsupported operation')
+        config, input_path = consumed_inputs(operation, provider.get('config'), provider.get('input'))
+        consumed = {'config': config, 'input': input_path}
         paths = {}
         for field in ('config', 'input'):
-            if field not in provider:
+            if consumed[field] is None:
                 paths[field] = None
                 continue
-            value = provider[field]
+            value = consumed[field]
             if not isinstance(value, str) or not value.strip():
                 raise MigrationError(label + ' ' + field + ' must be a nonempty path')
             target = io_path(value).resolve()
@@ -51,11 +62,11 @@ def preflight(path):
             raise MigrationError(label + ' requires explicit config')
         if operation == 'build-settings':
             bundle = paths['input']
-            if bundle is None or not bundle.is_dir() or not (bundle / 'manifest.json').is_file():
+            if paths['config'] is None and (bundle is None or not bundle.is_dir() or not (bundle / 'manifest.json').is_file()):
                 raise MigrationError(label + ' requires an input evidence bundle with manifest.json')
         identity = (operation, paths['config'], paths['input'])
         if identity in seen:
             raise MigrationError(label + ' duplicates an earlier provider request')
         seen.add(identity)
-        entries.append(dict(provider))
+        entries.append({'operation': operation, **{key: str(value) for key, value in paths.items() if value is not None}})
     return entries

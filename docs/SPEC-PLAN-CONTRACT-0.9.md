@@ -40,4 +40,4 @@ python .hmigbot-ios/plugin/scripts/a2h_ios.py spec-summary --project . --build-e
 
 回归覆盖合法/缺失结构、N/A证据、共享动作冲突与排除、Plan映射、写权/依赖/进度、冻结降级、真实原调度、字面量混合来源和过期证据。实际模型规则对照样本另见`tests/evaluations/spec-plan-v2/`的源、生成记录与独立复核；小样本不能外推真实项目迁移成功率。
 
-发行与安装验证入口见[验证说明](VALIDATION.md)。未在本轮完成Chunky或其他真实App的iOS/鸿蒙双端设备验收。
+发行与安装验证入口见验证说明（本地过程记录：`VALIDATION.md`）。未在本轮完成Chunky或其他真实App的iOS/鸿蒙双端设备验收。
