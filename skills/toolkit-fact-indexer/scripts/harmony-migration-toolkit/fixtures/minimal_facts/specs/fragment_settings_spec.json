@@ -1,0 +1,40 @@
+{
+  "screen_id": "fragment_settings",
+  "class": "",
+  "layout": "fragment_settings",
+  "screen_type": "unknown",
+  "source": "project",
+  "ui_elements": [
+    {
+      "id": "settings_title",
+      "type": "TextView",
+      "label": "Settings",
+      "visibility": "always",
+      "condition": "",
+      "is_interactive": true,
+      "behaviors": []
+    }
+  ],
+  "behaviors": [],
+  "dynamic_ui": [
+    {
+      "source": "inflate_layout",
+      "layout": "fragment_settings",
+      "enclosing_fn": "override fun onCreateView(",
+      "file": "app\\src\\main\\java\\com\\verifyfix\\minimal\\SettingsFragment.kt"
+    }
+  ],
+  "navigation": {
+    "entry_points": [],
+    "exit_points": []
+  },
+  "stats": {
+    "total_elements": 1,
+    "interactive": 1,
+    "with_behavior": 0,
+    "conditional_visibility": 0,
+    "dynamic_gaps": 1,
+    "nav_out": 0,
+    "nav_in": 0
+  }
+}

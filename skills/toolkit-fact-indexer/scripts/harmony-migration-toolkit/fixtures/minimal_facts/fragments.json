@@ -1,0 +1,26 @@
+{
+  "fragments": [
+    {
+      "class": "SettingsFragment",
+      "container_id": "fragment_container",
+      "attach_method": "FragmentTransaction.replace",
+      "host_class": "MainActivity",
+      "host_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "line": 17,
+      "source_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt"
+    }
+  ],
+  "stats": {
+    "total": 1,
+    "by_attach_method": {
+      "FragmentTransaction.replace": 1
+    },
+    "source_files_scanned": 3,
+    "coverage": {
+      "ast_available": false,
+      "declared_fragment_count": 0,
+      "attached_fragment_count": 1,
+      "orphan_classes": []
+    }
+  }
+}

@@ -1,0 +1,153 @@
+# 验证报告模板
+
+> 存储路径：`spec/verify-report.md`。由 SKILL.md §3e 调用本模板生成。
+
+```markdown
+# 验证报告
+
+- 验证时间: YYYY-MM-DD HH:mm
+- 迁移报告: spec/migration-report.md
+
+## 验证结果总览
+
+| 检查项 | 编号 | 状态 | 详情 |
+|--------|------|------|------|
+| 全量编译 | CHECK-1 | PASS/FAIL | 编译轮数: X, 剩余错误: Y |
+| 静态分析 | CHECK-2 | PASS/FAIL | ERROR: X, WARN: Y |
+| 占位符扫描 | CHECK-3 | PASS/FAIL | pending: X, 可回填未回填: Y, 未注册: Z |
+| App 身份校验 | CHECK-4 | PASS/FAIL | bundleName: X, vendor: X, version: X |
+| 页面状态审计 | CHECK-5 | PASS/FAIL | P0 converted+产物存在: X/Y, P1: Z/W |
+| 功能验收 | CHECK-6 | PASS/FAIL | V1 通过: X/Y, V2 通过: Z/W |
+| 路由跳转验证 | CHECK-7 | PASS/FAIL/DEFERRED | verified: X, reopened: Y, wontfix: Z, 必崩(pushed_but_unregistered): N |
+| 视觉对齐 | CHECK-8 | PASS/FAIL-visual/FAIL-functional/DEFERRED | ALIGN: X, URL: Y, CRASH: Z（URL/CRASH>0 = FAIL-functional 阻塞门控）|
+| 单元 TDD | CHECK-9 | PASS/FAIL/DEFERRED | round-{final}: ut PASS X/Y, 内部轮数 N |
+| UI TDD | CHECK-10 | PASS/FAIL/DEFERRED | round-{final}: ui PASS X/Y, 内部轮数 N |
+| 风格合规 | CHECK-11 | PASS/FAIL/SKIP/DEFERRED | 违规: X (ERROR: Y, WARN: Z) |
+
+## 门控判定
+
+- V1 门控: PASS/FAIL
+- 终态编译复检: PASS/FAIL（CHECK-7/9/10 修复后的重测结果，门控以此为准）
+- 失败项: [列表]
+- P0 页面全部 converted+产物存在: YES/NO
+- CHECK-8 功能性失败（CRASH/URL）: N 项（门控要求 = 0；ALIGN 纯视觉差异不计入）
+- DEFERRED 项: N 项 [CHECK-X(原因), ...]
+  - ⚠️ N > 0 时必须保留本行并显著标注："本次门控通过是在 N 项 DEFERRED 下达成，对应能力（路由对账 / 视觉 / UT / UI）未实测，非强通过"
+- 回环修复时序标注: 第 N 轮回环修复发生在 UT/UI 实测之后 → 必须标注"UT/UI 结论未覆盖该轮改动"（无回环或回环先于实测时写"无"）
+- §6.1 verified 回写: 已回写 N 页 / 遗留未回写 M 页 [列表] / CHECK-9或10 DEFERRED 未回写（三选一如实填写）
+
+## 详细结果
+
+### CHECK-1: 全量编译
+- 状态: PASS/FAIL（取终态编译复检结果）
+- 首轮编译: PASS/FAIL，修复轮数: X
+- 终态编译复检（CHECK-7/9/10 修复后）: PASS/FAIL
+- 剩余错误: (如果 FAIL，列出错误)
+- 编译短路触发: YES/NO（YES 时设备三段 CHECK-8/9/10 标 DEFERRED（编译未过））
+
+### CHECK-2: 静态分析
+| 文件 | 行号 | 检查项 | 级别 |
+|------|------|--------|------|
+| ... | ... | ... | ... |
+
+### CHECK-3: 占位符扫描（摘要视图，完整数据见 spec/placeholder-registry.md）
+| ID | 文件 | 类型 | 目标 | 状态 | 备注 |
+|----|------|------|------|------|------|
+| PH-001 | ... | navigation | ... | pending/resolved/deferred | ... |
+
+### CHECK-4: App 身份校验
+| 检查项 | 状态 | 值 | 说明 |
+|--------|------|-----|------|
+| bundleName | PASS/FAIL | com.xxx.yyy | ... |
+| vendor | PASS/FAIL | xxx | ... |
+| versionName | PASS/WARN | x.y.z | ... |
+| app_name | PASS/FAIL | ... | ... |
+| 图标文件 | PASS/WARN | foreground: XKB, background: YKB | ... |
+| 自适应图标 | PASS/FAIL | layered_image.json | ... |
+
+### CHECK-5: 页面状态审计
+
+> 判定口径：P0 100% converted/verified 且目标 .ets 存在（verified 由 §6.1 门控后回写，不是本 CHECK 的前置要求）
+
+| 优先级 | 总数 | verified | converted | pending | skipped | converted+verified 率 |
+|--------|------|----------|-----------|---------|---------|--------|
+| P0 | X | Y | Z | W | - | (Y+Z)/X% |
+| P1 | ... | ... | ... | ... | ... | ... |
+| P2 | ... | ... | ... | ... | ... | ... |
+
+- 状态与产物不符（status=converted/verified 但 .ets 缺失）: [列表，>0 即 FAIL]
+
+### CHECK-6: 功能验收
+| 功能 ID | 功能名称 | V 级别 | 状态 | 备注 |
+|---------|---------|--------|------|------|
+| F-001 | ... | V1 | PASS/FAIL | ... |
+| F-002 | ... | V2 | PASS/SKIP | ... |
+
+### CHECK-7: 路由跳转验证（arkts-router-verify，纯静态 + 内置修复闭环）
+
+- 状态: PASS/FAIL/DEFERRED（DEFERRED 仅"拿不到 Android 源码仓 / skill 未安装"，与设备无关）
+- 来源: `spec/verify/route/ROUTE_VERIFY_SUMMARY.md` + `spec/verify/route/fix_plan.json`
+- pushed_but_unregistered（push 了没注册 = 运行时必崩 P0）: N（PASS 要求 = 0）
+
+| 维度 | 修复项 | verified | reopened | wontfix |
+|------|--------|----------|----------|---------|
+| A1-REG 注册缺失 | X | ... | ... | ... |
+| A1 页面不存在 | X | ... | ... | ... |
+| A2 弹窗不存在 | X | ... | ... | ... |
+| B 触发控件缺失 | X | ... | ... | ... |
+| C 触发存在未绑定 | X | ... | ... | ... |
+
+- 遗留项（wontfix，附 verdict_basis）: [列表]
+- 未闭环项（reopened，断在哪）: [列表]
+
+### CHECK-8: 视觉对齐（arkts-visual-verify）
+
+- 状态: PASS / FAIL-visual / FAIL-functional / DEFERRED
+- 来源: `spec/visual-verify/report.md`（cache_stats + 各页 pass/fail）
+- 截图缓存命中率: X%
+- 功能性失败（**阻塞门控、进 §5 回环**）: CRASH: X 个, URL_MISMATCH: Y 个
+- 纯视觉差异（不阻塞门控）: ALIGN: Z 个（涉及 N 页）
+
+| 页面 | 结果 | ALIGN | URL | CRASH | 差异摘要 |
+|------|------|-------|-----|-------|---------|
+| page_0001 | pass | 0 | 0 | 0 | |
+| page_0003 | fail-visual | 3 | 0 | 0 | 标题栏配色/间距偏差 |
+| page_0015 | fail-functional | - | 0 | 1 | 打开即崩（见 CRASH_P0015_*.md）|
+
+> visual-verify 是"100% 对齐 + 一差异一文件"模型，**没有对齐度打分/阈值机制**，本表按差异文件计数呈现。
+> 差异 markdown：`spec/fix/round-{N}/ui/{ALIGN|URL|CRASH}_*.md`（N 取 `spec/fix/_state.yaml.current_round`；`spec/fix/` 由 visual-verify 独占，ut/ui 已迁至 `spec/verify/`）。CRASH/URL 由 §5 回环修复；ALIGN 由用户或后续 a2h-fixer 离线消化。
+
+### CHECK-9: 单元 TDD（arkts-ut-verifier，内置 fix-loop）
+
+- 状态: PASS/FAIL/DEFERRED
+- 内部 fix-loop 轮数: N（停止原因: 全 GREEN / CONVERGED / MAX_ROUNDS / NO_PROGRESS / 编译失败）
+- 来源: `spec/verify/ut/round-{final}/final-summary.md`（状态主依据）+ `spec/test/ut-report.md` + `_ut_summary.md`
+
+| 维度 | round-0 | round-{final} | 增量 |
+|---|---|---|---|
+| ut PASS | x / total | x / total | +N pp |
+
+剩余未解决 it() 列表：`spec/verify/ut/round-{final}/ut/`
+
+### CHECK-10: UI TDD（arkts-ui-verifier，内置 fix-loop）
+
+- 状态: PASS/FAIL/DEFERRED
+- 内部 fix-loop 轮数: N（停止原因: 全 GREEN / CONVERGED / MAX_ROUNDS / NO_PROGRESS / 编译失败）
+- 来源: `spec/verify/ui/round-{final}/final-summary.md`（状态主依据）+ `spec/test/ui-report.md` + `_ui_summary.md`
+
+| 维度 | round-0 | round-{final} | 增量 |
+|---|---|---|---|
+| ui PASS | x / total | x / total | +N pp |
+
+剩余未解决 it() 列表：`spec/verify/ui/round-{final}/ui/`（ui-verifier 独占目录，无需过滤）
+
+### CHECK-11: 风格合规（style_set != none 时）
+- 状态: PASS/FAIL/SKIP/DEFERRED（SKIP 仅 style_set=none；orchestrator skill 未安装为 DEFERRED）
+- 风格集: <style_set 值>
+- 违规统计: ERROR X, WARN Y
+
+| 文件 | 规则 | 级别 | 描述 |
+|------|------|------|------|
+| pages/XxxPage.ets | import-order | WARN | Import 顺序不符合风格规范 |
+| components/YyyCard.ets | naming | ERROR | 文件名应为 PascalCase |
+```

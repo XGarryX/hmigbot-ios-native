@@ -1,0 +1,27 @@
+{
+  "dynamic_elements": [
+    {
+      "view_type": "TextView",
+      "variable_name": "statusView",
+      "container_variable": "container",
+      "container_id": "fragment_container",
+      "creation_method": "addView",
+      "host_class": "MainActivity",
+      "host_method": "onCreate",
+      "file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "line": 27,
+      "properties": {
+        "text": "Loading..."
+      }
+    }
+  ],
+  "adapter_layouts": [],
+  "stats": {
+    "total_dynamic_elements": 1,
+    "total_adapter_layouts": 0,
+    "by_creation_method": {
+      "addView": 1
+    },
+    "source_files_scanned": 3
+  }
+}

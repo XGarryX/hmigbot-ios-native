@@ -1,0 +1,18 @@
+{
+  "_purpose": "测试访问事实（单一源）。由 a2h-spec Step 3.0c2 收集，落 spec/baseline/dev_info.json。供 spec 收尾的 auth-chain probe（arkts-network-troubleshoot 场景 E）与 execute 期联调消费。",
+  "_security": "仅测试环境凭证、非生产；建议将 spec/baseline/dev_info.json 加入 .gitignore，不写任何生产密钥/token。",
+  "env": "test",
+  "base_url": "<https://xxx-test.xxx/>",
+  "cleartext_allowed": false,
+  "business_success_code": {
+    "field": "<code | status>",
+    "value": "<200 | 0>"
+  },
+  "token_invalid_codes": ["<如 -1001 / 401，可选>"],
+  "test_account": {
+    "phone": "<1xxxxxxxxxx，可留空>",
+    "password": "<test-only，可留空>",
+    "sms_note": "<可收验证码 / 固定测试码 xxxx / 无>"
+  },
+  "backend_contact": "<可确认契约的后端同事，可选>"
+}

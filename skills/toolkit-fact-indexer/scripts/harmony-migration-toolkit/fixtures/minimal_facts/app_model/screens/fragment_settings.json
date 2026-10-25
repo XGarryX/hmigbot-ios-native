@@ -1,0 +1,16 @@
+{
+  "layout": "fragment_settings",
+  "ui_point_ids": [
+    "up:fragment_settings:settings_title"
+  ],
+  "elements_preview": [
+    {
+      "ui_point_id": "up:fragment_settings:settings_title",
+      "id": "settings_title",
+      "tag": "TextView",
+      "is_interactive": true,
+      "has_behaviors": false
+    }
+  ],
+  "outgoing_nav_edge_ids": []
+}

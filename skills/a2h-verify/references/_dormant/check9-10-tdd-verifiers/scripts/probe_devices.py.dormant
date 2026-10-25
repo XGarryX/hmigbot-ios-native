@@ -1,0 +1,267 @@
+#!/usr/bin/env python3
+"""probe_devices.py —— CHECK-8/9/10 设备前置的**机械探针**（替代 check7-to-10.md §2 那段让模型自主执行的伪代码）
+
+治的病（2026-08-17 用户实报：设备前置检查跑了 20+ 分钟没结果）：
+    §2 原来是一段散文——"which hdc / $DEVECO_SDK_HOME/toolchains/hdc / macOS 路径 / Linux 路径 /
+    hdc list targets ≥1 device / adb devices ≥1 device"，全靠模型一条条自己敲。三个结构性的慢：
+      ① 规约只列了 macOS/Linux 路径，Windows 上模型只能自己搜盘（`dir /s /b hdc.exe`），10-20 分钟起步；
+      ② `hdc list targets` / `adb devices` **没有超时**——hdc 服务端陈旧/挂死时会无限期阻塞，模型就干等；
+      ③ 每条命令一次模型往返，N 条 × 每轮十几秒。
+    本脚本一次跑完，三平台候选表定位（含 Windows）、每条探针 10 秒硬超时、结构化输出，秒级。
+
+用法:
+    python probe_devices.py [--timeout 10] [--json]
+输出:
+    人类可读摘要（stderr）+ 一行 JSON（stdout，--json 时缩进）
+退出码（a2h-verify 按码路由，**不要再让模型自己判"有没有 device"**）:
+    0  = hdc 与 adb 都可用且各有 ≥1 台在线设备      → CHECK-8/9/10 全部可跑
+    10 = 只有 hdc 可用+在线，adb 缺/无设备          → CHECK-9/10 可跑，CHECK-8 DEFERRED（visual 需双端）
+    20 = hdc 缺/无设备（不论 adb）                   → CHECK-8/9/10 全部 DEFERRED
+    2  = 探针自身异常
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+
+if sys.platform.startswith("win"):   # Windows 管道输出中文防 cp936 崩
+    for _st in (sys.stdout, sys.stderr):
+        try:
+            _st.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+HERE = pathlib.Path(__file__).resolve().parent
+SKILLS_ROOT = HERE.parent.parent            # .../skills/a2h-verify/scripts → .../skills
+
+
+def _load_lib_tools():
+    """优先复用兄弟 skill arkts-visual-verify 的 lib_tools（单一事实源：三平台候选表 + 超时探针）。
+    找不到时用下方内嵌的最小实现——a2h-verify 不能因为 visual-verify 没装就探不了 hdc（CHECK-9/10 只要 hdc）。"""
+    for cand in (SKILLS_ROOT / "arkts-visual-verify" / "scripts",
+                 pathlib.Path.home() / ".agents" / "skills" / "arkts-visual-verify" / "scripts",
+                 pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+                 / ".agents" / "skills" / "arkts-visual-verify" / "scripts"):
+        if (cand / "lib_tools.py").is_file():
+            sys.path.insert(0, str(cand))
+            try:
+                import lib_tools  # type: ignore
+                return lib_tools
+            except Exception:       # noqa: BLE001
+                return None
+    return None
+
+
+# ───────────── 内嵌最小实现（与 lib_tools 同一套候选表逻辑，无递归、带超时）─────────────
+_IS_WIN = sys.platform.startswith("win")
+_IS_MAC = sys.platform == "darwin"
+_EXE = ".exe" if _IS_WIN else ""
+
+
+def _deveco_roots():
+    roots = []
+    for k in ("DEVECO_HOME", "DEVECO_SDK_HOME"):
+        v = os.environ.get(k)
+        if v:
+            roots += [v, os.path.dirname(v)]
+    if _IS_MAC:
+        roots += ["/Applications/DevEco-Studio.app/Contents", os.path.expanduser("~/Library/Huawei/Sdk")]
+    elif _IS_WIN:
+        pf = os.environ.get("ProgramFiles", r"C:\Program Files")
+        lad = os.environ.get("LOCALAPPDATA", "")
+        roots += [os.path.join(pf, "Huawei", "DevEco Studio")]
+        if lad:
+            roots += [os.path.join(lad, "Huawei", "Sdk"), os.path.join(lad, "OpenHarmony", "Sdk")]
+    else:
+        roots += [os.path.expanduser("~/Huawei/Sdk"), os.path.expanduser("~/command-line-tools"),
+                  os.path.expanduser("~/deveco-studio"), "/opt/deveco-studio"]
+    return [r for r in roots if r]
+
+
+def _find_hdc():
+    v = os.environ.get("HDC")
+    if v:
+        return v
+    p = shutil.which("hdc")
+    if p:
+        return p
+    for root in _deveco_roots():
+        for rel in (("sdk", "default", "openharmony", "toolchains"), ("openharmony", "toolchains"),
+                    ("toolchains",), ("default", "openharmony", "toolchains")):
+            c = os.path.join(root, *rel, "hdc" + _EXE)
+            if os.path.isfile(c):
+                return c
+        for base in (os.path.join(root, "sdk"), root):          # sdk/<版本>/openharmony/toolchains，只看一层
+            try:
+                for name in sorted(os.listdir(base)):
+                    c = os.path.join(base, name, "openharmony", "toolchains", "hdc" + _EXE)
+                    if os.path.isfile(c):
+                        return c
+            except OSError:
+                pass
+    return "hdc"
+
+
+def _find_adb():
+    v = os.environ.get("ADB")
+    if v:
+        return v
+    p = shutil.which("adb")
+    if p:
+        return p
+    cands = []
+    for home in (os.environ.get("ANDROID_HOME"), os.environ.get("ANDROID_SDK_ROOT")):
+        if home:
+            cands.append(os.path.join(home, "platform-tools", "adb" + _EXE))
+    if _IS_MAC:
+        cands.append(os.path.expanduser("~/Library/Android/sdk/platform-tools/adb"))
+    elif _IS_WIN:
+        lad = os.environ.get("LOCALAPPDATA", "")
+        if lad:
+            cands.append(os.path.join(lad, "Android", "Sdk", "platform-tools", "adb.exe"))
+    else:
+        cands.append(os.path.expanduser("~/Android/Sdk/platform-tools/adb"))
+    for c in cands:
+        if os.path.isfile(c):
+            return c
+    return "adb"
+
+
+def _run(cmd, timeout):
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=timeout)
+        return p.returncode, (p.stdout or "") + (p.stderr or ""), False
+    except subprocess.TimeoutExpired:
+        return -1, "", True
+    except (OSError, FileNotFoundError):
+        return -2, "", False
+
+
+def _probe_embedded(timeout):
+    hdc, adb = _find_hdc(), _find_adb()
+    hdc_ok = os.path.isfile(hdc) or bool(shutil.which(hdc))
+    adb_ok = os.path.isfile(adb) or bool(shutil.which(adb))
+    ht, at, hto, ato = [], [], False, False
+    if hdc_ok:
+        rc, out, hto = _run([hdc, "list", "targets"], timeout)
+        if not hto and rc >= 0:
+            ht = [l.strip() for l in out.splitlines()
+                  if l.strip() and "Empty" not in l and "[Fail]" not in l]
+    if adb_ok:
+        rc, out, ato = _run([adb, "devices"], timeout)
+        if not ato and rc >= 0:
+            for l in out.splitlines()[1:]:
+                parts = l.split()
+                if len(parts) >= 2 and parts[1] == "device":
+                    at.append(parts[0])
+    return {"hdc": hdc, "hdc_resolved": hdc_ok, "hmos_targets": ht, "hmos_online": bool(ht),
+            "hdc_timed_out": hto,
+            "adb": adb, "adb_resolved": adb_ok, "android_devices": at, "android_online": bool(at),
+            "adb_timed_out": ato}
+
+
+# CHECK → 承担它的 verifier skill。skill 不在 = 该 CHECK 恒 DEFERRED（原因：skill 未安装），
+# 与设备探测无关、也不阻塞门控（SKILL.md §6.5 "MUST PASS（DEFERRED 时不阻塞）"）。
+# 之前"前置 0.5 skill 安装检测"是散文让模型自己 ls，这里机械化：一次 JSON 同时结掉两个前置。
+_VERIFIER_OF = {"CHECK-8": "arkts-visual-verify", "CHECK-9": "arkts-ut-verifier",
+                "CHECK-10": "arkts-ui-verifier"}
+
+# ★默认暂停的维度（2026-08-17 决策）：arkts-ut-verifier / arkts-ui-verifier 待优化，先不跑 CHECK-9/10。
+#   恢复：env A2H_VERIFY_ENABLE="CHECK-9,CHECK-10"（或改这里）。规约与引用全部保留，重启只动这一行。
+#   暂停 ≠ 删除：仍以 DEFERRED 记入报告与门控标注，不阻塞；报告里能看出是"暂停"而不是"没装/坏了"。
+DEFAULT_PAUSED = {"CHECK-9", "CHECK-10"}
+PAUSED_REASON = ("DEFERRED（默认暂停：待 arkts-ut-verifier / arkts-ui-verifier 优化后重启；"
+                 "设 A2H_VERIFY_ENABLE=CHECK-9,CHECK-10 恢复；不阻塞门控）")
+
+
+def _skill_installed(name):
+    for base in (SKILLS_ROOT,
+                 pathlib.Path.home() / ".agents" / "skills",
+                 pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()) / ".agents" / "skills"):
+        if (base / name / "SKILL.md").is_file():
+            return str(base / name)
+    return None
+
+
+def main(argv):
+    ap = argparse.ArgumentParser(description="CHECK-8/9/10 设备前置机械探针")
+    ap.add_argument("--timeout", type=int, default=10, help="每条探针命令的硬超时（秒），默认 10")
+    ap.add_argument("--json", action="store_true", help="stdout 输出缩进 JSON")
+    a = ap.parse_args(argv[1:])
+
+    lib = _load_lib_tools()
+    if lib is not None and hasattr(lib, "probe_devices"):
+        r = lib.probe_devices(timeout=a.timeout)
+        r.setdefault("hdc_timed_out", False)
+        r.setdefault("adb_timed_out", False)
+        r["source"] = "arkts-visual-verify/lib_tools"
+    else:
+        r = _probe_embedded(a.timeout)
+        r["source"] = "embedded"
+    r["platform"] = sys.platform
+
+    # ── 路由结论：让退出码替模型做判断 ──
+    if r["hmos_online"] and r["android_online"]:
+        code, verdict = 0, "ALL_READY"
+        checks = {"CHECK-8": "RUN", "CHECK-9": "RUN", "CHECK-10": "RUN"}
+    elif r["hmos_online"]:
+        code, verdict = 10, "HMOS_ONLY"
+        checks = {"CHECK-8": "DEFERRED（adb 不可用或无 Android 设备；visual 需双端）",
+                  "CHECK-9": "RUN", "CHECK-10": "RUN"}
+    else:
+        code, verdict = 20, "HMOS_UNAVAILABLE"
+        why = ("hdc 未找到（不在 PATH / 候选安装位，可设 env HDC=<路径>）" if not r["hdc_resolved"]
+               else "hdc list targets 超时（hdc 服务端可能挂死，试 `hdc kill` 后重试）" if r.get("hdc_timed_out")
+               else "hdc 可用但无在线设备（模拟器没起 / 没 tconn）")
+        checks = {k: f"DEFERRED（{why}）" for k in ("CHECK-8", "CHECK-9", "CHECK-10")}
+    skills = {}
+    for chk, name in _VERIFIER_OF.items():
+        path = _skill_installed(name)
+        skills[name] = path
+        if not path:
+            checks[chk] = f"DEFERRED（verifier skill 未安装：{name}；不阻塞门控）"
+    r["verifier_skills"] = skills
+    # ★显式禁用开关（"注释掉某个维度"的正式做法，2026-08-17）：
+    #   env A2H_VERIFY_DISABLE="CHECK-9,CHECK-10"  或  项目根 spec/verify/disabled_checks.txt（一行一个）
+    #   —— skill 在不在是环境事实，"这次跑不跑"是决策；两者分开记账，报告里能看出是哪种 DEFERRED。
+    disabled = {x.strip().upper() for x in os.environ.get("A2H_VERIFY_DISABLE", "").split(",") if x.strip()}
+    cfg = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()) / "spec" / "verify" / "disabled_checks.txt"
+    if cfg.is_file():
+        disabled |= {l.strip().upper() for l in cfg.read_text(encoding="utf-8", errors="replace").splitlines()
+                     if l.strip() and not l.strip().startswith("#")}
+    for chk in list(checks):
+        if chk in disabled:
+            checks[chk] = "DEFERRED（按配置禁用：A2H_VERIFY_DISABLE / spec/verify/disabled_checks.txt；不阻塞门控）"
+    enabled = {x.strip().upper() for x in os.environ.get("A2H_VERIFY_ENABLE", "").split(",") if x.strip()}
+    paused = DEFAULT_PAUSED - enabled - disabled           # 显式禁用优先级更高，已标过就不覆盖
+    for chk in paused:
+        if chk in checks:
+            checks[chk] = PAUSED_REASON
+    r["disabled_checks"] = sorted(disabled)
+    r["paused_checks"] = sorted(paused)
+    r.update({"verdict": verdict, "exit_code": code, "checks": checks})
+
+    # 人类可读摘要 → stderr；JSON → stdout（便于 a2h-verify 只解析 stdout）
+    e = sys.stderr
+    print(f"[probe-devices] platform={sys.platform}  source={r['source']}  timeout={a.timeout}s", file=e)
+    print(f"  hdc : {r['hdc']}  resolved={r['hdc_resolved']}  targets={r['hmos_targets'] or '—'}"
+          + ("  ⏱超时" if r.get("hdc_timed_out") else ""), file=e)
+    print(f"  adb : {r['adb']}  resolved={r['adb_resolved']}  devices={r['android_devices'] or '—'}"
+          + ("  ⏱超时" if r.get("adb_timed_out") else ""), file=e)
+    for name, path in skills.items():
+        print(f"  skill {name:20s} {'✅ ' + path if path else '❌ 未安装'}", file=e)
+    for k, v in checks.items():
+        print(f"  {k}: {v}", file=e)
+    print(f"[probe-devices] VERDICT: {verdict}  (exit {code})", file=e)
+    print(json.dumps(r, ensure_ascii=False, indent=1 if a.json else None))
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

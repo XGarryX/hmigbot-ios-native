@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "launcher_class": "",
+  "screen_total": 0,
+  "navigation_node_total": 0,
+  "reachable_navigation_screen_count": 0,
+  "runtime_entry_screen_count": 0,
+  "unmapped_layout_count": 0,
+  "layout_with_static_elements_count": 0,
+  "exported_path_count": 0,
+  "short_path_count": 0,
+  "uncovered_static_layout_count": 0
+}

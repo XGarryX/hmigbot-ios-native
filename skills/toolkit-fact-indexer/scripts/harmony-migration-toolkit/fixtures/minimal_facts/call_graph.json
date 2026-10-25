@@ -1,0 +1,224 @@
+{
+  "schema_version": "1.0",
+  "symbols": [
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "MainActivity",
+      "owner_chain": [
+        "MainActivity"
+      ],
+      "function_name": "onCreate",
+      "signature": "savedInstanceState: Bundle?",
+      "file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "start_line": 12,
+      "end_line": 29,
+      "confidence": "ast"
+    },
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.MainActivity.openSettings/0",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "MainActivity",
+      "owner_chain": [
+        "MainActivity"
+      ],
+      "function_name": "openSettings",
+      "signature": "",
+      "file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "start_line": 31,
+      "end_line": 34,
+      "confidence": "ast"
+    },
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.SettingsActivity.onCreate/1",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "SettingsActivity",
+      "owner_chain": [
+        "SettingsActivity"
+      ],
+      "function_name": "onCreate",
+      "signature": "savedInstanceState: Bundle?",
+      "file": "app/src/main/java/com/verifyfix/minimal/SettingsActivity.kt",
+      "start_line": 7,
+      "end_line": 10,
+      "confidence": "ast"
+    },
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.SettingsFragment.onCreateView/3",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "SettingsFragment",
+      "owner_chain": [
+        "SettingsFragment"
+      ],
+      "function_name": "onCreateView",
+      "signature": "inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?",
+      "file": "app/src/main/java/com/verifyfix/minimal/SettingsFragment.kt",
+      "start_line": 10,
+      "end_line": 14,
+      "confidence": "ast"
+    }
+  ],
+  "calls": [
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "to_symbol_id": "fn:com.verifyfix.minimal.MainActivity.openSettings/0",
+      "callee_name": "openSettings",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 22,
+      "confidence": "ast_same_class"
+    }
+  ],
+  "unresolved_calls": [
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "setContentView",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 14,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "beginTransaction",
+      "receiver": "supportFragmentManager",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 16,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "commit",
+      "receiver": "supportFragmentManager.beginTransaction()\n            .replace(R.id.fragment_container, SettingsFragment())",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 16,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "replace",
+      "receiver": "supportFragmentManager.beginTransaction()",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 16,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "SettingsFragment",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 17,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "findViewById",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 20,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "setOnClickListener",
+      "receiver": "btnSettings",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 21,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "findViewById",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 25,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "TextView",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 26,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "setText",
+      "receiver": "statusView",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 27,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "callee_name": "addView",
+      "receiver": "container",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 28,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.openSettings/0",
+      "callee_name": "Intent",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 32,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.MainActivity.openSettings/0",
+      "callee_name": "startActivity",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "callsite_line": 33,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.SettingsActivity.onCreate/1",
+      "callee_name": "setContentView",
+      "receiver": "",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/SettingsActivity.kt",
+      "callsite_line": 9,
+      "reason": "unresolved"
+    },
+    {
+      "from_symbol_id": "fn:com.verifyfix.minimal.SettingsFragment.onCreateView/3",
+      "callee_name": "inflate",
+      "receiver": "inflater",
+      "argument_count": 0,
+      "callsite_file": "app/src/main/java/com/verifyfix/minimal/SettingsFragment.kt",
+      "callsite_line": 13,
+      "reason": "unresolved"
+    }
+  ],
+  "stats": {
+    "symbol_count": 4,
+    "call_count": 1,
+    "unresolved_call_count": 15,
+    "ast_call_count": 1
+  }
+}

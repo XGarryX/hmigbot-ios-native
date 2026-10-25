@@ -1,0 +1,27 @@
+# skill-taxonomy.yaml — Skill Hub classification registry
+# Add new types/domains by adding a line here. No script or directory changes needed.
+
+types:
+  pipeline:    "流水线编排 — 端到端迁移流程中的阶段性 skill"
+  domain:      "领域知识 — 某个技术领域的专业能力"
+  style:       "风格规范 — 编码标准和最佳实践"
+  codebase:    "代码操作 — 对现有代码库的分析、修改、调试"
+  tool:        "工具 — 通用辅助工具，不绑定特定领域"
+
+domains:
+  ui:          "UI/组件构建"
+  state:       "状态管理"
+  navigation:  "导航路由"
+  data:        "数据层/网络"
+  media:       "媒体/下载"
+  system:      "系统能力"
+  migration:   "迁移专用"
+  engineering: "工程配置"
+  general:     "通用/跨领域"
+
+style-sets:
+  wfhc-standard: "五方合创团队编码风格（基于 utils/AI + utils/Scan）"
+
+platforms:
+  claude-code: "Claude Code"
+  opencode:    "OpenCode"

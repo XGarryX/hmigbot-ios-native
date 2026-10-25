@@ -1,0 +1,35 @@
+# 休眠归档：CHECK-9 风格合规（原 CHECK-11）
+
+## 摘除原因（2026-08-21）
+
+该 CHECK 依赖风格 orchestrator skill（如 `arkts-style-orchestrator`）做反模式扫描，
+但**该 skill 不在本 codex 包内**（67 个 skill 中无此项）。因此它在本包里只可能落在两种状态：
+
+- `style_set = none` → SKIP
+- `style_set != none` 但 skill 未安装 → DEFERRED
+
+两种都出不了实质结果，属于恒定空转；且它本就不纳入 V1 门控（建议性检查），
+留着只会占执行序列、让模型多读一段永远走不通的分支。故整体摘除。
+
+摘除后 CHECK 序列为 **CHECK-1 ~ CHECK-8**（无重编号，风格合规是末位，删掉即可）。
+
+## 连带的语义变化（重要）
+
+摘除前："SKIP 仅 CHECK-9 `style_set=none` 一种"——它是全 skill 唯一的合法 SKIP 来源。
+摘除后：**CHECK-1~8 全部没有 SKIP 条件**，任何不可执行一律标 `DEFERRED` 并写明原因。
+`execution-discipline.md` §1.1 / §1.2、`orchestration.md` 处置表均已按此改写。
+
+## 恢复方法
+
+1. 把 `check9-style.md.dormant` 改回 `references/check9-style.md`
+2. SKILL.md：§2 流程图末尾加回 `├─ CHECK-9  风格合规`；§3 加回 3c 段（检查项表 + 详见指引 + 非门控说明）
+3. SKILL.md §1.1 第 1 条、`execution-discipline.md` §1.1/§1.2 把 SKIP 例外条款加回
+4. `verify-report-template.md`：总览表加回风格合规行 + §CHECK-9 详细段
+5. `failure-loop.md` / `orchestration.md`：加回 CHECK-9 的"不回环 / DEFERRED 处置"条目
+6. 前提：包内需实际存在风格 orchestrator skill，否则恢复了仍是空转
+
+## 同期状态
+
+`_dormant/check9-10-tdd-verifiers/` 是更早一次摘除（单元 TDD / UI TDD，对应 skill
+`arkts-ut-verifier` / `arkts-ui-verifier` 已不在包内），当时把原 CHECK-11 重编号为 CHECK-9。
+本次摘除的就是那个重编号后的 CHECK-9。

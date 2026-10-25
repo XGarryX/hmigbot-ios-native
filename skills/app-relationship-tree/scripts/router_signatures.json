@@ -1,0 +1,9 @@
+{
+  "_comment": "路由框架签名表（scan_reference_edges.py Pass R Tier1 用）。签名是数据不是代码：撞到新框架加一行，不改扫描器。Tier2 常量共引用不依赖本表（框架无关兜底）。",
+  "route_annotations": ["Route", "RouterUri", "RouterPath", "Destination", "RouterAnno"],
+  "build_patterns": [
+    "TheRouter\\s*\\.\\s*build\\s*\\(",
+    "ARouter\\s*\\.\\s*getInstance\\s*\\(\\s*\\)\\s*\\.\\s*build\\s*\\(",
+    "\\bRouter\\s*\\.\\s*build\\s*\\("
+  ]
+}

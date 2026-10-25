@@ -1,0 +1,16 @@
+{
+  "name": "hmigbot-ios152",
+  "version": "1.5.2-ios.30",
+  "description": "Native iOS input port of HMigBot CodeX 1.5.2; original stage contracts and gates",
+  "author": {
+    "name": "fuxi-ailabs"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ios",
+    "harmonyos",
+    "arkts",
+    "migration"
+  ],
+  "skills": "./skills/"
+}

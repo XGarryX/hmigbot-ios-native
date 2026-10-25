@@ -1,0 +1,44 @@
+{
+  "behavior_chains": [
+    {
+      "element_id": "btn_settings",
+      "view_ref": "btnSettings",
+      "event_type": "click",
+      "handler": {
+        "symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+        "method": "onCreate",
+        "file": "app\\src\\main\\java\\com\\verifyfix\\minimal\\MainActivity.kt",
+        "line": 21
+      },
+      "effect_chain": [
+        {
+          "step": "call",
+          "target": "openSettings()",
+          "confidence": "static_analysis",
+          "symbol_id": "fn:com.verifyfix.minimal.MainActivity.openSettings/0",
+          "nested": [
+            {
+              "step": "navigate",
+              "target": "startActivity",
+              "destination": "SettingsActivity",
+              "via": "startActivity",
+              "confidence": "static_analysis"
+            }
+          ]
+        }
+      ],
+      "chain_depth": 2,
+      "confidence": "static_analysis"
+    }
+  ],
+  "stats": {
+    "total_bindings": 1,
+    "with_effect_chain": 1,
+    "without_handler": 0,
+    "max_chain_depth": 2,
+    "by_step_type": {
+      "call": 1,
+      "navigate": 1
+    }
+  }
+}

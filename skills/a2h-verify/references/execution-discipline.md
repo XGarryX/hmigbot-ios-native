@@ -1,0 +1,94 @@
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+
+# 执行铁律（无跳过原则）
+
+> **本文件优先级高于 SKILL.md 内任何其他段落。** 与其它文档冲突时以本文件为准。
+
+主对话执行 a2h-verify 时**禁止以"省时 / 省 token / 上下文长 / 用户没明说要跑 / 预估收效低"等任何理由**主动缩减或跳过任一检查项。
+
+---
+
+## 1. 具体禁止项
+
+命中即视为流程失败，必须重新补跑。
+
+### 1.1 CHECK-1~8 任一项标 SKIP
+
+**CHECK-1~8 全部没有 SKIP 状态**——本 skill 现存的检查项里没有任何一项定义了 SKIP 触发条件。
+不可执行的情形一律标 DEFERRED 并写明原因（合法情形见 §1.3）。
+
+主线程不得追加自定义 SKIP 理由，也不得以"无 SKIP 可用"为由把不可执行项标成 PASS。
+
+### 1.2 CHECK-6/7 委托后不读结果
+
+
+- ❌ "派完就当 PASS"——错。必须实测产物，无产物视为 FAIL
+- ❌ "我估计应该通过了"——错。状态来自实测，不来自估计
+
+### 1.3 CHECK-6/7 状态判定不可滥用 DEFERRED
+
+DEFERRED 仅在对应前置不满足时合法：
+
+- CHECK-6 DEFERRED：仅"拿不到 iOS 源码仓（--ios-root）"或 "arkts-router-verify skill 未安装"——**与设备无关，不因 hdc/adb 缺失而 DEFERRED**
+- CHECK-7 DEFERRED：adb **或 hdc 任一**不可用且 health check 失败（visual 需双端模拟器截图），**或** §5 回环耗尽仍编译未过（无法 build HAP），**或** visual-verify skill 未安装
+**Domain skill 缺失没有 SKIP**：skill 未安装统一标 DEFERRED 并计入门控判定区的 DEFERRED 标注（处置总表见 `orchestration.md`）。
+
+其他场景必须出 PASS 或 FAIL，不允许出 DEFERRED 当"软逃避"。**注意**：编译未过导致设备段 DEFERRED 时，CHECK-1 自身必须如实标 FAIL（不得用设备段的 DEFERRED 掩盖编译失败）。
+
+### 1.4 失败回环老路径不允许提前 break
+
+参见 `failure-loop.md`。
+
+- "外圈最多 3 轮" 是上限不是建议。3 轮内自动跑完，主线程不得提前止血。
+- 回环重验轮按 `failure-loop.md`「回环轮重验范围」表收程——**这是铁律唯一认可的合法缩程**（已 PASS 且未受修复影响的项可沿用结论），不属于跳过违规；但表中标"必跑"的项（CHECK-1/2/3 + 之前失败项 + 触碰路由面时的 CHECK-6）一项都不能省。
+
+
+
+- ❌ 主线程派 a2h-fixer / a2h-diagnoser 旁路 verifier——错，违反职责分工
+- ❌ 主线程提前打断 verifier 循环——错，循环退出条件由 verifier 自己控制
+- ❌ 主线程改写 verifier 的 round-N / fix_plan.json 产物——错（router-verify 的 fix_plan.json 由其自身收口）
+
+---
+
+## 2. 主线程自检清单（生成 `spec/verify-report.md` 前必跑）
+
+逐条核对下列断言。任一不成立 → **不允许写报告**，必须先把漏掉的部分补回去：
+
+```
+[ ] CHECK-1~8 每一项状态字段都对应 SKILL.md §3 定义的合法取值
+    （PASS/FAIL/DEFERRED；CHECK-7 细分 FAIL-visual / FAIL-functional），
+    不存在 SKIP 状态、也不存在"主线程自定义 SKIP 理由"
+[ ] CHECK-6/7 中状态为 PASS/FAIL 的项，状态来自实测产物
+    （状态为 DEFERRED 的项豁免本条——产物可不存在，但 DEFERRED 理由必须符合 §1.3）：
+    - CHECK-6: spec/verify/route/ROUTE_VERIFY_SUMMARY.md + spec/verify/route/fix_plan.json 存在且被读取
+    - CHECK-7: spec/visual-verify/report.md 存在且被读取
+      即读即落是为了状态不靠记忆、中断后可恢复）
+[ ] 终态编译复检已跑（CHECK-6 任一改过源码时）——门控的 CHECK-1 取复检结果，
+    不沿用本轮开头那次编译结论
+[ ] 门控在 N>0 项 DEFERRED 下达成时，报告门控判定区已显著标注（SKILL.md §6 末注），
+    未把"DEFERRED 不阻塞"写成强通过
+[ ] 门控通过时 §6.1 verified 回写已执行（或已标注"CHECK-7 DEFERRED，未回写"）
+[ ] 回环轮发生过源码修复时，CHECK-1/2/3 已全量重跑（failure-loop「回环轮重验范围」），
+    CHECK-7 实测后才修复的改动已在门控区标注"未覆盖"
+[ ] verify-report.md 任何 "SKIPPED for time / 控制运行时长 / 主线程跳过" 类措辞 = 自动违规
+```
+
+---
+
+## 3. 违规处置
+
+发现已写出的报告含有违规跳过：
+
+1. **不要靠"在报告里加 notes 说明跳过原因"自洽**——这是反模式
+2. 把对应的检查项补跑完
+3. 重写 verify-report.md 用真实数据替换
+
+---
+
+## 4. 自我保护倾向 vs 用户契约
+
+主线程出现"省时省 token"冲动时记住：用户调 `$a2h-verify` 是为了拿一份**完整的**验证结果。
+
+- 累计 token 不是主线程预算约束——是用户成本，由用户决定
+- 长流水线就该长，硬上限已由各 verifier 内部设了；主线程的工作是按那些硬上限跑，不是预先剪枝
+- "agent 自我保护"导致的提前止血在 a2h pipeline 是已知反模式——本文件就是堵这个口

@@ -1,0 +1,1419 @@
+{
+ "相芯科技AR视频特效SDK": {
+  "provider": "杭州相芯科技有限公司",
+  "email_domain": "faceunity.com",
+  "link_domains": []
+ },
+ "YILI LingTongCV HM SDK": {
+  "provider": "内蒙古伊利实业集团股份有限公司",
+  "email_domain": "iwhalecloud.com",
+  "link_domains": []
+ },
+ "SenseAR Effects": {
+  "provider": "北京大甜绵白糖科技有限公司",
+  "email_domain": "softsugar.com",
+  "link_domains": []
+ },
+ "美摄美颜SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.meishesdk.com"
+  ]
+ },
+ "证照识别深度学习版拍照识别 SDK": {
+  "provider": "上海合合信息科技股份有限公司",
+  "email_domain": "intsig.net",
+  "link_domains": [
+   "ohpm.openharm",
+   "www.textin.com"
+  ]
+ },
+ "译图智讯二代证OCR识别": {
+  "provider": "北京译图智讯科技有限公司",
+  "email_domain": "etoplive.com",
+  "link_domains": []
+ },
+ "文通银行卡卡号识别软件SDK": {
+  "provider": "北京文通科技有限公司",
+  "email_domain": "sinosecu.com.cn",
+  "link_domains": []
+ },
+ "译图智讯银行卡OCR识别": {
+  "provider": "北京译图智讯科技有限公司",
+  "email_domain": "etoplive.com",
+  "link_domains": []
+ },
+ "中安证件识别系统SDK": {
+  "provider": "北京中安未来科技有限公司",
+  "email_domain": "sinosecu.com.cn",
+  "link_domains": []
+ },
+ "声音克隆": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "DuiTts": {
+  "provider": "思必驰科技股份有限公司",
+  "email_domain": "aispeech.com",
+  "link_domains": [
+   "www.duiopen.com"
+  ]
+ },
+ "离线语音合成": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "短文本语音合成": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "语音信号处理": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "DuiAsr": {
+  "provider": "思必驰科技股份有限公司",
+  "email_domain": "aispeech.com",
+  "link_domains": []
+ },
+ "驰声语音评测SDK": {
+  "provider": "苏州驰声信息科技有限公司",
+  "email_domain": "chivox.com",
+  "link_domains": [
+   "www.chivox.com"
+  ]
+ },
+ "口语评测": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "智言语音评测 SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "api.ai.smart-speech.com"
+  ]
+ },
+ "实时语音转写": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "一句话识别": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "语音唤醒": {
+  "provider": "云知声智能科技股份有限公司",
+  "email_domain": "unisound.com",
+  "link_domains": []
+ },
+ "语音识别": {
+  "provider": "上海容大数字技术有限公司",
+  "email_domain": "qq.com",
+  "link_domains": []
+ },
+ "腾讯地图地图SDK": {
+  "provider": "深圳市腾讯计算机系统有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "lbs.qq.com"
+  ]
+ },
+ "室内导航": {
+  "provider": "北京大希科技有限公司",
+  "email_domain": "daxicn.com",
+  "link_domains": [
+   "map1a.daxicn.com"
+  ]
+ },
+ "大希室内外一体化导航": {
+  "provider": "北京大希科技有限公司",
+  "email_domain": "daxicn.com",
+  "link_domains": [
+   "map1a.daxicn.com"
+  ]
+ },
+ "维智定位SDK": {
+  "provider": "武汉维网智芯信息科技有限公司",
+  "email_domain": "wayz.ai",
+  "link_domains": []
+ },
+ "vesdk": {
+  "provider": "杭州视杏科技有限公司",
+  "email_domain": "seeshiontech.com",
+  "link_domains": []
+ },
+ "美摄视频编辑创作SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.meishesdk.com"
+  ]
+ },
+ "锐动视频编辑SDK": {
+  "provider": "北京锐动天地信息技术有限公司",
+  "email_domain": "qq.com",
+  "link_domains": [
+   "rdsdk.com"
+  ]
+ },
+ "阿里云播放器SDK": {
+  "provider": "阿里云计算有限公司",
+  "email_domain": "service.aliyun.com",
+  "link_domains": [
+   "videocloudqa.oss-cn-"
+  ]
+ },
+ "腾讯云播放器 SDK": {
+  "provider": "腾讯云计算（北京）有限责任公司",
+  "email_domain": "",
+  "link_domains": [
+   "cloud.tencent.com"
+  ]
+ },
+ "百家云 点播回放 UI SDK": {
+  "provider": "武汉百家云科技有限公司",
+  "email_domain": "baijiayun.com",
+  "link_domains": [
+   "ohpm.openharmony.cn"
+  ]
+ },
+ "百家云 点播回放 Core SDK": {
+  "provider": "武汉百家云科技有限公司",
+  "email_domain": "baijiayun.com",
+  "link_domains": [
+   "ohpm.openharmony.cn"
+  ]
+ },
+ "QPlayer2 播放器 SDK": {
+  "provider": "上海七牛信息技术有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "demovideos.qnsdk.com",
+   "developer.qiniu.io",
+   "sdk-release.qiniushawn.top"
+  ]
+ },
+ "腾讯云直播SDK": {
+  "provider": "腾讯云计算（北京）有限责任公司",
+  "email_domain": "",
+  "link_domains": [
+   "cloud.tencent.com"
+  ]
+ },
+ "保利威视频直播websdk": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "gitee.com",
+   "www.polyv.net"
+  ]
+ },
+ "263云播FineSDK": {
+  "provider": "北京二六三企业通信有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "drive.263.net",
+   "www.263live.net"
+  ]
+ },
+ "全时标准直播SDK": {
+  "provider": "全时云商务服务股份有限公司",
+  "email_domain": "quanshi.com",
+  "link_domains": [
+   "developer.quanshi.com",
+   "example.com"
+  ]
+ },
+ "腾讯云实时音视频 SDK": {
+  "provider": "腾讯云计算（北京）有限责任公司",
+  "email_domain": "",
+  "link_domains": [
+   "cloud.tencent.com"
+  ]
+ },
+ "花椒播放SDK": {
+  "provider": "北京密境和风科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "example.com"
+  ]
+ },
+ "263云播FastSDK": {
+  "provider": "北京二六三企业通信有限公司",
+  "email_domain": "net263.com",
+  "link_domains": [
+   "developer.263.net",
+   "simupdate.263.net"
+  ]
+ },
+ "百家云实时音视频 SDK": {
+  "provider": "百家云网科技有限公司",
+  "email_domain": "baijiayun.com",
+  "link_domains": [
+   "**",
+   "auth",
+   "developerhu|weicom",
+   "docs.baijiayun.com",
+   "git2.baijiashilian.com",
+   "www.baijiayun.com"
+  ]
+ },
+ "AnyChat SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "bbs.anychat.cn",
+   "sdk.anychat.cn",
+   "www.anychat.cn",
+   "www.bairuitech.com"
+  ]
+ },
+ "菊风智能双录 SDK": {
+  "provider": "宁波菊风系统软件有限公司",
+  "email_domain": "juphoon.com",
+  "link_domains": [
+   "192.168.xx.xx:18530",
+   "192.168.xx.xx:20000",
+   "rtc.juphoon.com"
+  ]
+ },
+ "菊风视频能力平台 SDK": {
+  "provider": "宁波菊风系统软件有限公司",
+  "email_domain": "juphoon.com",
+  "link_domains": [
+   "192.168.17.60:10042",
+   "rtc.juphoon.com"
+  ]
+ },
+ "声网音频SDK": {
+  "provider": "上海声网科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "doc.shengwang.cn"
+  ]
+ },
+ "声网视频SDK": {
+  "provider": "上海声网科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "doc.shengwang.cn"
+  ]
+ },
+ "融云 CallKit SDK（企业版）": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "docs.rongcloud.cn",
+   "xxx",
+   "xxx.png"
+  ]
+ },
+ "AnyChat智能双录SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.anychat.cn",
+   "www.bairuitech.com"
+  ]
+ },
+ "阿里云实时音视频ARTC": {
+  "provider": "阿里云计算有限公司",
+  "email_domain": "service.aliyun.com",
+  "link_domains": [
+   "maven.aliyun.com"
+  ]
+ },
+ "融云 CallLib SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "docs.rongcloud.cn"
+  ]
+ },
+ "VideoComm音视频SDK": {
+  "provider": "广州视通网络科技有限公司",
+  "email_domain": "videocomm.net",
+  "link_domains": []
+ },
+ "云屋RTC SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "sdk.cloudroom.com"
+  ]
+ },
+ "融云 CallKit SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "docs.rongcloud.cn",
+   "xxx",
+   "xxx.png"
+  ]
+ },
+ "小鱼易连音视频SDK": {
+  "provider": "北京小鱼易连科技有限公司",
+  "email_domain": "xylink.com",
+  "link_domains": [
+   "openapi.xylink.com"
+  ]
+ },
+ "新拓云 实时互动课堂 SDK": {
+  "provider": "新拓云（北京）科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "www.talk-cloud.com"
+  ]
+ },
+ "移动终端密码模块": {
+  "provider": "浙江省数字安全证书管理有限公司",
+  "email_domain": "zjca.com.cn",
+  "link_domains": []
+ },
+ "电子签名服务器软件": {
+  "provider": "北京天威诚信电子商务服务有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "192.168.100.68:10316"
+  ]
+ },
+ "mToken GM3000 可信密码模块": {
+  "provider": "北京世纪龙脉科技有限公司",
+  "email_domain": "longmai.com.cn",
+  "link_domains": [
+   "smart2000.taobao.com",
+   "www.longmai.com.cn"
+  ]
+ },
+ "爱加密移动应用威胁态势感知SDK": {
+  "provider": "北京智游网安科技有限公司",
+  "email_domain": "ijiami.cn",
+  "link_domains": [
+   "www.ijiami.cn"
+  ]
+ },
+ "DigitalKeylibrary": {
+  "provider": "北京信长城科技发展有限公司",
+  "email_domain": "i-wall.cn",
+  "link_domains": []
+ },
+ "网易易盾风控引擎": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "dun.163.com",
+   "xxx.xxx.xxx或xxx.xxx.xxx,非完"
+  ]
+ },
+ "亚信安全零信任SDK": {
+  "provider": "亚信科技（成都）有限公司",
+  "email_domain": "asiainfo-sec.com",
+  "link_domains": []
+ },
+ "北京一砂IIFAA安全相机SDK": {
+  "provider": "北京一砂信息技术有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "esandinfo.yuque.com"
+  ]
+ },
+ "云核密码键盘SDK": {
+  "provider": "北京云核网络技术有限公司",
+  "email_domain": "dcits.com",
+  "link_domains": []
+ },
+ "顶象无感智能验证码": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "xxx.xxx.xxx.xxx"
+  ]
+ },
+ "极验行为验证第四代": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "or",
+   "|https:"
+  ]
+ },
+ "指掌易移动安全MBS SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "172.16.30.36:9070”",
+   "172.16.30.37:9070"
+  ]
+ },
+ "指掌易应用数据安全SDK": {
+  "provider": "北京指掌易科技有限公司",
+  "email_domain": "zhizhangyi.com",
+  "link_domains": []
+ },
+ "比特授权云SDK（软授权）": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "account.bitanswer.cn",
+   "bit.bitanswer.cn"
+  ]
+ },
+ "安全沙箱SDK": {
+  "provider": "上海上讯信息技术股份有限公司",
+  "email_domain": "suninfo.com",
+  "link_domains": [
+   "ip:port"
+  ]
+ },
+ "同盾设备指纹FP": {
+  "provider": "同盾科技有限公司",
+  "email_domain": "trustdecision.com",
+  "link_domains": [
+   "ohpm.openharmony.cn",
+   "www.tongdun.cn"
+  ]
+ },
+ "安全网关SDK": {
+  "provider": "上海上讯信息技术股份有限公司",
+  "email_domain": "suninfo.com",
+  "link_domains": [
+   "ip:port"
+  ]
+ },
+ "云核客户端安全SDK": {
+  "provider": "北京云核网络技术有限公司",
+  "email_domain": "dcits.com",
+  "link_domains": []
+ },
+ "联软科技业务应用安全SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.leagsoft.com"
+  ]
+ },
+ "协同客户端密码模块SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.koal.com"
+  ]
+ },
+ "TrustAccess SDK": {
+  "provider": "北京启明星辰信息安全技术有限公司",
+  "email_domain": "venustech.com.cn",
+  "link_domains": []
+ },
+ "密鸽移动端SDK": {
+  "provider": "北京信长城科技发展有限公司",
+  "email_domain": "i-wall.cn",
+  "link_domains": []
+ },
+ "云核客户端国密SSL通讯组件SDK": {
+  "provider": "北京云核网络技术有限公司",
+  "email_domain": "dcits.com",
+  "link_domains": []
+ },
+ "云签名SDK": {
+  "provider": "河南省信息化集团有限公司",
+  "email_domain": "163.com",
+  "link_domains": []
+ },
+ "同盾虚假流量识别": {
+  "provider": "同盾科技有限公司",
+  "email_domain": "trustdecision.com",
+  "link_domains": [
+   "sg.apitd.net"
+  ]
+ },
+ "白盒安全SDK": {
+  "provider": "北京信长城科技发展有限公司",
+  "email_domain": "i-wall.cn",
+  "link_domains": []
+ },
+ "卓信SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "zxid.mobileservice.cn"
+  ]
+ },
+ "安胜API安全SDK": {
+  "provider": "北京安胜华信科技有限公司",
+  "email_domain": "asguarder.com",
+  "link_domains": []
+ },
+ "邦盛科技设备指纹Pro": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "ip:port"
+  ]
+ },
+ "顶象设备指纹": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "constid.dingxiang-inc.com"
+  ]
+ },
+ "数字联盟可信ID SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "hmuni.telecome.cn”"
+  ]
+ },
+ "芯盾时代终端威胁态势感知SDK": {
+  "provider": "北京芯盾时代科技有限公司",
+  "email_domain": "trusfort.com",
+  "link_domains": [
+   "192.168.1.170:8101",
+   "xxx.xxx.xxx.xxx"
+  ]
+ },
+ "AnyChat虚拟营业厅SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.anychat.cn",
+   "www.bairuitech.com"
+  ]
+ },
+ "AnyChat智能坐席SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.anychat.cn",
+   "www.bairuitech.com"
+  ]
+ },
+ "FreeLink 音视频 SDK": {
+  "provider": "易谷网络科技股份有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "devcc.myegoo.com.cn",
+   "webrtc.myegoo.com.cn",
+   "xchat.myegoo.com.cn"
+  ]
+ },
+ "一洽访客端 SDK": {
+  "provider": "深圳市虹红科技有限公司",
+  "email_domain": "rainbowred.com",
+  "link_domains": [
+   "demo.echatsoft.com",
+   "e.echatsoft.com**",
+   "fr.echatsoft.com**",
+   "id.echatsoft.com**",
+   "m.echatsoft.com**",
+   "qnfile.echatsoft.com",
+   "vfile.rainbowred.com",
+   "www.echatsoft.com",
+   "xx.echatsoft.com**"
+  ]
+ },
+ "TiCloud RTC": {
+  "provider": "北京天润融通科技股份有限公司",
+  "email_domain": "live800.com",
+  "link_domains": [
+   "github.com",
+   "mvnrepo.jiagouyun.com",
+   "www.jitpack.io"
+  ]
+ },
+ "智齿客服 SDK": {
+  "provider": "北京智齿博创科技有限公司",
+  "email_domain": "zhichi.com",
+  "link_domains": [
+   "img.sobot.com",
+   "img0.baidu.com",
+   "img3.sobot.com",
+   "p3-pc.douyinpic.com",
+   "www.baidu.com",
+   "www.sobot.com",
+   "www.soboten.com",
+   "www.zhichi.com"
+  ]
+ },
+ "速启鸿蒙云化SDK": {
+  "provider": "广州速启科技有限责任公司",
+  "email_domain": "suqi.tech",
+  "link_domains": [
+   "suqi.tech"
+  ]
+ },
+ "全时云会议SDK": {
+  "provider": "全时云商务服务股份有限公司",
+  "email_domain": "quanshi.com",
+  "link_domains": [
+   "developer.quanshi.com",
+   "n.qsh1.cn",
+   "newcas.quanshi.com"
+  ]
+ },
+ "小鱼易连会议SDK": {
+  "provider": "北京小鱼易连科技有限公司",
+  "email_domain": "xylink.com",
+  "link_domains": [
+   "openapi.xylink.com"
+  ]
+ },
+ "和缓视频医生": {
+  "provider": "北京和缓医疗科技有限公司",
+  "email_domain": "hh-medic.com",
+  "link_domains": []
+ },
+ "聚典数据开放平台": {
+  "provider": "上海辞书出版社有限公司",
+  "email_domain": "126.com",
+  "link_domains": [
+   "docs.jdapi.com",
+   "www.jdapi.com"
+  ]
+ },
+ "思迪信息证券开户SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "operation.thinkive.com:18090",
+   "www.xxx.com"
+  ]
+ },
+ "思迪信息理财商城SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.xxx.xx",
+   "xx.xx.xx"
+  ]
+ },
+ "财人汇sdk": {
+  "provider": "杭州财人汇网络股份有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "192.168.9.14:9090",
+   "hl.sltest.cairenhui.com"
+  ]
+ },
+ "微模式财富自助双录SDK": {
+  "provider": "广东微模式软件股份有限公司",
+  "email_domain": "micropattern.com",
+  "link_domains": []
+ },
+ "AnyChat智能开户SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.anychat.cn",
+   "www.bairuitech.com"
+  ]
+ },
+ "微模式远程双录SDK": {
+  "provider": "广东微模式软件股份有限公司",
+  "email_domain": "micropattern.com",
+  "link_domains": []
+ },
+ "TradPlus 聚合广告SDK": {
+  "provider": "上海世全网络科技有限公司",
+  "email_domain": "tradplus.com",
+  "link_domains": [
+   "artifact.bytedance.com",
+   "ohpm.openharmony.cn",
+   "ohpm.sigmob.com"
+  ]
+ },
+ "Sigmob广告SDK": {
+  "provider": "北京创智汇聚科技股份有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "ohpm.sigmob.com"
+  ]
+ },
+ "快手联盟广告SDK": {
+  "provider": "北京快手广告有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "your_callback_url",
+   "your_callback_url”"
+  ]
+ },
+ "ToBid聚合广告SDK": {
+  "provider": "北京创致科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "dash.sigmob.com"
+  ]
+ },
+ "美数聚合广告SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "gitee.com"
+  ]
+ },
+ "Mediatom": {
+  "provider": "北京前呈无限科技有限公司",
+  "email_domain": "admergex.com",
+  "link_domains": [
+   "ad.oceanengine.com",
+   "dev.mintegral.com",
+   "developer.apple.com",
+   "developers.adnet.qq.com",
+   "e.qq.com",
+   "openapi.mediatom.cn",
+   "support.sigmob.com",
+   "u.kuaishou.com",
+   "union.baidu.com",
+   "vungle.com",
+   "www.csjplatform.com",
+   "www.mediatom.cn",
+   "yingxiao.baidu.com"
+  ]
+ },
+ "天目广告 SDK": {
+  "provider": "杭州艾狄墨搏信息服务有限公司",
+  "email_domain": "admobile.top",
+  "link_domains": []
+ },
+ "天璇广告SDK": {
+  "provider": "上海优比客思科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "ubixai.com"
+  ]
+ },
+ "Taku 聚合广告SDK": {
+  "provider": "广州塔酷信息科技有限公司",
+  "email_domain": "takuad.com",
+  "link_domains": []
+ },
+ "基调听云-用户体验监控SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "example.com"
+  ]
+ },
+ "博睿数据应用可观测性能监控SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.bonree.com"
+  ]
+ },
+ "宝兰德⼀体化运⾏⽀撑平台移动应⽤监控SDK": {
+  "provider": "北京宝兰德软件股份有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "xxxxxxxxxxx"
+  ]
+ },
+ "腾讯云终端性能监控": {
+  "provider": "腾讯云计算（北京）有限责任公司",
+  "email_domain": "qq.com",
+  "link_domains": [
+   "app.rumt-zh.com",
+   "ohpm.openharmony.cn"
+  ]
+ },
+ "腾讯Bugly专业版SDK": {
+  "provider": "深圳市腾讯计算机系统有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "bugly.tds.qq.com",
+   "ohpm.openharmony.cn"
+  ]
+ },
+ "阿里云用户体验监控SDK": {
+  "provider": "阿里云计算有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "ohpm.openharmony.cn"
+  ]
+ },
+ "友盟应用性能监控（U-APM）SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "apm.umeng.com",
+   "developer.umeng.com"
+  ]
+ },
+ "申朴信息APM-SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "gitee.com"
+  ]
+ },
+ "个推消息推送SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.test.com:"
+  ]
+ },
+ "友盟消息推送（U-Push）SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "developer.umeng.com"
+  ]
+ },
+ "友盟推送基础包": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "developer.umeng.com",
+   "upush.umeng.com"
+  ]
+ },
+ "尚云互联 CS2 AiPN SDK": {
+  "provider": "深圳市尚云互联技术有限公司",
+  "email_domain": "cs2-network.com",
+  "link_domains": [
+   "www.cs2-network.cn",
+   "www.cs2-network.cn|"
+  ]
+ },
+ "cashier_alipay/cashiersdk": {
+  "provider": "支付宝（杭州）信息技术有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "alidocs.dingtalk.com",
+   "opendocs.alipay.com"
+  ]
+ },
+ "Ping++聚合支付 SDK": {
+  "provider": "上海简米网络科技有限公司",
+  "email_domain": "pingxx.com",
+  "link_domains": []
+ },
+ "乐变SDK": {
+  "provider": "上海乐变信息科技有限公司",
+  "email_domain": "lbstreaming.com",
+  "link_domains": []
+ },
+ "腾讯 Shiply SDK": {
+  "provider": "腾讯科技（深圳）有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "ohpm.openharmony.cn",
+   "shiply.tencent.com"
+  ]
+ },
+ "科蓝MADP移动开发平台SDK": {
+  "provider": "北京科蓝软件系统股份有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "www.b",
+   "www.baidu.com|闪屏图片点击事件跳转的外链url,例如:"
+  ]
+ },
+ "Kuikly": {
+  "provider": "腾讯科技（深圳）有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "github.com",
+   "kuikly.tds.qq.com",
+   "mirrors.tencent.com",
+   "registry.npmjs.org"
+  ]
+ },
+ "Hippy": {
+  "provider": "腾讯科技（深圳）有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "framework.tds.qq.com"
+  ]
+ },
+ "腾讯云游戏多媒体引擎 GME SDK": {
+  "provider": "腾讯云计算（北京）有限责任公司",
+  "email_domain": "",
+  "link_domains": [
+   "cloud.tencent.com"
+  ]
+ },
+ "ThinkingData Analytics SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "youserverurl.1.com",
+   "youserverurl.2.com"
+  ]
+ },
+ "QuickGame自发行SDK": {
+  "provider": "成都惜东网络科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "sdkapi.example.com",
+   "wiki.connect.qq.com"
+  ]
+ },
+ "友盟社会化分享（U-Share）SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "api.weibo.com",
+   "developer.umeng.com",
+   "devs.umeng.com",
+   "graph.qq.com",
+   "img.alicdn.com",
+   "video.umeng.com",
+   "www.umeng.com"
+  ]
+ },
+ "融云 IMLib SDK（企业版）": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.rongcloud.cn"
+  ]
+ },
+ "360智语即时通讯 CC SDK": {
+  "provider": "上海三六零智语科技有限公司",
+  "email_domain": "360.cn",
+  "link_domains": [
+   "www.xxx.com:8282"
+  ]
+ },
+ "融云 IMLib SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "docs.rongcloud.cn",
+   "www.rongcloud.cn"
+  ]
+ },
+ "环信即时通讯 IM SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.easemob.com"
+  ]
+ },
+ "微博分享登录SDK": {
+  "provider": "北京微梦创科网络技术有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "api.weibo.com"
+  ]
+ },
+ "个推一键认证": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.baidu.com"
+  ]
+ },
+ "创蓝闪验": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "123.com",
+   "127.0.0.1:8080",
+   "abc.com",
+   "github.com",
+   "www.abc.com",
+   "www.baidu.com",
+   "www.chuanglan.com",
+   "www.sina.com"
+  ]
+ },
+ "联通认证SDK": {
+  "provider": "联通在线信息科技有限公司",
+  "email_domain": "chinaunicom.cn",
+  "link_domains": [
+   "e.189.cn",
+   "kaidian.10010.com",
+   "msv6.wosms.cn",
+   "wap.cmpassport.com"
+  ]
+ },
+ "极光认证": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "opencloud.wostore.cn"
+  ]
+ },
+ "天翼账号认证SDK": {
+  "provider": "天翼数字生活科技有限公司",
+  "email_domain": "chinatelecom.cn",
+  "link_domains": [
+   "e.189.cn",
+   "id.189.cn",
+   "id.dlife.cn"
+  ]
+ },
+ "友盟智能认证（U-Verify）SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "ai.login.umeng.com",
+   "developer.umeng.com"
+  ]
+ },
+ "秒验一键登录": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.baidu.com"
+  ]
+ },
+ "AGC 认证服务SDK": {
+  "provider": "华为软件技术有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "xxx.png"
+  ]
+ },
+ "动码印章OCR": {
+  "provider": "矩网科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "developer.harmonyos.com"
+  ]
+ },
+ "石墨文档中台SDK": {
+  "provider": "武汉初心科技有限公司",
+  "email_domain": "shimo.im",
+  "link_domains": [
+   "open.shimo.im"
+  ]
+ },
+ "浩辰CAD看图王企业SDK": {
+  "provider": "苏州浩辰软件股份有限公司",
+  "email_domain": "gstarcad.com",
+  "link_domains": []
+ },
+ "福昕 PDF SDK": {
+  "provider": "福建福昕软件开发股份有限公司",
+  "email_domain": "foxitsoftware.cn",
+  "link_domains": [
+   "developers.foxitsoftware.cn"
+  ]
+ },
+ "点聚OFD-SDK": {
+  "provider": "北京点聚信息技术有限公司",
+  "email_domain": "yonyou.com",
+  "link_domains": [
+   "auth.dianju.cn"
+  ]
+ },
+ "汉王手写识别SDK": {
+  "provider": "汉王科技股份有限公司",
+  "email_domain": "hanwang.com.cn",
+  "link_domains": []
+ },
+ "友盟common SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "developer.umeng.com",
+   "mobile.umeng.com",
+   "www.umeng.com"
+  ]
+ },
+ "诸葛io": {
+  "provider": "北京诸葛云游科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "su.zhugeio.com",
+   "tp4.sinaimg.cn"
+  ]
+ },
+ "友盟统计分析（U-APP）SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "developer.umeng.com"
+  ]
+ },
+ "热力引擎 SDK": {
+  "provider": "汇量云（北京）科技有限公司",
+  "email_domain": "solar-engine.com",
+  "link_domains": [
+   "help.solar-engine.com",
+   "www.solar-engine.com"
+  ]
+ },
+ "神策分析 SDK": {
+  "provider": "神策网络科技（北京）有限公司",
+  "email_domain": "sensorsdata.cn",
+  "link_domains": []
+ },
+ "mPaaS 埋点 SDK": {
+  "provider": "萨思数字科技（北京）有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "__bridge_loaded__",
+   "cn-hangzhou-mas-log.cloud.alipay.com"
+  ]
+ },
+ "GrowingIO Analytics SDK": {
+  "provider": "北京易数科技有限公司",
+  "email_domain": "startdt.com",
+  "link_domains": [
+   "napi.growingio.com|",
+   "www.example.com"
+  ]
+ },
+ "中焯行情SDK": {
+  "provider": "杭州中焯信息技术股份有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "100.1.1.1:22016",
+   "100.1.1.1:22016|",
+   "123.218.114.56:22016",
+   "www.szse.cn"
+  ]
+ },
+ "天明 SDK": {
+  "provider": "深圳数鉴科技有限公司",
+  "email_domain": "qq.com",
+  "link_domains": [
+   "localhost:8082"
+  ]
+ },
+ "引力引擎SDK": {
+  "provider": "成都引力引擎科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "doc.gravity-engine.com"
+  ]
+ },
+ "TopSecSdk": {
+  "provider": "北京天融信网络安全技术有限公司",
+  "email_domain": "topsec.com.cn",
+  "link_domains": []
+ },
+ "科蓝软件国密SSL通讯组件": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "test1.gmssl.cn"
+  ]
+ },
+ "敏应用安全隧道SDK": {
+  "provider": "北京德惠众合信息技术有限公司",
+  "email_domain": "dehuinet.com",
+  "link_domains": []
+ },
+ "联软科技零信任网络访问安全SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "www.leagsoft.com",
+   "www.xx.com:xxxx"
+  ]
+ },
+ "新华三准入MC SDK": {
+  "provider": "新华三技术有限公司北京研究所",
+  "email_domain": "h3c.com",
+  "link_domains": []
+ },
+ "鑫模态人脸活体检测SDK": {
+  "provider": "北京海鑫智圣技术有限公司",
+  "email_domain": "hisign.com.cn",
+  "link_domains": []
+ },
+ "基于人脸识别活体检测的身份认证系统": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "api-idn.megvii.com",
+   "api-sgp.megvii.com",
+   "api.megvii.com"
+  ]
+ },
+ "北京一砂 IIFAA免密认证 SDK": {
+  "provider": "北京一砂信息技术有限公司",
+  "email_domain": "esandinfo.com",
+  "link_domains": [
+   "dacms-drcn.security.dbankcloud.cn",
+   "esand-file-sharing.oss-cn-beijing.aliyuncs.com"
+  ]
+ },
+ "契约锁移动签章SDK": {
+  "provider": "上海亘岩网络科技有限公司",
+  "email_domain": "qiyuesuo.com",
+  "link_domains": []
+ },
+ "实证服务SDK": {
+  "provider": "",
+  "email_domain": "",
+  "link_domains": [
+   "developer.harmonyos.com"
+  ]
+ },
+ "POS电子签名": {
+  "provider": "北京国富安电子商务安全认证有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "your-api-endpoint.com"
+  ]
+ },
+ "医证宝SDK": {
+  "provider": "四川省数字证书认证管理中心有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "{ip:port}"
+  ]
+ },
+ "认证签名移动端模块": {
+  "provider": "北京数字认证股份有限公司",
+  "email_domain": "bjca.org.cn",
+  "link_domains": []
+ },
+ "中认移动认证SDK": {
+  "provider": "北京中认环宇信息安全技术有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "172.18.101.89:10042",
+   "www.cqcca.com"
+  ]
+ },
+ "移动智能终端安全密码模块": {
+  "provider": "北京安软天地科技有限公司",
+  "email_domain": "scanywhere.com",
+  "link_domains": [
+   "your.server.com"
+  ]
+ },
+ "百度智能云人脸实名认证SDK": {
+  "provider": "北京百度网讯科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "ai.baidu",
+   "ai.baidu.c",
+   "aip.baidubce.com",
+   "bj.bcebos.com",
+   "brain.baidu.com"
+  ]
+ },
+ "SHECA数字证书SDK": {
+  "provider": "上海市数字证书认证中心有限公司",
+  "email_domain": "sheca.com",
+  "link_domains": []
+ },
+ "薄膜盾SDK": {
+  "provider": "上海方付通科技服务股份有限公司",
+  "email_domain": "f-road.com.cn",
+  "link_domains": []
+ },
+ "协同签名移动端SDK": {
+  "provider": "北京数字认证股份有限公司",
+  "email_domain": "bjca.org.cn",
+  "link_domains": []
+ },
+ "实人认证SDK": {
+  "provider": "上海创蓝云智信息科技股份有限公司",
+  "email_domain": "253.com",
+  "link_domains": [
+   "doc.chuanglan.com"
+  ]
+ },
+ "手写信息数字签名移动端SDK": {
+  "provider": "北京数字认证股份有限公司",
+  "email_domain": "bjca.org.cn",
+  "link_domains": [
+   "223.70.139.221:11204"
+  ]
+ },
+ "BJCast SDK（必捷无线投屏）": {
+  "provider": "苏州必捷网络有限公司",
+  "email_domain": "bijienetworks.com",
+  "link_domains": [
+   "www.bijienetworks.com"
+  ]
+ },
+ "契约锁物理用印SDK": {
+  "provider": "上海亘岩网络科技有限公司",
+  "email_domain": "qiyuesuo.com",
+  "link_domains": [
+   "app201.qiyuesuo.net"
+  ]
+ },
+ "恬家红外码库SDK": {
+  "provider": "恬家（上海）信息科技有限公司",
+  "email_domain": "tiqiaamail.com",
+  "link_domains": [
+   "developer.tiqiaa.com"
+  ]
+ },
+ "TTLock SDK": {
+  "provider": "杭州赛脑智能科技股份有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "your-open-api-host"
+  ]
+ },
+ "LPAPI-德佟标签打印SDK": {
+  "provider": "上海玄码网络科技有限公司",
+  "email_domain": "dothantech.com",
+  "link_domains": []
+ },
+ "乐播投屏SDK": {
+  "provider": "深圳乐播科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "cloud.lebo.cn"
+  ]
+ },
+ "鹤梦云SDK": {
+  "provider": "南京鹤梦信息技术有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "websvr.smartcloudcon.com",
+   "www.smartcloudcon.com"
+  ]
+ },
+ "跨平台热敏打印机 SDK": {
+  "provider": "厦门爱印科技有限公司",
+  "email_domain": "aiyin.com",
+  "link_domains": [
+   "example.com",
+   "github.com",
+   "ohpm.openharmony.cn",
+   "shop.example.com"
+  ]
+ },
+ "尚云互联 CS2 P2P SDK": {
+  "provider": "深圳市尚云互联技术有限公司",
+  "email_domain": "cs2-network.com",
+  "link_domains": []
+ },
+ "华大智宝蓝牙Key SDK": {
+  "provider": "北京华大智宝电子系统有限公司",
+  "email_domain": "bhz.com.cn",
+  "link_domains": []
+ },
+ "文鼎创蓝牙Key SDK": {
+  "provider": "深圳市文鼎创数据科技有限公司",
+  "email_domain": "excelsecu.com",
+  "link_domains": []
+ },
+ "蓝牙型智能密码钥匙SDK": {
+  "provider": "神州融安科技（北京）有限公司",
+  "email_domain": "ronganchina.cn",
+  "link_domains": []
+ },
+ "PDBox SDK": {
+  "provider": "国开鸿（深圳）科技有限公司",
+  "email_domain": "",
+  "link_domains": [
+   "gkhos.com:8809",
+   "ohpm.openharmony.cn"
+  ]
+ }
+}

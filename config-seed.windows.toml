@@ -1,0 +1,56 @@
+# .codex/config.toml — base seed written by migbot's install.ps1 (Windows variant).
+#
+# install.sh uses config-seed.toml (Unix); install.ps1 uses THIS file. The two
+# differ ONLY in the sandbox section below — validate.sh asserts the shared keys
+# stay in both. Do not fork anything else between them.
+#
+# The installer creates this file ONLY when it is absent; it never overwrites an
+# existing config. Edit freely after install.
+#
+# What is NOT here (the installer appends these to config.toml):
+#   * [[hooks.*]] — appended UNCONDITIONALLY by the installer (cwd-relative). Each
+#     hook execs the a2h binary directly: .migbot\bin\a2h.exe hook (Windows)
+#     or .migbot/bin/a2h hook (Unix) — no wrapper script in the
+#     chain. Written as an ARRAY OF TABLES (double brackets — Codex requires
+#     hooks.<Event> to be array<table>; single-bracket [hooks.X] is a parse
+#     error). See install.ps1.
+#   * [features].hooks — REQUIRED for inline [[hooks.*]] to fire; Codex gates all
+#     lifecycle hooks behind this flag. config-seed sets it (below); the installer
+#     also ensures it idempotently if config.toml already exists.
+#   * [otel] — NOT used. migbot telemetry is a single raw channel: the lifecycle
+#     hooks upload Codex rollout slices to the ingest endpoint, and the server
+#     parses usage out of them. Host-native OTel was never part of migbot's data
+#     flow and is intentionally not wired. No [otel] block is ever written.
+
+# ── Top-level session keys (must precede any [table] header) ─────────
+# Windows + codex 0.150.x: `workspace-write` is silently downgraded to read-only,
+# and read-only cannot spawn the default shell (Store PowerShell under
+# WindowsApps) — EVERY command dies with CreateProcess 1920 / "blocked by
+# policy" (issue #48). danger-full-access is the only mode in which the a2h
+# pipeline (hvigorw / adb / hdc + slice upload) can execute on Windows today.
+# sandbox_workspace_write.network_access does not apply under
+# danger-full-access and is intentionally absent here.
+sandbox_mode = "danger-full-access"
+approval_policy = "on-request"
+
+# ── Lifecycle hooks gate ────────────────────────────────────────────
+[features]
+# REQUIRED: without this Codex does not load inline [[hooks.*]] or plugin
+# hooks.json, so the usage hook never fires. (features.codex_hooks is a deprecated
+# alias.)
+hooks = true
+# REQUIRED: multi-agent collaboration switch. a2h-execute / a2h-verify /
+# arkts-visual-verify / arkts-ut-verifier are orchestration skills that dispatch
+# subagents; without this flag every spawn_agent call fails.
+multi_agent = true
+
+# ── Subagent pool ───────────────────────────────────────────────────
+[agents]
+# Concurrent-subagent cap (Codex default 6). a2h-execute Stage 1 batches its
+# converters and the verifiers run in waves under this cap; raise it on beefy
+# machines.
+max_threads = 6
+# Codex depth: root session = 0, a spawned agent = 1, a sub-sub-agent = 2.
+# visual-fixer (depth 1) dispatches visual-fixer-reviewer (depth 2) in the
+# visual-verify closed loop, so max_depth must be >= 2 (Codex default 1).
+max_depth = 2

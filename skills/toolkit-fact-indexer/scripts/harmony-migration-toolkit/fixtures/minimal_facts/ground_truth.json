@@ -1,0 +1,103 @@
+{
+  "static_elements": [
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_main.xml",
+      "layout": "activity_main",
+      "tag": "TextView",
+      "id": "hello",
+      "text": "Hello",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_main.xml",
+      "layout": "activity_main",
+      "tag": "FrameLayout",
+      "id": "fragment_container",
+      "text": "",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_main.xml",
+      "layout": "activity_main",
+      "tag": "Button",
+      "id": "btn_settings",
+      "text": "Settings",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": true,
+      "behaviors": [
+        {
+          "event": "click",
+          "method": "setOnClickListener",
+          "file": "app\\src\\main\\java\\com\\verifyfix\\minimal\\MainActivity.kt",
+          "line": 21,
+          "enclosing_fn": "override fun onCreate(savedInstanceState: Bundle?) {"
+        }
+      ]
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_settings.xml",
+      "layout": "activity_settings",
+      "tag": "TextView",
+      "id": "settings_header",
+      "text": "Settings Screen",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\fragment_settings.xml",
+      "layout": "fragment_settings",
+      "tag": "TextView",
+      "id": "settings_title",
+      "text": "Settings",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    }
+  ],
+  "dynamic_gap": [
+    {
+      "source": "inflate_layout",
+      "layout": "fragment_settings",
+      "binding_class": "",
+      "enclosing_fn": "override fun onCreateView(",
+      "file": "app\\src\\main\\java\\com\\verifyfix\\minimal\\SettingsFragment.kt",
+      "line": 13,
+      "in_static_xml": true
+    }
+  ],
+  "non_ui_bindings": [],
+  "unmatched": [],
+  "coverage_stats": {
+    "xml_elements_total": 5,
+    "xml_interactive": 1,
+    "xml_with_behavior_bound": 1,
+    "xml_interactive_or_bound": 1,
+    "xml_conditional_visibility": 0,
+    "dynamic_gap_total": 1,
+    "dynamic_gap_pure_new": 0,
+    "data_driven_ui": 0,
+    "non_ui_bindings": 0,
+    "unmatched": 0
+  }
+}

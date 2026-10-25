@@ -1,0 +1,54 @@
+{
+  "scope": "Internal compiled-engine compatibility; public workflow uses native iOS names.",
+  "public": {
+    "source_config": "ios.source_root",
+    "source_anchors": "source_anchors",
+    "slice_anchor_reference": "source_anchors_ref",
+    "feature_audit_root_option": "--ios-root",
+    "ui_graph_identity": "ios_id"
+  },
+  "retained_internal_protocols": [
+    {
+      "name": "--android-root",
+      "reason": "Hidden import alias and original compiled oracle CLI. The native production help exposes --ios-root."
+    },
+    {
+      "name": "android_source_anchors / android_source_anchors_ref",
+      "reason": "Old-plan import parser and original engine test fixtures retain compatibility. Native public templates and authoring use source_anchors / source_anchors_ref; current profile, lint and index accept them directly."
+    },
+    {
+      "name": "config.android",
+      "reason": "Read-only legacy configuration import and mismatch detection. New native initialization does not create this key."
+    },
+    {
+      "name": "Original compiled binaries and original toolkit implementation identifiers",
+      "reason": "Binary bytes, dispatch IDs, SDK namespaces and original error/rule IDs are preserved. They are internal components, not native source-discovery entry points. Their strings have not been rewritten, encoded or hidden."
+    },
+    {
+      "name": "Android in the original NON_BIZ exclusion data and paired oracle tests",
+      "reason": "Original matching data and test labels retain their meaning so the behavior comparison remains valid."
+    },
+    {
+      "name": "android_id (read-only UI graph engines)",
+      "reason": "Only a temporary four-file view maps the native identity key at the original validator/query boundary. Formal graph and returned JSON use ios_id. Raw original output and both file hash sets are retained. No binary bytes are changed."
+    },
+    {
+      "name": "Original icon source-density parameters",
+      "reason": "Not a native Asset Catalog input API. Pipeline launcher uses original audit/dry-run to reject would-change sets before the original engine, then checks that it did not mutate target code. Explicit source-backed plans may use the original icon_fix before the loop."
+    },
+    {
+      "name": "capture-android-traffic.md",
+      "reason": "Exact string retained by immutable Windows/macOS network helper binaries and a proxy source comment. Safe internal redirect only; public references use capture-ios-traffic.md. Byte search proves the references, not that a process opens the Markdown at runtime; that runtime read has not been proven. No old source commands remain in the redirect."
+    },
+    {
+      "name": "activity / activity_name / --activity / adb_serial / launcher_activity / resumed / historical name-normalization suffixes",
+      "reason": "Normalized input/profile/import slots and original rule data retain exact spellings. Values are actual native identities, not source SDK APIs. Source device/replay support must be evidenced separately; current unadapted source-device paths are DEFERRED, not successful native verification."
+    }
+  ],
+  "validation": "Public workflow Markdown/TOML/YAML is checked separately from internal code, test fixtures and opaque binary content. This is not an assertion that every byte in the package lacks legacy platform strings.",
+  "known_limits": [
+    "VERIFY router-verify native source scanner is not completed; not invoked or used as a prerequisite by this INIT/SPEC/PLAN/EXECUTE trial.",
+    "Legacy optional source scanners are not evidence of native coverage. Native source phases use Source, native graph and semantic analysis, not empty foreign scans.",
+    "VERIFY/scenario/ad source-device drivers are not claimed native merely by revised instructions. Require an actually available native driver and real replay evidence; otherwise use existing DEFERRED semantics. Vendor snapshots and optional legacy source scanners were not made into Swift analyzers by text changes."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "version_command": ["/usr/bin/clang", "--version"],
+  "timeout_seconds": 120,
+  "translation_units": [
+    {
+      "file": "Counter.m",
+      "arguments": ["/usr/bin/clang", "-x", "objective-c", "-fsyntax-only", "-Xclang", "-ast-dump=json", "{file}"]
+    }
+  ]
+}

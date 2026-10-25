@@ -1,0 +1,55 @@
+{
+  "_doc": "LLM 定点补长尾的结构化裁决（route-verify P1, 设计 §2.4）。只读 llm_worklist.json 的 45 个 flag 方法体得出，不读全仓。键 = '类.方法'。nav_kind: page_nav|dialog|auto_dialog|ui_state|external_intent|launcher_def|back|dead_code。keep=是否进运行时路由验证集。",
+  "target_rules": {
+    "AppLoadDialog": {"nav_kind": "ui_state", "keep": false, "note": "全局 loading 旋钮，observer 控制 show/close，非导航"},
+    "PPTCreatingDialog": {"nav_kind": "ui_state", "keep": false, "note": "生成进度框，程序化"}
+  },
+  "method_verdicts": {
+    "AppContant.callPhone": {"nav_kind": "external_intent", "keep": false, "target": "EXTERNAL_DIAL", "note": "Intent(ACTION_DIAL) tel: 拨号，非App内跳转"},
+    "CustomerServiceDialog.call": {"nav_kind": "external_intent", "keep": false, "target": "EXTERNAL_DIAL", "note": "客服拨号"},
+    "CustomerServiceWebActivity.initWebSetting": {"nav_kind": "external_intent", "keep": false, "target": "EXTERNAL_BROWSER", "note": "WebView shouldOverrideUrl → Intent(ACTION_VIEW) 外部浏览器"},
+    "WebViewActivity.initWebSetting": {"nav_kind": "external_intent", "keep": false, "target": "EXTERNAL_BROWSER", "note": "同上"},
+    "HomeViewModel.checkUpate": {"nav_kind": "external_intent", "keep": false, "target": "EXTERNAL_BROWSER", "note": "检查更新打开下载 URL"},
+
+    "MemberCenterActivitiy.openMemberCenter": {"nav_kind": "launcher_def", "keep": false, "target": "MemberCenterActivitiy", "note": "companion 启动器：startActivity(getMemberCenterIntent()) 自跳；注释里的 VipFunctionInterceptDialog 是死代码"},
+    "HomeActivity.openHomePage": {"nav_kind": "launcher_def", "keep": false, "target": "HomeActivity", "note": "companion 启动器，getHomeIntent 自跳；并 co-launch MemberCenter(回退栈)"},
+
+    "PayAgreementDialog.gotoWeb": {"nav_kind": "page_nav", "keep": true, "target": "WebViewActivity", "trigger_by": "span", "trigger_value": "协议链接", "note": "支付协议弹窗内文本链接 → WebView"},
+    "CustomerServiceWebActivity.showPermissionDialog": {"nav_kind": "dialog", "keep": true, "target": "AppTipsDialog", "note": "权限说明弹窗，点击间接触发"},
+    "RefundProgressActivity.showPermissionDialog": {"nav_kind": "dialog", "keep": true, "target": "AppTipsDialog", "note": "权限弹窗，点击触发"},
+    "SplashActivity.gotoHome": {"nav_kind": "page_nav", "keep": true, "target": "GuideActivity", "trigger_by": "auto", "trigger_value": "splash_timeout", "note": "开屏自动跳转 Guide/Home(按 MMKV guide 标志)"},
+    "GuideInitFragment.goHomeActivity": {"nav_kind": "page_nav", "keep": true, "target": "HomeActivity", "trigger_by": "auto", "trigger_value": "guide_finish", "note": "引导完成 → Home"},
+
+    "RefundProgressActivity.showUpdateConfirmDialog": {"nav_kind": "dead_code", "keep": false, "note": "整段 // 注释，regex 误抽"},
+    "PPTFilePage.dowLoadPptFile": {"nav_kind": "dead_code", "keep": false, "note": "PPTCreatingDialog show 被注释"},
+
+    "VipBindAccountDialog.onClick": {"nav_kind": "page_nav", "keep": true, "target": "LoginActivity", "trigger_by": "id", "trigger_value": "tv_bind_now", "note": "R.id.tv_bind_now -> openLoginPage，真点击跳转"},
+    "VipFunctionInterceptDialog.onClick": {"nav_kind": "page_nav", "keep": true, "target": "MemberCenterActivitiy", "trigger_by": "id", "trigger_value": "tv_open_now", "note": "拦截弹窗去开通"},
+    "MemberCenterViewModel.createOrder": {"nav_kind": "page_nav", "keep": true, "target": "LoginActivity", "trigger_by": "guard", "trigger_value": "need_auth_before_pay", "note": "下单前未绑定 → 跳登录(条件守卫)"},
+
+    "HomeDocFragment.fileListPage": {"nav_kind": "page_nav", "keep": true, "target": "FileListPage", "note": "intra helper → FileListPage"},
+    "HomeFragment.fileListPage": {"nav_kind": "page_nav", "keep": true, "target": "FileListPage", "note": "同上"},
+    "FileUploadPage.fileListPage": {"nav_kind": "page_nav", "keep": true, "target": "FileListPage", "note": "同上"},
+
+    "HomeActivity.showUserTip": {"nav_kind": "auto_dialog", "keep": true, "target": "AppTipsDialog", "trigger_by": "auto", "note": "首页加载提示，程序化但真实弹窗"},
+    "HomeActivity.showLimitDialog": {"nav_kind": "auto_dialog", "keep": true, "target": "LimitedGiftDialog", "trigger_by": "auto", "note": "限时礼包，程序化弹"},
+    "HomeActivity.showCampaignDialog": {"nav_kind": "auto_dialog", "keep": true, "target": "CampaignDialog", "trigger_by": "auto", "note": "活动弹窗，程序化弹"},
+    "HomeActivity.initObserver": {"nav_kind": "auto_dialog", "keep": true, "target": "VipBindAccountDialog", "trigger_by": "auto", "note": "登录后绑定提醒弹窗(observer 触发)；同方法的 AppLoadDialog 由 target_rules 归 ui_state"},
+    "PPTFilePage.onBackPressed": {"nav_kind": "back", "keep": true, "target": "HomeActivity", "trigger_by": "back", "note": "返回键 → Home"},
+
+    "MineActivity.<launcher>": {"nav_kind": "launcher_def", "keep": false, "target": "MineActivity", "note": "companion 自跳定义"},
+    "SearchPagePage.<launcher>": {"nav_kind": "launcher_def", "keep": false, "target": "SearchPagePage", "note": "getIntent 自跳"},
+    "HomeActivity.<launcher>": {"nav_kind": "launcher_def", "keep": false, "target": "HomeActivity", "note": "getHomeIntent 自跳"},
+    "ChoicePPTTemplatePage.choiceTemplatePage": {"nav_kind": "launcher_def", "keep": false, "target": "ChoicePPTTemplatePage", "note": "自跳启动器"},
+    "PPTFilePage.previewPPTFile": {"nav_kind": "launcher_def", "keep": false, "target": "PPTFilePage", "note": "自跳"},
+    "PPTTemplatePreviewPage.previewTemplate": {"nav_kind": "launcher_def", "keep": false, "target": "PPTTemplatePreviewPage", "note": "自跳"},
+    "CreateOutLinePage.createOutlinePage": {"nav_kind": "launcher_def_guarded", "keep": false, "target": "CreateOutLinePage", "guards": ["LoginActivity:not_login", "MemberCenterActivitiy:not_vip"], "note": "自跳启动器，内含登录/会员守卫多目标"},
+
+    "HomeActivity.initView": {"nav_kind": "lifecycle", "keep": false, "target": "GuideActivity", "note": "首启判断是否进引导(lifecycle)"}
+  },
+  "default_for_unlisted": {
+    "AppLoadDialog_target": "ui_state",
+    "initObserver_or_lifecycle_with_dialog": "ui_state",
+    "else": "keep_as_script"
+  }
+}

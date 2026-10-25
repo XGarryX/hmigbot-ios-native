@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyfix.local/schemas/agent_bundle.v1.schema.json",
+  "title": "agent_bundle_v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "bundle_kind",
+    "meta",
+    "agent_hints",
+    "summary",
+    "outline",
+    "intermediate_manifest"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "bundle_kind": { "const": "harmony_migration_agent_bundle" },
+    "meta": { "type": "object", "additionalProperties": true },
+    "agent_hints": { "type": "object", "additionalProperties": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "required": ["feature_count", "screen_count", "edge_count", "intermediate_artifact_count"],
+      "properties": {
+        "feature_count": { "type": "integer", "minimum": 0 },
+        "screen_count": { "type": "integer", "minimum": 0 },
+        "edge_count": { "type": "integer", "minimum": 0 },
+        "intermediate_artifact_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "outline": {
+      "type": "object",
+      "required": ["app", "features", "migration", "verification", "taxonomy", "artifacts"],
+      "properties": {
+        "app": { "type": "object", "additionalProperties": true },
+        "features": { "type": "array" },
+        "migration": { "type": "object", "additionalProperties": true },
+        "verification": { "type": "object", "additionalProperties": true },
+        "taxonomy": { "type": "object", "additionalProperties": true },
+        "artifacts": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    },
+    "intermediate_manifest": {
+      "type": "object",
+      "required": ["root", "artifact_count", "artifacts"],
+      "properties": {
+        "root": { "type": "string" },
+        "artifact_count": { "type": "integer", "minimum": 0 },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["bytes"],
+            "properties": {
+              "bytes": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

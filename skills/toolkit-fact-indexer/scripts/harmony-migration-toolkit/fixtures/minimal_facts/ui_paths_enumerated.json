@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "start_class": "MainActivity",
+  "max_depth": 8,
+  "max_paths_cap": 800,
+  "paths": [
+    {
+      "path_display": "Main > L2:Localintent:L32 > Settings",
+      "depth": 2,
+      "leaf_class": "SettingsActivity"
+    }
+  ],
+  "path_count": 1
+}

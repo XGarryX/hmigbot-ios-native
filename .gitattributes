@@ -1,0 +1,34 @@
+# Line-ending policy. Pin text to LF in the repo; only Windows-native scripts
+# keep CRLF. A stray CR breaks `#!/bin/bash` shebangs on Linux/macOS.
+* text=auto eol=lf
+
+*.sh       text eol=lf
+*.bash     text eol=lf
+install.sh text eol=lf
+
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Binary assets — never touch line endings.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.gz    binary
+*.zip   binary
+*.tar   binary
+*.exe   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+
+# Pre-built runtime binaries (linux/darwin ship without an extension) — mark
+# explicitly so Git never line-ending-normalises machine code. Arch-qualified
+# so they don't match the a2h-* bash wrappers (LF text).
+bin/a2h-linux-*    binary
+bin/a2h-darwin-*   binary
+bin/a2h-windows-*  binary

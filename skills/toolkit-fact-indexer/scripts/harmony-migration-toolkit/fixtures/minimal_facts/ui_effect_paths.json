@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "nav_pipeline_version": "1.0",
+  "bytecode_fallback": {
+    "mode": "evidence_only",
+    "note": "Bytecode may confirm constants/callbacks, but report labels require source or string resources."
+  },
+  "path_count": 0,
+  "stats": {
+    "by_effect_kind": {}
+  },
+  "paths": []
+}

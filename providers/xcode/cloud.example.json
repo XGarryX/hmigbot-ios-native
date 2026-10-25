@@ -1,0 +1,7 @@
+{
+  "project": "NativeCounter.xcodeproj",
+  "scheme": "NativeCounter",
+  "configuration": "Release",
+  "runner": "xcode-27",
+  "developer_dir": "/Applications/Xcode_27.app/Contents/Developer"
+}

@@ -1,0 +1,333 @@
+---
+name: a2h-verify
+description: 第四步：验证迁移产出。编译检查 + 静态分析 + 页面状态审计 + 功能验收 + 路由跳转验证 + 视觉对齐 + 单元/UI TDD + 风格合规。即使用户只说"验证"或"测试"，也应触发。
+metadata:
+  type: pipeline
+  domain: migration
+  tags:
+  - pipeline
+  - migration
+---
+> **⚠️ 用户契约（最高优先级）**：本 skill 每个 CHECK 必须严格顺序执行；不允许以"省时 / 省 token / 上下文长 / 预估收效低"等理由跳过或合并任一项。**CHECK-7/8/9/10 各自委托给独立的 verifier skill**（router / visual / ut / ui）；router-verify 的修复闭环、ut 和 ui 的修复循环都在它们自身的 SKILL 内部完成，a2h-verify 不再持有循环。
+
+# a2h-verify
+
+## 启动检查 — 待办 findings
+
+读 `spec/.a2h/open-findings.json`（不存在 = 首轮，直接开工）：
+
+| 情况 | 行动 |
+|---|---|
+| 有 `owner_stage: verify` 的条目 | 先处理这些，再做本轮正常工作；处理完重跑 `scripts/lint_verify_coverage.py` 确认消失 |
+| 有 `owner_stage` 属**上游阶段**且 `severity: blocking` 的条目 | 🔴 **拒绝开工**，列出条目并提示用户回到该阶段（a2h-spec / a2h-plan / a2h-execute） |
+| 条目标记 `escalate: true`（同一问题连续 3 轮） | 🔴 停止自动重试，按 a2h-spec `templates/decision-card.md` §连续未收敛 出决策卡 |
+| 本阶段 section 标记 `halted`（进度停滞 3 轮 / 累计 10 轮） | 🔴 **停止修复尝试**，按 decision-card §连续未收敛 出决策卡；用户裁决后 `--clear-halt <决策ID>` 解除，再继续 |
+| 无条目 | ✅ 正常开工 |
+
+路由不靠猜：每个 linter 比对两份产物，**哪一侧缺条目就由哪一侧负责**。责任无法机械判定时
+（典型：AC 按当前描述实现不了），用决策卡上报，由用户指定 owner——选项与 owner 的对应关系
+写死在卡里，避免推诿。
+
+**findings 只能由「原 linter 重跑后不再报」来关闭**，不能由任何一方声明「已修复」而关闭。
+
+> **存量/legacy spec 首轮提示**：报 `VERIFY.SPEC_INDEX_MISSING` 不是要求改写 spec——在 a2h-spec
+> 侧跑 `python3 <a2h-spec>/scripts/build_traceability_index.py --project-root <ROOT>` 即从现有
+> Markdown 秒级派生 index（零内容改动），重跑本 linter 即关闭。
+
+## 1. 定位
+
+Pipeline 层第四步，**统一验证编排**。聚合多种验证手段，给出一份结构化的通过/失败报告。
+
+```
+a2h-spec → a2h-plan → a2h-execute → a2h-verify（本 skill）
+                                        │
+                                        ├─ CHECK-1  全量编译修复
+                                        ├─ CHECK-2  静态分析
+                                        ├─ CHECK-3  占位符扫描
+                                        ├─ CHECK-4  App 身份校验
+                                        ├─ CHECK-5  页面状态审计
+                                        ├─ CHECK-6  功能验收（feature-index）
+                                        ├─ CHECK-7  路由跳转验证    → $arkts-router-verify（纯静态，内置修复闭环）
+                                        ├─ CHECK-8  视觉对齐         → $arkts-visual-verify
+                                        ├─ CHECK-9  单元 TDD 验证    → $arkts-ut-verifier   ⏸ **默认暂停**（2026-08-17，待该 verifier 优化后重启）
+                                        ├─ CHECK-10 UI TDD 验证      → $arkts-ui-verifier   ⏸ **默认暂停**（同上；恢复：A2H_VERIFY_ENABLE=CHECK-9,CHECK-10）
+                                        ├─ CHECK-11 风格合规
+                                        └─ 生成验证报告 + Retrospect 引导
+```
+
+**核心原则**：a2h-verify 是**验证编排层**，不实现修复逻辑、不持有循环。CHECK-7/8/9/10 各自委托给独立 verifier skill：router-verify（纯静态，自带"抽取→对账→agent 修复→复检"闭环）、ut/ui-verifier（自带 fix-loop，默认 `MODE=verify_fix`）、visual-verify（只产 markdown）。CHECK-1~6 失败、以及 CHECK-8 的 CRASH/URL 功能性失败，回环到 a2h-execute（见 §5）；CHECK-8 的 ALIGN 纯视觉差异与 CHECK-11 风格合规为建议性，失败只记报告。
+
+---
+
+## 1.1 执行铁律（无跳过原则）
+
+主对话执行 a2h-verify 时**禁止以"省时 / 省 token / 上下文长 / 预估收效低"等任何理由**跳过任一 CHECK 项。
+
+核心禁止项：
+1. **CHECK-1~11 任一项标 SKIP**——只允许各 CHECK 自身定义的 SKIP 触发条件
+2. **CHECK-7/8/9/10 委托后不读结果**——主线程必须读各 verifier 产出，把 PASS/FAIL 落到本 skill 报告
+3. **失败回环老路径提前 break**——"最多 3 轮"是硬上限不是建议
+
+router-verify 的修复闭环、ut/ui-verifier 内部的 fix-loop（轮数、收敛、stalled）由各自 SKILL 自管；a2h-verify 不干预其内部轮数。
+
+**详见 `references/execution-discipline.md`**。
+
+---
+
+## 2. 输入
+
+| 文件 | 用途 |
+|------|------|
+| `spec/baseline/ui-manifest.md` | 页面清单、优先级、confidence、页面状态 |
+| `spec/baseline/feature-index.md` | 功能总索引、V1/V2 分配、依赖图 |
+| `spec/baseline/plans/feature-plan.md` | 已执行的功能执行计划（L1 索引；逐 slice 账本在 `plans/slices/slice-NN-<fid>.md`） |
+| `spec/baseline/plans/ui-plan.md` | 已执行的 UI 转换计划 |
+| `spec/baseline/ui/page_NNNN.md` | 各页面详细 UI Spec |
+| `spec/baseline/features/F-xxx.md` | 各功能详细 Spec |
+| `spec/migration-report.md` | a2h-execute 执行报告 |
+| `spec/placeholder-registry.md` | 占位符注册表（如果存在） |
+| `entry/src/main/ets/**/*.ets` | 迁移产出代码 |
+| Android 源码仓路径（`--android-root` / `ANDROID_ROOT`）| **CHECK-7 与 CHECK-10 共用**——CHECK-7 路由双端对账的 Android 一侧；CHECK-10 ui-verifier 的 Android oracle（事实抽取 + 响应契约基线，缺失会显著降级发现能力）。优先从 `migration-report.md` / `spec/baseline` 记录读，读不到则向用户索取。仍无 → CHECK-7 标 DEFERRED；CHECK-10 **派发前**先向用户确认是否以 `oracle=absent` 降级（ui-verifier 契约要求显式授权，避免流水线中途阻塞），授权则降级跑、拒绝则 CHECK-10 标 DEFERRED |
+
+如果 `spec/migration-report.md` 不存在，提示用户先执行 `a2h-execute`。
+
+---
+
+## 3. 验证清单
+
+按顺序执行，每项产出独立的 PASS/FAIL/SKIP/DEFERRED 状态。
+
+### 3.0 编译门禁（贯穿全流程，先于各 CHECK 的硬规则）
+
+编译能不能过，是设备验证与门控的地基，因此有两条强制规则：
+
+1. **编译短路**：CHECK-1 编译 FAIL 时，**本轮跳过设备三段 CHECK-8/9/10**（它们要 build+install HAP，编译不过只会空转撞错），直接进 §5 老路径修编译后重跑。CHECK-7 路由是纯静态、读源码，**不受影响照常跑**。若 §5 回环耗尽仍编不过，设备三段标 `DEFERRED（原因：编译未过）`。
+2. **终态编译复检**：CHECK-7 / 9 / 10 都会改源码，跑完后代码已不是 CHECK-1 当初校验的那份。**报告生成前必须重跑一次编译复检**，§6 门控的 "CHECK-1" 一律以**这次终态复检**为准，不沿用开头那次的旧结论（防"对账/测试闭环但最终语法不过"）。
+
+### 3a. CHECK-1 ~ CHECK-6
+
+| 检查项 | 简介 | 关键判定 |
+|--------|------|---------|
+| CHECK-1 全量编译修复 | 委托 `hmos-fix-build-errors` 最多 20 轮 → 失败升级到 `arkts-knowledge-verifier` | 编译通过 → PASS |
+| CHECK-2 静态分析 | grep 检查：`any`、废弃导入、SQL 拼接、`as`、`eval()`、aboutToAppear 参数 | ERROR 0 → PASS（WARN 不阻塞，附清单）|
+| CHECK-3 占位符扫描 | 结构化扫描 `placeholder-registry.md` + 兜底 grep TODO | pending=0 且无未注册项 → PASS |
+| CHECK-4 App 身份校验 | bundleName/vendor/versionName/app_name/图标/layered_image.json | 0 FAIL → PASS（WARN 不阻塞）|
+| CHECK-5 页面状态审计 | 按 P0/P1/P2 分组统计 status 字段 + .ets 文件存在性 | P0 100% converted/verified 且产物存在 → PASS（verified 由 §6.1 门控后回写）|
+| CHECK-6 功能验收 | 逐 F-xxx 读 `features/F-xxx.md` 验收标准 + 自动化检查 | V1 全 PASS → PASS |
+
+详见 `references/checks-1-to-6.md`。
+
+### 3b. CHECK-7 ~ CHECK-10：四段委托验证（router 静态 + 设备三段）
+
+> ⏸ **CHECK-9 / CHECK-10 当前默认暂停**（2026-08-17 决策：`arkts-ut-verifier` / `arkts-ui-verifier` 待优化后重启）。
+> 机械层由 `scripts/probe_devices.py` 的 `DEFAULT_PAUSED` 兜住——它会把这两项标成
+> `DEFERRED（默认暂停…）`，**主线程看到即不派发**，不 sleep、不装 HAP、不进 fix-loop。
+> 恢复只需 `A2H_VERIFY_ENABLE="CHECK-9,CHECK-10"`（或改 `DEFAULT_PAUSED`），下面的规约原样生效。
+> 暂停 ≠ 删除：仍以 DEFERRED 计入报告与门控标注（不阻塞），别把它写成 PASS/SKIPPED。
+
+四个 verifier 都委托独立 skill 自管循环。**CHECK-7 路由纯静态先跑**（修复会改源码，让设备验证跑在修过路由的代码上）；**CHECK-8/9/10 设备三段严格串行**，每个跑完 sleep 5（设备静默）。
+
+| 检查项 | 委托 | 内部循环 | 产物 | 关键判定 |
+|--------|------|---------|------|---------|
+| CHECK-7 路由跳转验证 | `$arkts-router-verify` | **自带修复闭环**（抽取→对账→agent 修复→复检收口） | `spec/verify/route/ROUTE_VERIFY_SUMMARY.md`、`fix_plan.json` | 无 reopened 且 `pushed_but_unregistered`=0 → PASS；拿不到 Android 源码仓 → DEFERRED |
+| CHECK-8 视觉对齐 | `$arkts-visual-verify` | 无（一次性截图对比） | `spec/fix/round-N/ui/{ALIGN,URL,CRASH}_*.md` | CRASH/URL=0 且 ALIGN=0 → PASS；仅 ALIGN → FAIL-visual（不门控）；CRASH/URL>0 → FAIL-functional（阻塞门控，进 §5 回环）；adb/hdc 任一不可用 → DEFERRED |
+| CHECK-9 单元 TDD ⏸暂停 | `$arkts-ut-verifier` | **自带 fix-loop**（默认 `MODE=verify_fix`）；**默认不派发**，probe_devices 标 `DEFERRED（默认暂停）` | `spec/verify/ut/round-N/`、`spec/test/ut-report.md`、`spec/verify/ut/round-{final}/final-summary.md` | final-summary 报全 GREEN → PASS |
+| CHECK-10 UI TDD ⏸暂停 | `$arkts-ui-verifier` | **自带 fix-loop**（默认 `MODE=verify_fix`）；**默认不派发**，同上 | `spec/verify/ui/round-N/`、`spec/test/ui-report.md`、`spec/verify/ui/round-{final}/final-summary.md` | final-summary 报全 GREEN → PASS |
+
+**执行约束**：
+- **CHECK-7 路由纯静态、不碰设备**：不依赖 hdc/adb，先于设备三段跑；它与设备三段之间无串行/sleep 约束
+- **设备三段的前置是"编译能过"**：CHECK-8/9/10 要 build+install HAP，因此 CHECK-1 终态编译 FAIL 时本轮不跑它们（见 §3.0 编译短路）；回环耗尽仍编不过则标 `DEFERRED（编译未过）`
+- **CHECK-8/9/10 设备三段必须串行**（visual → sleep 5 → ut → sleep 5 → ui），不得同一条消息派发（撞设备 IPC）；CHECK-9/10 暂停期间只跑 visual，不留 sleep 空转
+- a2h-verify 主线程只读各 verifier 退出后的 final-summary / report / SUMMARY，提取 PASS/FAIL/DEFERRED 落到本 skill 报告；每段退出后即读即落，不靠记忆/估计（四个 verifier 产物目录互相独立：route 在 `spec/verify/route/`、ut 在 `spec/verify/ut/`、ui 在 `spec/verify/ui/`、visual 在 `spec/fix/`，互不覆盖）
+- **不干预** router/ut/ui-verifier 内部轮数、不再派 a2h-fixer / a2h-diagnoser；这些由各 verifier 内部循环自管
+- 拿不到 Android 源码仓 → CHECK-7 标 DEFERRED；**adb 或 hdc 任一不可用 → CHECK-8 标 DEFERRED**（visual 需双端模拟器截图）；hdc 不可用 → CHECK-9/10 标 DEFERRED；**对应 verifier skill 未安装 → 该 CHECK 标 DEFERRED（原因：skill 未安装）**，没有任何"主线程 SKIP"（见 `references/orchestration.md` 处置表）
+
+详见 `references/check7-to-10.md`。
+
+### 3c. CHECK-11
+
+| 检查项 | 简介 | 关键判定 |
+|--------|------|---------|
+| CHECK-11 风格合规 | `style_set != none` 时加载对应 orchestrator skill 做反模式扫描 | 无 ERROR 违规 → PASS；`style_set=none` → SKIP |
+
+> 已删除的两项：**Spec 覆盖率**（UI 覆盖率与 CHECK-5、功能 V1 VERIFIED 率与 CHECK-6 重复）、**confidence 降级审查**（对 medium/low 页面的额外质量复查，与 CHECK-5 页面状态审计 + CHECK-3 占位符扫描重叠，且不在门控内）。两者均为非门控的建议性检查，删除以收敛流程。
+
+详见 `references/check11-style.md`。
+
+> CHECK-11 不纳入 V1 门控（§6），风格合规是建议性的。
+
+### 3d. Retrospect 引导（必选）
+
+验证报告生成后，自动输出引导信息：
+
+```
+全部通过 → "验证全部通过。建议执行 a2h-retrospect 提取本次迁移经验。"
+门控通过但有建议项失败（FAIL-visual / CHECK-11）→ "门控通过；存在 N 项建议性问题（视觉差异/风格），
+    可离线处理，不阻塞。建议执行 a2h-retrospect。"
+门控失败 → "存在门控失败项，请先处理（回环已跑满/或需人工介入）。处理完毕后建议执行 a2h-retrospect。"
+```
+
+### 3e. 生成统一验证报告
+
+汇总所有检查结果，写入 `spec/verify-report.md`。模板见 `references/verify-report-template.md`。
+
+---
+
+## 4. 验证报告
+
+存储路径：`spec/verify-report.md`。完整模板见 `references/verify-report-template.md`（含 CHECK-1~11 总览表 + 门控判定 + 各 CHECK 详细结果表）。
+
+---
+
+## 5. 验证失败回环（适用于 CHECK-1~6 + CHECK-8 的 CRASH/URL 功能性子类）
+
+- CHECK-7/9/10 失败由各自 verifier skill 内部处理（router 自带修复闭环，ut/ui 自带 fix-loop）。a2h-verify **不为这三项做老路径回环**。
+- CHECK-8 拆两级：**ALIGN 纯视觉差异**只记报告等离线消化（不回环）；**CRASH/URL（页面打不开/崩溃）是功能性失败**，视同 CHECK-1~6 进老路径（visual-verify 自身无循环，这类失败若不回环就无人修复）。
+- CHECK-11（风格合规）是建议性检查，**失败只记报告、不进老路径回环**（不为非门控项耗回环预算）。
+- CHECK-1~6 任一失败，或 CHECK-8 存在 CRASH/URL → 走老路径：从失败项提取修复任务 → 生成 `spec/plans/plan-fix-<timestamp>.md` → 委托 a2h-execute 执行 → 重新执行 a2h-verify（重验范围见 `references/failure-loop.md`「回环轮重验范围」，**不是简单地"只查之前失败的项"**——修复可能引入回归）。
+- 回环上限：最多 3 轮（硬上限）。
+
+详见 `references/failure-loop.md`。
+
+---
+
+## 6. 门控
+
+**V1 门控标准**：
+
+```
+门控判定:
+  ├─ CHECK-1 全量编译: MUST PASS（取 §3.0 终态编译复检结果，非开头那次）
+  ├─ CHECK-2 静态分析: ERROR 级 0 MUST PASS（WARN 不阻塞）
+  ├─ CHECK-3 占位符扫描: MUST PASS（无可回填未回填项；deferred V2 占位符不算失败）
+  ├─ CHECK-4 App 身份校验: MUST PASS（0 FAIL；WARN 不阻塞）
+  ├─ CHECK-5 页面状态审计: P0 页面 100% converted/verified 且产物存在 MUST PASS
+  ├─ CHECK-6 功能验收: V1 项 100% PASS MUST PASS
+  ├─ CHECK-7 路由跳转验证: MUST PASS（DEFERRED 时不阻塞；含运行时必崩项 pushed_but_unregistered=0）
+  ├─ CHECK-8 功能性子项: CRASH/URL_MISMATCH = 0 MUST PASS（仅 ALIGN 视觉差异不阻塞；DEFERRED 时不阻塞）
+  ├─ CHECK-9 单元 TDD: MUST PASS（DEFERRED 时不阻塞）
+  ├─ CHECK-10 UI TDD: MUST PASS（DEFERRED 时不阻塞）
+  │
+  以上全部通过？
+  ├─ 是 → 门控通过 → 执行 §6.1 状态回写 → 可进入 a2h-retrospect
+  └─ 否 → 触发回环（§5），或提示用户手动介入
+```
+
+CHECK-8 的 ALIGN 纯视觉差异、CHECK-11（风格合规）不阻塞门控，记录在报告中作为后续优化方向。**CHECK-8 的 CRASH/URL 是功能性失败**（页面打不开/崩溃不是"视觉问题"），阻塞门控并进 §5 回环。
+
+> **DEFERRED 不阻塞 ≠ 强通过**：CHECK-7/8/9/10 在前置缺失时 DEFERRED 不卡门，但若门控是在若干 DEFERRED 下达成的（如无设备 + 无 Android 源码仓时门控实际只剩 CHECK-1~6 纯静态项），报告**必须在门控判定区显著标注**"本次门控通过是在 N 项 DEFERRED 下达成，路由/视觉/UT/UI 未实测"，避免被误读为强通过。
+
+### 6.1 验证状态回写（门控通过后必跑）
+
+CHECK-5 审计的是"转换完成态"（converted），`verified` 在此处统一置位——这是全流程唯一把实测结论写回 `spec/baseline/ui-manifest.md` 的环节，缺了它 verified 状态就没有产生机制：
+
+```
+门控通过后:
+  ├─ CHECK-9/10 均实测（非 DEFERRED）→ 把 P0 页面中 status=converted 的批量置 verified
+  │     例外: 某页在 spec/verify/ui/round-{final}/ui/ 仍有 manual_review / UNREACHABLE 遗留
+  │           → 该页不回写，列入报告"遗留未回写"清单
+  ├─ CHECK-9/10 任一 DEFERRED → 不回写（status 维持 converted），
+  │     报告标注"未实测，verified 未置位"
+  └─ 回写时在 ui-manifest 该页备注记录来源（a2h-verify 日期 + 本轮实际非 DEFERRED 的实测项，如 "CHECK-9/10"；CHECK-7 DEFERRED 时不得写入 CHECK-7）
+```
+
+P1/P2 页面不在门控与实测保证范围内，不回写。下次运行 CHECK-5 时，verified 即是上一轮实测的真实痕迹，而不是未经验证的自我声明。
+
+---
+
+## 7. 与 Domain Skill 的关系
+
+| Skill / Agent | 角色 | 调用方式 |
+|---|---|---|
+| `$hmos-fix-build-errors` | 全量编译修复（CHECK-1） | 主对话内联 |
+| `$arkts-knowledge-verifier` | 编译升级诊断 + 静态分析辅助（CHECK-1/2） | 主对话内联 |
+| `$arkts-app-identity` | App 身份校验（CHECK-4） | 主对话内联 |
+| `$arkts-router-verify` | 路由跳转验证 + 内置修复闭环（CHECK-7，纯静态） | 主对话内联 |
+| `$arkts-visual-verify` | 视觉对齐（CHECK-8） | 主对话内联 |
+| `$arkts-ut-verifier` | 单元 TDD + 内置 fix-loop（CHECK-9） | 主对话内联 |
+| `$arkts-ui-verifier` | UI TDD + 内置 fix-loop（CHECK-10） | 主对话内联 |
+
+a2h-verify **不再直接派 `Agent(a2h-fixer)` 或 `Agent(a2h-diagnoser)`**。修复执行者实际是：ut/ui-verifier 各自 skill 内的 `agents/spec-fixer.md`、router-verify 的工作包修复 agent（均由各 verifier 内部循环调度）；`a2h-fixer` 仅保留"visual ALIGN 差异离线消费者"一个角色（用户按需触发，不在本流程编排内）；`a2h-diagnoser` 在 v13 编排中无调用方。原 `$arkts-spec-evolver`（旧 Spec 覆盖率检查）已随该检查删除而移除编排。
+
+详见 `references/orchestration.md`。
+
+---
+
+## 8. 触发 Prompt 示例
+
+```
+验证
+测试一下
+检查下迁移结果
+跑一下验证
+编译通过吗
+检查代码质量
+P0 页面都验证了吗
+```
+
+自然语言触发时，a2h-verify 先检查 `spec/migration-report.md` 是否存在。如果不存在，提示用户先执行 a2h-execute。
+
+---
+
+## 9. References 索引
+
+| 文件 | 覆盖范围 |
+|------|---------|
+| `references/execution-discipline.md` | 执行铁律全文（自检清单、违规处置）|
+| `references/checks-1-to-6.md` | CHECK-1 ~ CHECK-6 的完整执行步骤 |
+| `references/check7-to-10.md` | CHECK-7（路由，静态）/ 8 / 9 / 10（设备三段）四段委托细则（前置检测、串行约束、产物读取、状态映射）|
+| `references/check11-style.md` | CHECK-11 风格合规 的完整执行步骤 |
+| `references/verify-report-template.md` | `spec/verify-report.md` 的完整模板 |
+| `references/failure-loop.md` | 失败回环算法（CHECK-1~6 + CHECK-8 CRASH/URL；含编译短路 Step 0、回环轮重验范围表）|
+| `references/orchestration.md` | 编排关系完整图、调用模型规则 |
+
+---
+
+## 收尾 — 验证对账（强制）
+
+把每条 requirement 的结论写入 `spec/.a2h/verification.json`：
+
+```json
+{"verdicts": [{"requirement_id": "F001-AC01", "verdict": "pass",
+               "oracle_used": "ui", "evidence": "spec/fix/round-1/ui/…md",
+               "requirement_digest": "sha256:…", "reason": ""}]}
+```
+
+`verdict` ∈ `pass | fail | blocked | deferred`。**设备不可用时结论是 `blocked`，不是 `pass`**。
+
+然后跑：
+
+```bash
+python3 scripts/lint_verify_coverage.py --project-root $PROJECT_ROOT
+```
+
+- 🔴 `VERIFY.NO_VERDICT`：active 需求没有任何结论——**这就是「verify 漏判了 AC」的检出点**。
+- 🔴 `VERIFY.REQUIREMENT_FAILED`：结论为 fail → `owner_stage=execute`，走既有回环
+  （见 [references/failure-loop.md](./references/failure-loop.md)），修复任务须带上
+  `requirement_id`，这样复检能按需求逐条确认关闭，而不是只看 CHECK 级别的红绿。
+- 🔴 `VERIFY.VERDICT_STALE`：AC 已变更，结论基于旧断言。
+- 🟡 `VERIFY.DEFERRAL_UNEXPLAINED`：blocked/deferred 未写原因与关闭条件。
+
+> **判定强度门禁尚未启用**：本对账只回答「有没有被判过」，不回答「判得够不够强」。
+> Spec 侧已在每条 AC 的 `判:` 锚声明了应有的判定方式，Gate 摘要会把 `判:` 与实际
+> `oracle_used` 并列如实呈报，但暂不自动阻断。「编译通过 ≠ 行为正确」的强度门禁是后续
+> 单独一项。
+
+---
+
+## 10. 收尾：盘库 + 上报本阶段用量
+
+verify 成功产出 `spec/verify-report.md` 后，作为本 skill 的最后一步执行（纯本地 Bash，**忽略退出码、绝不阻断**）。**两条命令的先后顺序有意义，不要调换**：
+
+```bash
+# 1. 代码行数盘库（LOC 事实）→ code-lines.json
+.migbot/bin/a2h-codex count-lines
+
+# 2. 标记本阶段水位
+.migbot/bin/a2h-codex mark-stage a2h-verify
+```
+
+- **`count-lines`** 统计 Android / HarmonyOS 两侧的代码行数。verify 通过即迁移完成，此刻两侧代码都已就位，是行数盘库的第一个有效时点——而 `$a2h-init` 那次盘库跑在迁移之前，HarmonyOS 侧尚不存在（记为 `null`）。缺了这一次，一个只跑到 verify、不跑 retrospect 的迁移会永远停在"已完成、HarmonyOS 0 行"。a2h-retrospect 结尾还会再盘一次（覆盖同一 run 的 fact），两次都跑不会重复计数。
+- **`mark-stage a2h-verify`** 写出本阶段的 stage-marks fact 与 sentinel。这个水位就是**服务端判定"迁移已完成"的唯一依据**（Codex 没有 CC 的 finalize 上传）——所以它必须排在 `count-lines` 之后：完成状态一旦落库，看板就会开始展示这个 app 的行数，行数得先就位。token / subagent / skill 维度的用量由生命周期 hook 上传的会话记录在服务端解析归因，供性能看板（5002）的事件时间轴使用；本步不自行采集用量。
+
+---

@@ -1,0 +1,12 @@
+{
+  "feature_id": "ft:mainactivity",
+  "related_ui_point_ids": [
+    "up:activity_main:btn_settings",
+    "up:activity_main:fragment_container",
+    "up:activity_main:hello"
+  ],
+  "related_nav_edge_ids": [
+    "ne:43a3cf2e75ce"
+  ],
+  "entry_path_ids_sample": []
+}

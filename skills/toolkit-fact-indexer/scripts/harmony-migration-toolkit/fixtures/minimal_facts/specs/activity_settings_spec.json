@@ -1,0 +1,39 @@
+{
+  "screen_id": "activity_settings",
+  "class": "SettingsActivity",
+  "layout": "activity_settings",
+  "screen_type": "activity",
+  "source": "project",
+  "ui_elements": [
+    {
+      "id": "settings_header",
+      "type": "TextView",
+      "label": "Settings Screen",
+      "visibility": "always",
+      "condition": "",
+      "is_interactive": true,
+      "behaviors": []
+    }
+  ],
+  "behaviors": [],
+  "dynamic_ui": [],
+  "navigation": {
+    "entry_points": [
+      {
+        "from": "MainActivity",
+        "trigger": "l2:localIntent:L32",
+        "type": "activity"
+      }
+    ],
+    "exit_points": []
+  },
+  "stats": {
+    "total_elements": 1,
+    "interactive": 1,
+    "with_behavior": 0,
+    "conditional_visibility": 0,
+    "dynamic_gaps": 0,
+    "nav_out": 0,
+    "nav_in": 1
+  }
+}

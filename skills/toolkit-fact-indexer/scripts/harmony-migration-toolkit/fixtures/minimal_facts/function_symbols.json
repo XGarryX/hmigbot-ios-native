@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0",
+  "symbols": [
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "MainActivity",
+      "owner_chain": [
+        "MainActivity"
+      ],
+      "function_name": "onCreate",
+      "signature": "savedInstanceState: Bundle?",
+      "file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "start_line": 12,
+      "end_line": 29,
+      "confidence": "ast"
+    },
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.MainActivity.openSettings/0",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "MainActivity",
+      "owner_chain": [
+        "MainActivity"
+      ],
+      "function_name": "openSettings",
+      "signature": "",
+      "file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "start_line": 31,
+      "end_line": 34,
+      "confidence": "ast"
+    },
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.SettingsActivity.onCreate/1",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "SettingsActivity",
+      "owner_chain": [
+        "SettingsActivity"
+      ],
+      "function_name": "onCreate",
+      "signature": "savedInstanceState: Bundle?",
+      "file": "app/src/main/java/com/verifyfix/minimal/SettingsActivity.kt",
+      "start_line": 7,
+      "end_line": 10,
+      "confidence": "ast"
+    },
+    {
+      "symbol_id": "fn:com.verifyfix.minimal.SettingsFragment.onCreateView/3",
+      "kind": "function",
+      "language": "kotlin",
+      "package": "com.verifyfix.minimal",
+      "class_name": "SettingsFragment",
+      "owner_chain": [
+        "SettingsFragment"
+      ],
+      "function_name": "onCreateView",
+      "signature": "inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?",
+      "file": "app/src/main/java/com/verifyfix/minimal/SettingsFragment.kt",
+      "start_line": 10,
+      "end_line": 14,
+      "confidence": "ast"
+    }
+  ],
+  "stats": {
+    "source_files_scanned": 3,
+    "symbol_count": 4,
+    "ast_symbol_count": 4
+  }
+}

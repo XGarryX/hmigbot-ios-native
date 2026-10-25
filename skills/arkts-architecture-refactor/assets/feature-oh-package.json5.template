@@ -1,0 +1,23 @@
+{
+  "name": "business_<NAME>",
+  "version": "1.0.0",
+  "description": "Business feature module: <NAME>.",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    // 几乎所有 business 都依赖这两个
+    "lib_common": "1.1.5",
+    "lib_widget": "1.0.2",
+    // 网络业务才需要
+    // "lib_network": "1.0.9",
+    // 公共业务依赖（business_common 自身不需要写这条）
+    "business_common": "file:../business_common",
+
+    "@pura/harmony-utils": "1.4.0"
+  },
+  "devDependencies": {
+    "@ohos/hypium": "1.0.21",
+    "@ohos/hamock": "1.0.0"
+  }
+}

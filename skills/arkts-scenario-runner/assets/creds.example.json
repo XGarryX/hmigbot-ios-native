@@ -1,0 +1,13 @@
+{
+  "_doc": "复制到 ~/.arkts-scenario-runner/creds.json 并填真实手机号 + 万能验证码。单文件按 <bundleName>.<device> 两级组织;两端用不同账号避免互踢登录。chmod 600 (脚本首次写入时自动设置)。",
+  "com.example.demoapp": {
+    "android": {
+      "phone": "10000000000",
+      "code": "888888"
+    },
+    "harmonyos": {
+      "phone": "13800138001",
+      "code": "888888"
+    }
+  }
+}

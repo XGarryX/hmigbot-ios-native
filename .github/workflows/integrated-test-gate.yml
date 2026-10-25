@@ -1,0 +1,43 @@
+name: Integrated Test Gate
+
+# 校验 PR 描述是否符合 Multica 机器校验契约（MC-01 ~ MC-16）。
+# 本仓为 Integrated Test Gate 机制正本；其余仓（migbot 等）为同步副本，修订以本仓为准。
+# error 级失败 → 本 check 失败；将其设为 branch protection 的 required status check 即可阻断 merge。
+# 变量块由 integrated-test-submit skill 生成（零 error、零 warning）；手写提交至少需零 error。
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  integrated-test-gate:
+    # 集成测试 opt-in：仅当 PR 带 integrated_test 标签时才检查格式。
+    # 该标签同时是 merge 后触发下游端到端迁移测试的信号（Instruction 侧同步条款：
+    # merged=true 且带 integrated_test → merged_cross_repo_validation；无标签 → ignore）。
+    # 无标签的 PR：本 check 被跳过（skipped 满足 required check，不阻断 merge）。
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'integrated_test') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (脚本)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install pyyaml
+
+      - name: Run MC-01 ~ MC-16
+        env:
+          # 经环境变量传入，避免 body 内容注入 shell
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python .github/scripts/check_integrated_test_pr.py

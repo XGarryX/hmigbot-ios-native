@@ -1,0 +1,536 @@
+{
+  "registry_id": "a2h/coverage-rules",
+  "version": 1,
+  "_purpose": "证据事实 → 必备义务种类。取代 AC 数量下限：对种类设底，对数量不设任何上下限。",
+  "_contract": [
+    "signal 由 profile_feature.py 从 Android 源码机械检出，每条带 file:line 证据；模型不得自报。",
+    "required_kinds 是该 signal 出现后必须被覆盖的可观察行为种类，不是 AC 条数。",
+    "required_oracle 是该种类 AC 的最低判定强度（判: 字段）；Spec 期决定，Verify 期不得降级。",
+    "kind_probe 仅用于 advisory 提示（Tier 2），关键词命中与否都不构成结论。"
+  ],
+  "oracle_strength": [
+    "static",
+    "unit",
+    "contract",
+    "route",
+    "ui",
+    "visual",
+    "device"
+  ],
+  "rules": [
+    {
+      "rule_id": "COV.PERMISSION",
+      "signal": "permission",
+      "required_kinds": [
+        "permission_granted",
+        "permission_denied"
+      ],
+      "required_oracle": "ui",
+      "required_addendum": null,
+      "why": "授予与拒绝是两条不同的可观察路径，拒绝路径最常被漏写",
+      "kind_probe": {
+        "permission_granted": [
+          "授予",
+          "已授权",
+          "granted",
+          "允许"
+        ],
+        "permission_denied": [
+          "拒绝",
+          "未授权",
+          "denied",
+          "无权限",
+          "不再询问"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.ERROR",
+      "signal": "error_path",
+      "required_kinds": [
+        "error",
+        "recovery"
+      ],
+      "required_oracle": "unit",
+      "required_addendum": null,
+      "why": "抛错与恢复/兜底是两件事；只写 happy path 是最常见的迁移缺口",
+      "kind_probe": {
+        "error": [
+          "失败",
+          "错误",
+          "异常",
+          "error",
+          "fail"
+        ],
+        "recovery": [
+          "重试",
+          "兜底",
+          "回退",
+          "恢复",
+          "fallback",
+          "retry"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.STATE_MACHINE",
+      "signal": "state_machine",
+      "required_kinds": [
+        "state_transition"
+      ],
+      "required_oracle": "unit",
+      "required_addendum": "state-machine",
+      "why": "每条独立转移都是一条断言；guard 不同即不同转移，不得合并",
+      "kind_probe": {
+        "state_transition": [
+          "状态",
+          "切换",
+          "转移",
+          "state",
+          "→"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.CONCURRENCY",
+      "signal": "concurrency",
+      "required_kinds": [
+        "ordering",
+        "cancellation"
+      ],
+      "required_oracle": "unit",
+      "required_addendum": "races",
+      "why": "顺序与取消会改变结果，且在 ArkTS 并发模型下与 Android 不等价",
+      "kind_probe": {
+        "ordering": [
+          "顺序",
+          "先后",
+          "并发",
+          "竞态",
+          "order"
+        ],
+        "cancellation": [
+          "取消",
+          "中断",
+          "cancel",
+          "abort"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.SERIALIZATION",
+      "signal": "serialization",
+      "required_kinds": [
+        "field_mapping",
+        "decode_failure"
+      ],
+      "required_oracle": "unit",
+      "required_addendum": "mapping",
+      "why": "字段名/类型/顺序/字节布局属不可压缩事实，近似实现在此处最容易静默出错",
+      "kind_probe": {
+        "field_mapping": [
+          "字段",
+          "映射",
+          "序列化",
+          "field",
+          "schema"
+        ],
+        "decode_failure": [
+          "解析失败",
+          "反序列化",
+          "脏数据",
+          "malformed",
+          "decode"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.LIFECYCLE",
+      "signal": "lifecycle",
+      "required_kinds": [
+        "lifecycle_init",
+        "lifecycle_release"
+      ],
+      "required_oracle": "ui",
+      "required_addendum": null,
+      "why": "释放/重入路径在 Android 与 ArkTS 生命周期不对齐，泄漏与重复初始化都在此处",
+      "kind_probe": {
+        "lifecycle_init": [
+          "初始化",
+          "创建",
+          "进入",
+          "onCreate",
+          "aboutToAppear"
+        ],
+        "lifecycle_release": [
+          "释放",
+          "销毁",
+          "退出",
+          "回收",
+          "destroy",
+          "aboutToDisappear"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.NETWORK",
+      "signal": "network",
+      "required_kinds": [
+        "request_success",
+        "request_error",
+        "request_timeout"
+      ],
+      "required_oracle": "contract",
+      "required_addendum": "api",
+      "why": "成功/业务失败/超时是三条不同的可观察结果，超时最常缺失",
+      "kind_probe": {
+        "request_success": [
+          "成功",
+          "返回",
+          "success",
+          "200"
+        ],
+        "request_error": [
+          "失败",
+          "错误码",
+          "业务失败",
+          "error"
+        ],
+        "request_timeout": [
+          "超时",
+          "断网",
+          "timeout",
+          "无网络"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.PERSISTENCE",
+      "signal": "persistence",
+      "required_kinds": [
+        "persist_write",
+        "persist_read",
+        "persist_migration"
+      ],
+      "required_oracle": "unit",
+      "required_addendum": null,
+      "why": "键名、默认值与升级迁移决定用户数据是否丢失",
+      "kind_probe": {
+        "persist_write": [
+          "保存",
+          "写入",
+          "存储",
+          "save",
+          "write"
+        ],
+        "persist_read": [
+          "读取",
+          "恢复",
+          "加载",
+          "read",
+          "load"
+        ],
+        "persist_migration": [
+          "迁移",
+          "升级",
+          "兼容旧版",
+          "migration",
+          "upgrade"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.NUMERIC",
+      "signal": "numeric_const",
+      "required_kinds": [
+        "exact_value"
+      ],
+      "required_oracle": "unit",
+      "required_addendum": "algo-io",
+      "why": "阈值/系数/公式属不可压缩事实，写成「大约」即迁移失真",
+      "kind_probe": {
+        "exact_value": [
+          "=",
+          "阈值",
+          "系数",
+          "精确",
+          "值为"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.NAVIGATION",
+      "signal": "navigation",
+      "required_kinds": [
+        "route_target"
+      ],
+      "required_oracle": "route",
+      "required_addendum": null,
+      "why": "跳转目标与参数是可确定性验证的，不应退化为「页面存在」",
+      "kind_probe": {
+        "route_target": [
+          "跳转",
+          "打开",
+          "进入",
+          "返回",
+          "路由",
+          "push"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.RENDER",
+      "signal": "render",
+      "required_kinds": [
+        "draw_result"
+      ],
+      "required_oracle": "visual",
+      "required_addendum": "render",
+      "why": "混合/透明度/画布状态无法由编译或单测判定，必须走视觉比对",
+      "kind_probe": {
+        "draw_result": [
+          "绘制",
+          "渲染",
+          "显示",
+          "样式",
+          "draw",
+          "render"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.PLATFORM",
+      "signal": "platform_api",
+      "required_kinds": [
+        "platform_behavior"
+      ],
+      "required_oracle": "device",
+      "required_addendum": null,
+      "why": "平台能力差异只能由真机或已批准的 HARD-DIV 决策确定",
+      "kind_probe": {
+        "platform_behavior": [
+          "系统",
+          "平台",
+          "机型",
+          "版本",
+          "真机"
+        ]
+      }
+    },
+    {
+      "rule_id": "COV.CROSS_MODULE",
+      "signal": "cross_module",
+      "required_kinds": [
+        "seam_contract"
+      ],
+      "required_oracle": "contract",
+      "required_addendum": "dependency-seam",
+      "why": "提供方与每个消费方的理解必须一致，单侧描述不构成契约",
+      "kind_probe": {
+        "seam_contract": [
+          "契约",
+          "接口",
+          "提供方",
+          "消费方",
+          "跨模块",
+          "seam"
+        ]
+      }
+    }
+  ],
+  "instance_accounting": {
+    "_purpose": "证据是清单时，要求就是那份清单。以下类别逐实例记账：AC 点名 / 组:{…} 声明 / skip-list 三选一，未交代即 🔴 SPEC.INSTANCE_UNACCOUNTED。",
+    "classes": {
+      "event_name": "埋点事件名（track/report/onEvent 调用点的字符串字面量）",
+      "js_bridge": "@JavascriptInterface 桥方法名",
+      "enum_case": "enum class 取值（EnumName.CASE）",
+      "numeric_const": "命名数值常量（const val / static final 数值）",
+      "threshold_literal": "比较表达式中的 ≥3 位裸数字（如 query.length > 8000）",
+      "permission_site": "Manifest.permission.* 调用点",
+      "sdk_seam": "三方 SDK import 接缝（微信/支付宝/荣耀/华为/OPPO/抖音/个推/火山/友盟），按文件去重"
+    },
+    "accounting": [
+      "ac_text_mentions_bare_id",
+      "group_declaration",
+      "skip_list_entry"
+    ]
+  },
+  "sdk_seams": {
+    "_purpose": "三方 SDK 接缝检测与 AC 记账的唯一权威源。profile_feature 按 root 检测 import，lint_coverage 按 aliases 判断 AC 是否点名。按项目可增删——这里只是默认集，不是封闭清单。",
+    "roots": {
+      "com.tencent.mm": {
+        "label": "微信",
+        "aliases": [
+          "微信",
+          "WeChat",
+          "WXHandler",
+          "WX"
+        ]
+      },
+      "com.alipay": {
+        "label": "支付宝",
+        "aliases": [
+          "支付宝",
+          "Alipay",
+          "AuthTask",
+          "PayTask"
+        ]
+      },
+      "com.hihonor": {
+        "label": "荣耀",
+        "aliases": [
+          "荣耀",
+          "Honor"
+        ]
+      },
+      "com.huawei": {
+        "label": "华为",
+        "aliases": [
+          "华为",
+          "Huawei",
+          "HMS"
+        ]
+      },
+      "com.heytap": {
+        "label": "OPPO",
+        "aliases": [
+          "OPPO",
+          "Oppo",
+          "oppo"
+        ]
+      },
+      "com.nearme": {
+        "label": "OPPO",
+        "aliases": [
+          "OPPO",
+          "nearme"
+        ]
+      },
+      "com.bytedance": {
+        "label": "抖音/巨量",
+        "aliases": [
+          "抖音",
+          "巨量",
+          "DouYin"
+        ]
+      },
+      "com.ss.android": {
+        "label": "抖音",
+        "aliases": [
+          "抖音",
+          "DouYin"
+        ]
+      },
+      "com.igexin": {
+        "label": "个推",
+        "aliases": [
+          "个推",
+          "getui",
+          "Getui"
+        ]
+      },
+      "com.volcengine": {
+        "label": "火山",
+        "aliases": [
+          "火山",
+          "Volc"
+        ]
+      },
+      "com.umeng": {
+        "label": "友盟",
+        "aliases": [
+          "友盟",
+          "Umeng",
+          "umeng"
+        ]
+      },
+      "com.google.firebase": {
+        "label": "Firebase",
+        "aliases": [
+          "Firebase",
+          "FCM",
+          "Crashlytics",
+          "Analytics"
+        ]
+      },
+      "com.google.android.gms": {
+        "label": "Google Play services",
+        "aliases": [
+          "GMS",
+          "Play services",
+          "Google 登录",
+          "AdMob"
+        ]
+      },
+      "com.google.android.play": {
+        "label": "Play Core",
+        "aliases": [
+          "Play Core",
+          "In-App Review",
+          "In-App Update"
+        ]
+      },
+      "com.android.billingclient": {
+        "label": "Play Billing",
+        "aliases": [
+          "Billing",
+          "内购",
+          "IAP"
+        ]
+      },
+      "com.facebook": {
+        "label": "Facebook",
+        "aliases": [
+          "Facebook",
+          "Meta",
+          "FB"
+        ]
+      },
+      "com.appsflyer": {
+        "label": "AppsFlyer",
+        "aliases": [
+          "AppsFlyer",
+          "AF"
+        ]
+      },
+      "com.adjust": {
+        "label": "Adjust",
+        "aliases": [
+          "Adjust"
+        ]
+      },
+      "com.onesignal": {
+        "label": "OneSignal",
+        "aliases": [
+          "OneSignal"
+        ]
+      },
+      "com.stripe": {
+        "label": "Stripe",
+        "aliases": [
+          "Stripe"
+        ]
+      },
+      "io.branch": {
+        "label": "Branch",
+        "aliases": [
+          "Branch",
+          "深链",
+          "deeplink"
+        ]
+      },
+      "com.mixpanel": {
+        "label": "Mixpanel",
+        "aliases": [
+          "Mixpanel"
+        ]
+      },
+      "com.amplitude": {
+        "label": "Amplitude",
+        "aliases": [
+          "Amplitude"
+        ]
+      }
+    }
+  }
+}

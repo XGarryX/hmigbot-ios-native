@@ -1,0 +1,189 @@
+{
+  "elements": [
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_main.xml",
+      "layout": "activity_main",
+      "tag": "TextView",
+      "id": "hello",
+      "text": "Hello",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_main.xml",
+      "layout": "activity_main",
+      "tag": "FrameLayout",
+      "id": "fragment_container",
+      "text": "",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_main.xml",
+      "layout": "activity_main",
+      "tag": "Button",
+      "id": "btn_settings",
+      "text": "Settings",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": true,
+      "behaviors": [
+        {
+          "event": "click",
+          "method": "setOnClickListener",
+          "file": "app\\src\\main\\java\\com\\verifyfix\\minimal\\MainActivity.kt",
+          "line": 21,
+          "enclosing_fn": "override fun onCreate(savedInstanceState: Bundle?) {"
+        }
+      ]
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\activity_settings.xml",
+      "layout": "activity_settings",
+      "tag": "TextView",
+      "id": "settings_header",
+      "text": "Settings Screen",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    },
+    {
+      "source": "static_xml_layout",
+      "file": "main\\res\\layout\\fragment_settings.xml",
+      "layout": "fragment_settings",
+      "tag": "TextView",
+      "id": "settings_title",
+      "text": "Settings",
+      "hint": "",
+      "content_desc": "",
+      "on_click_attr": "",
+      "visibility": "visible",
+      "is_interactive": false
+    }
+  ],
+  "layout_trees": {
+    "activity_main": {
+      "tag": "FrameLayout",
+      "id": "",
+      "text": "",
+      "hint": "",
+      "content_desc": "",
+      "is_interactive": false,
+      "visibility": "visible",
+      "source": "static_xml",
+      "on_click_attr": "",
+      "children": [
+        {
+          "tag": "TextView",
+          "id": "hello",
+          "text": "Hello",
+          "hint": "",
+          "content_desc": "",
+          "is_interactive": false,
+          "visibility": "visible",
+          "source": "static_xml",
+          "on_click_attr": "",
+          "children": []
+        },
+        {
+          "tag": "FrameLayout",
+          "id": "fragment_container",
+          "text": "",
+          "hint": "",
+          "content_desc": "",
+          "is_interactive": false,
+          "visibility": "visible",
+          "source": "static_xml",
+          "on_click_attr": "",
+          "children": []
+        },
+        {
+          "tag": "Button",
+          "id": "btn_settings",
+          "text": "Settings",
+          "hint": "",
+          "content_desc": "",
+          "is_interactive": true,
+          "visibility": "visible",
+          "source": "static_xml",
+          "on_click_attr": "",
+          "children": []
+        }
+      ]
+    },
+    "activity_settings": {
+      "tag": "LinearLayout",
+      "id": "",
+      "text": "",
+      "hint": "",
+      "content_desc": "",
+      "is_interactive": false,
+      "visibility": "visible",
+      "source": "static_xml",
+      "on_click_attr": "",
+      "children": [
+        {
+          "tag": "TextView",
+          "id": "settings_header",
+          "text": "Settings Screen",
+          "hint": "",
+          "content_desc": "",
+          "is_interactive": false,
+          "visibility": "visible",
+          "source": "static_xml",
+          "on_click_attr": "",
+          "children": []
+        }
+      ]
+    },
+    "fragment_settings": {
+      "tag": "LinearLayout",
+      "id": "",
+      "text": "",
+      "hint": "",
+      "content_desc": "",
+      "is_interactive": false,
+      "visibility": "visible",
+      "source": "static_xml",
+      "on_click_attr": "",
+      "children": [
+        {
+          "tag": "TextView",
+          "id": "settings_title",
+          "text": "Settings",
+          "hint": "",
+          "content_desc": "",
+          "is_interactive": false,
+          "visibility": "visible",
+          "source": "static_xml",
+          "on_click_attr": "",
+          "children": []
+        }
+      ]
+    }
+  },
+  "stats": {
+    "total": 5,
+    "interactive": 1,
+    "hidden_by_default": 0,
+    "layout_tree_count": 3,
+    "by_source": {
+      "static_xml_layout": 5
+    }
+  },
+  "strings": {}
+}

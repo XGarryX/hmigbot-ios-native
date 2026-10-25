@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "nav_pipeline_version": "1.0",
+  "nav_rules_version": "0",
+  "stats": {
+    "total": 1,
+    "by_kind": {
+      "local_intent_var": 1
+    }
+  },
+  "candidates": [
+    {
+      "id": "cand_5a7156aa22a71ae0",
+      "kind": "local_intent_var",
+      "effect": "navigating_resolvable",
+      "from_class": "MainActivity",
+      "to_class": "SettingsActivity",
+      "file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+      "line": 32,
+      "evidence": "startActivity(intent) with Intent(..., SettingsActivity::class.java)"
+    }
+  ]
+}

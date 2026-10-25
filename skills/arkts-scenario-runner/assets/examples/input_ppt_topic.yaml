@@ -1,0 +1,60 @@
+name: input_ppt_topic
+description: 在 HomeFragment 输入 PPT 主题文本并点击「立即生成」，把 App 开到 CreateOutLinePage 就绪态（满足 param_required(query) gating）
+platforms: [ios]
+# 注意：登录态假定调用方已通过 Skill(arkts-scenario-runner, "login")
+# 单独保证；本场景不内嵌 login precondition 以避开 SMS UI dump 超时死结。
+preconditions: []
+
+steps:
+  # 1. 启动到 Home（假定 caller 已确保登录态）
+  - action: relaunch_app
+    package: com.example.demoapp
+    activity: com.example.demoapp.page.HomeActivity
+
+  # 2. 关「服务协议」弹窗（冷启后偶现，blind-tap 坐标避免 dump 超时）
+  - action: tap_if_present
+    selector: { text: "同意并继续" }
+    timeout_ms: 3000
+
+  # 2b. 关「平台声明」弹窗（HomeActivity 启动时偶现）
+  - action: tap_if_present
+    selector: { text: "同意并承诺遵守" }
+    timeout_ms: 3000
+
+  # 3. 确保在「输入主题」子 tab（默认就在这，保险点）
+  - action: tap
+    selector: { text: "输入主题" }
+
+  # 4. 聚焦主题输入框（用 EditText 的初始 text 当 selector）
+  - action: tap
+    selector: { text: "输入需要生成的PPT主题，比如工作总结" }
+
+  # 5. 输入主题文本（ASCII 临时绕开 emulator 默认 IME 不支持 Unicode 的问题；
+  #    生产环境需先装 ADBKeyboard APK，详见 scenario_run.py 的 needs_input.json 指引）
+  - action: input_text
+    text: "AI training plan demo"
+
+  # 6. 收键盘（按 BACK 回退键盘）
+  - action: tap
+    coords: { x: 720, y: 200 }   # 顶部 banner 安全点
+
+  # 7. 点击「立即生成」
+  - action: tap
+    selector: { text: "立即生成" }
+
+  # 8. 等到 CreateOutLinePage 真正出现
+  #    注意：不能用 "生成大纲" — HomeFragment 顶部步骤指示器一直显示该文字
+  #    用 CreateOutLinePage 独占的"停止生成"按钮（tv_stop_create）作为信号
+  - action: wait_for
+    signal: ui_contains
+    value: "停止生成"
+    timeout_ms: 20000
+
+success_signals:
+  - type: ui_contains
+    value: "停止生成"
+
+artifacts:
+  - screenshot: after_input_topic.png
+
+timeout_ms: 60000

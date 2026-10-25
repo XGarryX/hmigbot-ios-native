@@ -1,0 +1,29 @@
+# logs
+logs/
+*.log
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+
+# Customer-facing runtime state — written into a user's project by the
+# installer / $a2h-init. Should never appear in this repo; ignored defensively
+# in case someone tests the installer from inside this checkout.
+# NOTE: .agents/plugins/ and .codex-plugin/ ARE shipped (not ignored).
+.migbot/
+.codex/
+.agents/skills/
+.claude/*
+!.claude/skills/
+
+# Local reference notes
+DATA_REPORTING_MAP.md
+
+# Parity copy of coverage rules into Nuitka dist (issue #44)
+**/_entry.dist/coverage-rules.json
+
+# 测试 skill 的看板账号(本机私有,绝不提交)
+tools/**/.env

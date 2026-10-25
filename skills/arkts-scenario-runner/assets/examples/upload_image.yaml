@@ -1,0 +1,50 @@
+# 上传图片场景 —— 全自动
+# 直接进 AI 绘画入口，点「上传照片」进系统 picker，自动选第一张；若相册为空，
+# 自动推送自带的默认测试图然后重试。
+name: upload_image
+description: 进入上传入口 → 自动选第一张 → 回到「开始生成」
+platforms: [ios, harmonyos]
+preconditions: [login]
+
+steps:
+  - action: launch_app
+    package: com.example.demoapp
+    ability: EntryAbility
+    activity: .MainActivity
+
+  - action: tap
+    selector: { text: "AI 绘画" }
+  - action: tap
+    selector: { text: "上传照片" }
+
+  # 等 picker 就绪
+  - action: wait_for
+    signal: ui_contains
+    value: "最近"
+    timeout_ms: 5000
+
+  # 全自动选第一张；若相册为空，内部会自动补图后重试
+  - action: pick_first_image_from_gallery
+    confirm_btn: { text: "完成" }
+    # 如果该 App picker 结构特殊，可覆盖默认 selector：
+    # first_image:
+    #   harmonyos: { class_name: "Image", index: 0 }
+    #   ios:   { coords: { x: 270, y: 600 } }
+
+  # 回到 App 的「已选图」状态
+  - action: wait_for
+    signal: ui_contains
+    value: "开始生成"
+    timeout_ms: 8000
+
+  - action: screenshot
+    save_to: artifacts/{timestamp}/after_pick.png
+
+success_signals:
+  - type: ui_contains
+    value: "开始生成"
+
+artifacts:
+  - screenshot: after_pick.png
+
+timeout_ms: 90000

@@ -1,0 +1,18 @@
+# 休眠归档：CHECK-9（单元 TDD / arkts-ut-verifier）与 CHECK-10（UI TDD / arkts-ui-verifier）
+
+2026-08-17 决策：这两个 verifier 待优化，**从 codex 分发的 a2h-verify 中整体摘除**（不是暂停/DEFERRED，
+是让使用者完全看不到还有这两个维度，避免误会）。摘除后原 CHECK-11 风格合规 重编号为 CHECK-9
+（先例：它本来是 CHECK-12，删 Spec 覆盖率审查后编成 11）。
+
+本目录是摘除前的**完整原件**（`.dormant` 后缀：codex 不加载、codex-adapter 校验器不扫描）。
+
+## 恢复步骤（等 ut/ui-verifier 优化好）
+1. 把本目录各文件去掉 `.dormant` 后缀覆盖回原位（`references/check7-to-10.md` 恢复原名，`check9-style.md` 改回 `check11-style.md`）；
+2. SKILL.md frontmatter `references:` 列表恢复两个文件名；
+3. `scripts/probe_devices.py` 用本目录版本（含 `_VERIFIER_OF` 三项 + `DEFAULT_PAUSED`）；
+4. 跑 `python3 ~/.claude/skills/codex-adapter/scripts/verify.py --codex-dir <codex-skills>` 确认结构与断链；
+5. 两个外部单行引用（`arkts-feature-coverage-auditor/SKILL.md`、`arkts-ui-coverage-auditor/SKILL.md`）见本目录 `external-refs.txt`。
+
+## 同批归档的 agent
+- `agents/spec-fixer-ut.toml.dormant`、`agents/spec-fixer-ui.toml.dormant`（原 `codex-skills/agents/` 下，属两个 verifier 的 fix-loop agent）
+  恢复时放回 `codex-skills/agents/` 并去掉后缀；`a2h-execute` / `a2h-spec` SKILL.md 顶部 spawn_agent 约定 banner 的 agent 名单里补回这两个名字（或直接重跑 codex-adapter 让 overlay 从 agents/ 目录重新枚举）。

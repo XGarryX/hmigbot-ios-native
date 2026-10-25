@@ -1,0 +1,40 @@
+# CHECK-9 执行细则
+
+> 配合 SKILL.md §3c 验证清单使用。CHECK-1~6 见 `checks-1-to-6.md`，CHECK-7~8（路由 + 视觉 委托）见 `check7-to-8.md`。
+>
+> **已删除的两项检查**：
+> - 原 Spec 覆盖率：其"UI 覆盖率=.ets 文件存在"与 CHECK-5 Step 3 重复，"功能 V1 VERIFIED 率"与 CHECK-6 重复，纯冗余。
+> - 原 confidence 降级审查：对 medium/low confidence 页面的额外质量复查（TODO 数 / pending 占位符 / 组件完整度），与 CHECK-5 页面状态审计 + CHECK-3 占位符扫描重叠，且不在门控内。
+>
+> 两者都不在 V1 门控内，属建议性检查，删除以收敛流程。
+
+---
+
+## CHECK-9：风格合规（条件执行）
+
+
+### 前置条件
+
+读取 plan Context 中的 `Style` 字段。`style_set = none` 或字段缺失时跳过此检查（状态: SKIP）。
+
+`style_set != none` 但对应风格 orchestrator skill 未安装 → 状态: DEFERRED（原因：风格 skill 未安装），计入门控判定区 DEFERRED 标注（本 CHECK 非门控，不影响放行）。**不允许**因 skill 缺失标 SKIP——SKIP 仅 `style_set=none` 一种。
+
+### 执行逻辑（`style_set != none` 时）
+
+1. 加载对应风格集的 orchestrator skill（如 `arkts-style-orchestrator`）
+2. 对已生成的代码执行反模式扫描：
+   - **命名规范**：文件名、类名、变量名是否符合风格要求
+   - **Import 顺序**：是否按风格规定的分组排序
+   - **UI tokens**：是否使用了风格定义的颜色/间距/字体 tokens
+   - **组件结构**：是否遵循风格的组件内结构顺序（如 @Param → @Local → build → @Builder）
+   - **ViewModel 模式**：业务逻辑是否正确提取到 ViewModel
+3. 生成风格合规报告
+
+### 结果判定
+
+- 无违规 → CHECK-9: PASS
+- 有违规但均为 WARN 级别 → CHECK-9: PASS（附建议列表）
+- 有 ERROR 级别违规 → CHECK-9: FAIL（附违规清单）
+- 风格 orchestrator skill 未安装 → CHECK-9: DEFERRED（见前置条件）
+
+**注意**: CHECK-9 不纳入 V1 门控判定（SKILL.md §6），风格合规是建议性的，不阻断迁移完成。

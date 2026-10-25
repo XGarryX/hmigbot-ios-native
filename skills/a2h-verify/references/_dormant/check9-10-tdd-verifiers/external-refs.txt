@@ -1,0 +1,2 @@
+../arkts-feature-coverage-auditor/SKILL.md:266:| `a2h-execute` 完成后 | 必跑；不通过则阻断 `a2h-verify` 的 CHECK-9 |
+../arkts-ui-coverage-auditor/SKILL.md:170:| `a2h-execute` 完成后 | 必跑；不通过则阻断 `a2h-verify` 的 CHECK-9 |

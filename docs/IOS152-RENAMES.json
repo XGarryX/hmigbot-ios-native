@@ -1,0 +1,7 @@
+{
+  "public_platform": "ios",
+  "public_source_field": "source_anchors",
+  "public_root_option": "--ios-root",
+  "compatibility_declaration": "engine-compatibility.json",
+  "policy": "Public skills and authoring use native names; required opaque-engine protocols remain explicitly declared, without hidden aliases as duplicate public skills."
+}

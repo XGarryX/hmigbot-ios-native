@@ -1,0 +1,5 @@
+{
+  "command": ["/absolute/path/hmigbot-swift-syntax"],
+  "version_command": ["/absolute/path/swift", "--version"],
+  "timeout_seconds": 120
+}

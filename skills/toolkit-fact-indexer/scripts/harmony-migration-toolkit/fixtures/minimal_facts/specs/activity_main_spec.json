@@ -1,0 +1,59 @@
+{
+  "screen_id": "activity_main",
+  "class": "MainActivity",
+  "layout": "activity_main",
+  "screen_type": "activity",
+  "source": "project",
+  "ui_elements": [
+    {
+      "id": "hello",
+      "type": "TextView",
+      "label": "Hello",
+      "visibility": "always",
+      "condition": "",
+      "is_interactive": true,
+      "behaviors": []
+    },
+    {
+      "id": "fragment_container",
+      "type": "FrameLayout",
+      "label": "",
+      "visibility": "always",
+      "condition": "",
+      "is_interactive": true,
+      "behaviors": []
+    },
+    {
+      "id": "btn_settings",
+      "type": "Button",
+      "label": "Settings",
+      "visibility": "always",
+      "condition": "",
+      "is_interactive": true,
+      "behaviors": []
+    }
+  ],
+  "behaviors": [],
+  "dynamic_ui": [],
+  "navigation": {
+    "entry_points": [],
+    "exit_points": [
+      {
+        "trigger": "l2:localIntent:L32",
+        "destination": "SettingsActivity",
+        "destination_layout": "activity_settings",
+        "type": "activity",
+        "via": "startActivity(local Intent)"
+      }
+    ]
+  },
+  "stats": {
+    "total_elements": 3,
+    "interactive": 3,
+    "with_behavior": 0,
+    "conditional_visibility": 0,
+    "dynamic_gaps": 0,
+    "nav_out": 1,
+    "nav_in": 0
+  }
+}

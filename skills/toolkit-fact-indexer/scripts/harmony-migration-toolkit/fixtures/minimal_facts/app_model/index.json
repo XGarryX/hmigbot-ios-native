@@ -1,0 +1,33 @@
+{
+  "app_model_version": "1",
+  "project_root": "D:\\Myfiles\\a2h\\arkts-migration\\harmony-migration-toolkit\\fixtures\\minimal_android",
+  "limitations": [
+    "Compose-only and programmatic views are only partially represented (stub screens / gap).",
+    "nav_edge_id on actions uses exact (from, to, trigger) match; ambiguous triggers may miss.",
+    "RemoteViews and runtime-inflated hierarchies require gap_analysis / manual entries."
+  ],
+  "counts": {
+    "ui_points": 5,
+    "nav_edges": 1,
+    "paths": 0,
+    "screens": 3,
+    "features": 3
+  },
+  "files": {
+    "nav_edges": "references/nav_edges.json",
+    "ui_point_index": "references/ui_point_index.json",
+    "screens": [
+      "screens/activity_main.json",
+      "screens/activity_settings.json",
+      "screens/fragment_settings.json"
+    ],
+    "features": [
+      "features/ft_fragment_settings.json",
+      "features/ft_mainactivity.json",
+      "features/ft_settingsactivity.json"
+    ],
+    "paths": [
+      "paths/all_paths.json"
+    ]
+  }
+}

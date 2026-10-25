@@ -1,0 +1,56 @@
+{
+  "findings": {
+    "id_dispatchers": [],
+    "event_registrations": [
+      {
+        "kind": "event_registration",
+        "file": "app\\src\\main\\java\\com\\verifyfix\\minimal\\MainActivity.kt",
+        "line": 21,
+        "view_ref": "btnSettings",
+        "method": "setOnClickListener",
+        "event_type": "click",
+        "enclosing_fn": "override fun onCreate(savedInstanceState: Bundle?) {",
+        "receiver_type": "Button",
+        "is_view": true,
+        "enclosing_symbol_id": "fn:com.verifyfix.minimal.MainActivity.onCreate/1",
+        "function_name": "onCreate",
+        "function_range": {
+          "start_line": 12,
+          "end_line": 29
+        }
+      }
+    ],
+    "visibility_controls": [],
+    "inflates": [
+      {
+        "kind": "inflate_layout",
+        "file": "app\\src\\main\\java\\com\\verifyfix\\minimal\\SettingsFragment.kt",
+        "line": 13,
+        "layout": "fragment_settings",
+        "enclosing_fn": "override fun onCreateView(",
+        "enclosing_symbol_id": "fn:com.verifyfix.minimal.SettingsFragment.onCreateView/3",
+        "function_name": "onCreateView",
+        "function_range": {
+          "start_line": 10,
+          "end_line": 14
+        }
+      }
+    ],
+    "data_driven_ui": []
+  },
+  "stats": {
+    "id_dispatchers": 0,
+    "event_registrations": 1,
+    "visibility_controls": 0,
+    "inflates": 1,
+    "data_driven_ui": 0,
+    "source_files_scanned": 3,
+    "findings_with_enclosing_symbol": 2
+  },
+  "view_ref_id_map": {
+    "app\\src\\main\\java\\com\\verifyfix\\minimal\\MainActivity.kt": {
+      "btnSettings": "btn_settings",
+      "container": "fragment_container"
+    }
+  }
+}

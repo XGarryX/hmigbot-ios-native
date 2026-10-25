@@ -1,0 +1,74 @@
+# 与 Domain Skill 的关系
+
+> 配合 SKILL.md §7 使用。a2h-verify 是**验证编排层**，不实现修复逻辑、不持有循环；本文件描述 a2h-verify 编排的所有 Domain Skill。
+
+---
+
+## 编排关系图
+
+```
+a2h-verify（编排层）
+  │
+  ├─ $hmos-fix-build-errors   — 全量编译修复（CHECK-1，主对话内联）
+  ├─ $arkts-knowledge-verifier — 编译升级诊断 + 静态分析辅助（CHECK-1/2，主对话内联）
+  ├─ $arkts-app-identity       — App 身份校验（CHECK-4，主对话内联）
+  ├─ $arkts-router-verify      — 路由跳转验证 + 内置修复闭环（CHECK-7，纯静态，主对话内联）
+  ├─ $arkts-visual-verify      — 视觉对齐截图对比（CHECK-8，主对话内联，一次性无循环）
+  ├─ $arkts-ut-verifier        — 单元 TDD + 内置 fix-loop（CHECK-9，主对话内联）
+  └─ $arkts-ui-verifier        — UI TDD + 内置 fix-loop（CHECK-10，主对话内联）
+```
+
+> 原 `$arkts-spec-evolver`（CHECK-11 Spec 覆盖率审计）已随该 CHECK 删除而移除编排——覆盖率由 CHECK-5 + CHECK-6 覆盖。
+
+a2h-verify **不再直接派 `Agent(a2h-fixer)` 或 `Agent(a2h-diagnoser)`**。修复执行者实际是各 verifier 自带的 agent（ut/ui 的 `agents/spec-fixer.md`、router 的工作包修复 agent），由各自内部循环调度；`a2h-fixer` 仅保留"visual ALIGN 差异离线消费者"一个角色（用户按需触发，不在本流程编排内）；`a2h-diagnoser` 在 v13 编排中无调用方。
+
+---
+
+## 调用模型规则
+
+- **Skill(...)**：domain 知识封装，主对话进入 skill 上下文执行；产出留在主对话，可被后续步骤直接读取
+- **CHECK-7 路由（router-verify）纯静态，不碰设备**：先于设备三段跑（修复会改源码，让设备验证跑在修过路由的代码上），与设备三段之间无串行/sleep 约束
+- 设备三段 skill（visual / ut / ui）**严格串行**调用，每段后 sleep 5（设备静默 + uitest daemon 排空）；不得同一条消息派发
+
+**Domain Skill 缺失时没有 SKIP**（SKIP 仅 CHECK-11 `style_set=none` 一种，见 `execution-discipline.md` §1.1），按下表处置：
+
+| 缺失的 Skill | 受影响 CHECK | 处置 |
+|---|---|---|
+| hmos-fix-build-errors | CHECK-1 | **编译验证照跑**（主线程直接跑 hvigor 编译）；缺的只是自动修复能力，编译失败如实标 FAIL |
+| arkts-knowledge-verifier | CHECK-1/2 | CHECK-1 失去升级诊断（仍可 FAIL 收口）；CHECK-2 的 grep 规则在 `checks-1-to-6.md` 内自含，照跑 |
+| arkts-app-identity | CHECK-4 | 校验规则在 `checks-1-to-6.md` 内自含，主线程直接执行，照跑 |
+| arkts-router-verify | CHECK-7 | DEFERRED（原因：verifier skill 未安装）|
+| arkts-visual-verify | CHECK-8 | DEFERRED（同上）|
+| arkts-ut-verifier / arkts-ui-verifier | CHECK-9 / CHECK-10 | DEFERRED（同上）|
+| 风格 orchestrator | CHECK-11 | DEFERRED（原因：风格 skill 未安装；非门控）|
+
+所有因 skill 缺失产生的 DEFERRED 一律计入 §6 门控判定区的 DEFERRED 显著标注。前置缺失（CHECK-7 缺 Android 源码仓、CHECK-8 缺 adb/hdc 任一、CHECK-9/10 缺 hdc、编译未过、CHECK-10 oracle 未获降级授权）同样标 DEFERRED，见 `check7-to-10.md`。
+
+---
+
+## 产物目录约定
+
+**四个 verifier 产物目录互相独立，无共写、无共享状态文件**（route/ut/ui 收口在 `spec/verify/` 下，visual 独占 `spec/fix/`）：
+
+| Skill | 写入目录（独占根） | 产物 |
+|---|---|---|
+| arkts-router-verify | `spec/verify/route/` | `ROUTE_VERIFY_SUMMARY.md` / `fix_plan.json` / `reachability_robust.json` 等 |
+| arkts-ut-verifier | `spec/verify/ut/` | 私有 `_state.yaml` + `round-N/ut/<id>.md` + `round-N/_ut_*.md` + `round-{final}/final-summary.md` |
+| arkts-ui-verifier | `spec/verify/ui/` | 私有 `_state.yaml` + `round-N/ui/<id>.md` + `round-N/_ui_*.md` + `round-{final}/final-summary.md` |
+| arkts-visual-verify | `spec/fix/round-N/ui/` | `ALIGN_*.md` / `URL_*.md` / `CRASH_*.md`（自有 `spec/fix/_state.yaml` 管轮次）|
+
+> **schema 注意**：各 skill 自带 `references/fix-file-schema.md`。ut/ui 的 `kind` 枚举是
+> `{RED, ERROR, IMPL_MISSING, UNREACHABLE}`（同构），visual 的是其超集（另含 `ALIGNMENT_DIFF /
+> URL_MISMATCH / CRASH / SYSTEMIC`）——读文件时以产出方 skill 的 schema 为准。
+> 目录已彻底分离：ut/ui 的 round 序列、`_state.yaml`、`final-summary.md` 均为各自私有，
+> 不与 visual 的全局轮号互扰，a2h-verify 读取时无需做 `source:` 过滤。
+
+---
+
+## 职责分工
+
+- **a2h-verify**：编排顺序、编译短路与终态编译复检（§3.0）、读各 verifier 产物、聚合报告、门控判定、门控后 verified 回写（§6.1）、失败回环（CHECK-1~6 + CHECK-8 的 CRASH/URL 功能性子类）
+- **arkts-router-verify**：双端控件级导航图抽取 + 三视角对账 + triage + agent 分派修复 + 复检收口（纯静态，自管闭环）
+- **arkts-visual-verify**：截图对比 + 写差异 markdown（不持循环；ALIGN 等离线消化，CRASH/URL 由 a2h-verify §5 回环接手修复）
+- **arkts-ut-verifier**：单元测试设计/生成/执行 + 内部 fix-loop（自管轮数、自管收敛）
+- **arkts-ui-verifier**：UI 测试设计/注入/生成/执行 + 内部 fix-loop（自管轮数、自管收敛）

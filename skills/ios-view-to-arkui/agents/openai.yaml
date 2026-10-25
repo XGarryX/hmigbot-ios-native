@@ -1,0 +1,6 @@
+interface:
+  display_name: iOS UI to ArkUI
+  short_description: Audit and migrate iOS View UI into ArkUI batches
+  default_prompt: Use $ios-view-to-arkui to audit an iOS View/XML app and migrate one feature batch into ArkUI with coverage and build checks.
+policy:
+  allow_implicit_invocation: false

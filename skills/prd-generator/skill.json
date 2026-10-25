@@ -1,0 +1,23 @@
+{
+  "name": "prd-generator",
+  "version": "1.0.0",
+  "description": "PRD文档生成器和规范性检查工具 - 基于原始规格和需求分析输入，生成规范性的PRD文档，并支持PRD规范性检查",
+  "author": "CodeAgent",
+  "category": "product-management",
+  "tags": ["PRD", "产品需求文档", "需求分析", "文档生成", "规范性检查"],
+  "language": "zh-CN",
+  "entry_point": "index.md",
+  "capabilities": [
+    "PRD文档生成",
+    "PRD规范性检查",
+    "最佳实践指导",
+    "模板参考",
+    "交互式需求收集"
+  ],
+  "dependencies": [],
+  "config": {
+    "template_version": "V2.1",
+    "output_format": "markdown",
+    "strict_mode": true
+  }
+}

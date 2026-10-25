@@ -1,0 +1,6 @@
+interface:
+  display_name: "iOS 初始化"
+  default_prompt: |
+    Run $a2h-init: check this host first, including Windows Swift and available Xcode Release settings on Windows; confirm native iOS/HarmonyOS/DevEco/hvigorw/hdc paths, preserve user configuration and authorization, and mark paths confirmed. Product/capability scope belongs to SPEC. Local operation does not require telemetry enrolment.
+policy:
+  allow_implicit_invocation: true

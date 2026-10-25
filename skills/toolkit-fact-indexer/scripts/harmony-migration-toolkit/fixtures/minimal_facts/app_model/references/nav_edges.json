@@ -1,0 +1,15 @@
+[
+  {
+    "from": "MainActivity",
+    "to": "SettingsActivity",
+    "to_layout": "activity_settings",
+    "type": "activity",
+    "via": "startActivity(local Intent)",
+    "trigger": "l2:localIntent:L32",
+    "line": 32,
+    "source_file": "app/src/main/java/com/verifyfix/minimal/MainActivity.kt",
+    "nav_edge_id": "ne:43a3cf2e75ce",
+    "from_layout": "activity_main",
+    "source": "regex"
+  }
+]

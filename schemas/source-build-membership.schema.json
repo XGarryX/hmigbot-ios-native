@@ -1,0 +1,598 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hmigbot.local/schemas/source-build-membership.schema.json",
+  "title": "Actual device-build source membership",
+  "description": "Members come only from captured compiler file lists and captured compiler invocations of one selected device build. Nothing is inferred from directory layout. Package integrity is not build authenticity. membership_status=complete is the only claim that every captured compiler input was accounted for; incomplete/unresolved documents must not widen a selected-build scope.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "scope",
+    "membership_status",
+    "selection",
+    "source_sha256",
+    "architectures",
+    "source_files",
+    "members",
+    "excluded_inputs",
+    "unresolved",
+    "evidence",
+    "limitations",
+    "claims",
+    "counts"
+  ],
+  "properties": {
+    "capture_roots": {
+      "description": "Original capture-host roots, used only as exact textual prefixes when replaying on another host; never opened by the consumer. Optional only for legacy v1 documents that replay at their original source root.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "derived_data"],
+      "properties": {
+        "source": {"$ref": "#/$defs/capture_root"},
+        "derived_data": {"$ref": "#/$defs/capture_root"}
+      }
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "source_build_membership"
+    },
+    "scope": {
+      "const": "selected-build"
+    },
+    "membership_status": {
+      "enum": [
+        "complete",
+        "incomplete",
+        "unresolved"
+      ]
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "configuration",
+        "sdk",
+        "xcode_version",
+        "targets",
+        "architectures",
+        "toolchain"
+      ],
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "configuration": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sdk": {
+          "type": "string",
+          "minLength": 1
+        },
+        "xcode_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "product": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targets": {
+          "$ref": "#/$defs/names"
+        },
+        "architectures": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "toolchain": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "architectures": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "source_files": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/member"
+      }
+    },
+    "excluded_inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/excluded"
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/unresolved"
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "captured_build_log",
+        "sources",
+        "build_tree_objects"
+      ],
+      "properties": {
+        "captured_build_log": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/log"
+            }
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "build_tree_objects": {
+          "$ref": "#/$defs/objects"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package_integrity",
+        "build_authenticity",
+        "behavior_equivalence",
+        "ipa_authentication",
+        "capture_host"
+      ],
+      "properties": {
+        "package_integrity": {
+          "const": "evidence_bundle_only"
+        },
+        "build_authenticity": {
+          "const": "not_verified"
+        },
+        "behavior_equivalence": {
+          "const": "not_verified"
+        },
+        "ipa_authentication": {
+          "const": "not_performed"
+        },
+        "capture_host": {
+          "const": "macos_xcode_required"
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_files",
+        "non_member_inputs",
+        "unsupported_inputs",
+        "unresolved_inputs"
+      ],
+      "properties": {
+        "source_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupported_inputs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unresolved_inputs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "non_member_inputs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "capture_root": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*(?:^|/)\\.{1,2}(?:/|$))(?:/|[A-Za-z]:/)[^\\\\\\u0000]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\:]+$"
+    },
+    "names": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "origins": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "swift_file_list",
+          "build_log_swift_invocation",
+          "build_log_clang_invocation",
+          "build_log_other_invocation"
+        ]
+      }
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "bytes",
+        "kind",
+        "analysis",
+        "origins",
+        "targets",
+        "architectures"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "enum": [
+            "swift_source",
+            "clang_source",
+            "other_compiler_input"
+          ]
+        },
+        "analysis": {
+          "enum": [
+            "compiled_input",
+            "not_analyzed"
+          ]
+        },
+        "origins": {
+          "$ref": "#/$defs/origins"
+        },
+        "targets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "architectures": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "excluded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "relative_path",
+        "reason",
+        "detail",
+        "origins",
+        "targets"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relative_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "generated_build_tree_input",
+            "outside_source_tree",
+            "outside_source_fingerprint_scope",
+            "outside_selected_targets"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        },
+        "origins": {
+          "$ref": "#/$defs/origins"
+        },
+        "targets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "unresolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reason",
+        "path",
+        "detail"
+      ],
+      "properties": {
+        "reason": {
+          "enum": [
+            "build_tree_missing",
+            "build_tree_unreadable",
+            "swift_file_list_unreadable",
+            "empty_swift_file_list",
+            "build_log_unreadable",
+            "build_log_not_utf8",
+            "ambiguous_compile_invocation",
+            "swift_file_list_absent",
+            "relative_compile_input",
+            "escaping_compile_input",
+            "missing_compile_input",
+            "case_colliding_member_paths",
+            "object_count_exceeds_membership",
+            "no_compile_evidence",
+            "no_source_tree_members"
+          ]
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "artifact",
+        "sha256",
+        "bytes",
+        "entries",
+        "target",
+        "architecture",
+        "module"
+      ],
+      "properties": {
+        "kind": {
+          "const": "swift_file_list"
+        },
+        "artifact": {
+          "type": "string",
+          "pattern": "^filelists/[^\\\\]+$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "architecture": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "sha256",
+        "bytes",
+        "swift_entries",
+        "clang_entries",
+        "other_entries",
+        "ambiguous_lines"
+      ],
+      "properties": {
+        "artifact": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "swift_entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clang_entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "other_entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ambiguous_lines": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "objects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "directories",
+        "unmatched"
+      ],
+      "properties": {
+        "directories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/directory"
+          }
+        },
+        "unmatched": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/unmatched"
+          }
+        }
+      }
+    },
+    "directory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "architecture",
+        "objects",
+        "captured_inputs"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "objects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "captured_inputs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "unmatched": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "architecture",
+        "objects",
+        "captured_inputs",
+        "sample_objects"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "objects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "captured_inputs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sample_objects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

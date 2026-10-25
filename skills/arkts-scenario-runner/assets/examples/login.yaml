@@ -1,0 +1,45 @@
+# 登录场景 —— 固定 sms strategy（驱动真实 UI 流程）
+#
+# 用法（一条命令）：
+#   python $SKILLS_ROOT/arkts-scenario-runner/scripts/scenario_run.py \
+#       --scenario login --device harmonyos
+# 首次运行交互问手机号 + 万能验证码，之后自动复用。
+#
+# 设计：
+#   Tier 1 快速直跳（可选，需填 login_activity）：am-start 到登录页 → 直接填表单
+#   Tier 2 fallback：launcher → walk → 登录页 → 填表单
+#   两层都走真实 UI 填表，不依赖"已登录态"短路（短路在 MemberCenter 拦截 / channel-rename 类项目会误判）
+name: login
+description: 真实 UI 登录（Tier 1 am-start LoginActivity / Tier 2 walk from launcher）
+platforms: [ios, harmonyos]
+preconditions: []
+
+steps:
+  - action: inject_token
+    strategy: sms                      # 固定真实 UI 流程
+    package: com.example.demoapp
+    ability: EntryAbility              # HarmonyOS launcher
+    activity: .MainActivity            # iOS launcher（placeholder，bootstrap 会替换为真值）
+    # login_activity: com.example.demoapp.page.LoginActivity   # 可选 Tier 1 直跳目标
+
+    # SMS 登录 UI selector（首次跑后填好稳定）
+    sms_flow:
+      enter_login:   { text: "我的" }
+      enter_login_2: { text: "登录" }
+      # phone_input / code_input / send_code_btn / submit_btn 若 dump 启发式能找到可不填
+      home_signal:   "首页"           # 首页 tab 上的稳定文字
+      post_wait_ms:  15000
+
+  - action: wait_for
+    signal: ui_contains
+    value: "首页"
+    timeout_ms: 15000
+
+success_signals:
+  - type: ui_contains
+    value: "首页"
+
+artifacts:
+  - screenshot: after_login.png
+
+timeout_ms: 90000
