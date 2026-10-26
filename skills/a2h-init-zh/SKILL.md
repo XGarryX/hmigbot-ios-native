@@ -1,10 +1,27 @@
 ---
 name: a2h-init-zh
-description: 触发：`$a2h-init-zh` 或自然语言。用人话确认自动探测到的 ios / harmonyos / hvigorw / deveco / hdc 路径。首次安装或路径变化时跑。
+description: "中文初始化入口，使用 a2h-init 的原生 iOS 配置与环境检查协议。"
 ---
+
 
 # 初始化原生 iOS 迁移
 
-完整执行 [a2h-init](../a2h-init/SKILL.md) 的环境、路径、配置、用户授权及原初始化门禁。中文入口不维护第二份路径/命令实现。
+先读取用户已提供路径及 `.migbot/config.json`，不要重复询问已知信息。
+本包用于读取 iOS 源工程并实现鸿蒙目标。工作区/工具目录不是待迁移源工程，
+没有选源工程时可以完成工具安装与自检，不创建虚构应用 baseline。
 
-Windows 检查已安装 Swift 与原生条件分支 provider，并确认是否已有绑定当前源码的 Xcode Release 构建设置导出。Mac 可读取实际 xcodebuild 设置。导出不是编译/签名/运行成功证据。目标 DevEco/SDK/Node/JDK/hvigor/hdc/签名仍按实际环境核验；源设备不使用目标设备工具代替。迁移产品和系统能力的范围在 SPEC 确认，INIT 路径确认不确定产品范围。
+1. 核对 iOS 源根与鸿蒙目标根真实存在且互不包含。识别 Xcode/SwiftPM/源码入口，
+   不要求源必须能在 Windows 编译。
+2. 找本包 runtime：工作区安装在 `.hmigbot-ios/plugin`；插件原目录就是 runtime。
+   执行 `python <runtime>/scripts/a2h_ios.py init --source <ios> --project <target>`。
+3. config 必须保存 `source_platform=ios`、`ios`、`harmonyos`、language、confirmed。
+   路径可含空格。现有不同源平台或不同源根不能静默改写；先报告具体冲突。
+4. 检查目标 hvigor/node/DevEco/SDK 与可用 hdc；配置真实文件路径，运行 validate。
+   只做源分析不以缺目标设备阻断；执行目标 build 前需要相应工具。
+5. iOS 的 Xcode、Mac、iPhone、Apple skills/MCP 是独立能力：分别记录 available、
+   configured、executed。云编译日志不能代替 iPhone 安装/功能验证。
+6. 输出已检测项和可执行阶段，按现有授权进入 a2h-run/spec。
+
+不写账号密码、证书私钥到配置。现有业务源和目标代码不因初始化被覆盖。
+配置文件只记录事实，缺工具写 unavailable，不生成虚假路径。
+重复运行应幂等；源更换需要先保留并重审旧 baseline，不能沿用其成功状态。

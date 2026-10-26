@@ -1,0 +1,4 @@
+interface:
+  display_name: arkts-codebase-locator
+  short_description: 针对ArkTS语言的Harmony应用代码仓功能定位类问答技能。专门用于回答"xx功能在哪实现？"、"导出逻辑在哪？"、"…
+  default_prompt: 请使用 $arkts-codebase-locator，按本技能的输入、执行步骤和验收条件完成当前任务。

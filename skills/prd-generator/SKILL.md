@@ -1,6 +1,6 @@
 ---
 name: prd-generator
-description: 基于终端V2.1 PRD模板的PRD生成与分析工具。支持：(1)根据需求描述生成完整的PRD文档 (2)分析PRD文档的完整性和规范性 (3)提取KEP/KEI列表 (4)验证公共需求/能力交互影响分析 (5)检查竞品分析章节完整性 (6)生成PRD分析报告。适用于用户请求：(1)生成PRD文档 (2)分析或审查PRD文档 (3)从PRD中提取KEP/KEI列表 (4)检查PRD完整性或一致性 (5)验证PRD格式合规性 (6)验证公共需求/能力分析完整性。关键词：PRD生成、PRD分析、KEP提取、KEI提取、完整性检查、公共需求分析、竞品分析检查、generate PRD、analyze PRD、completeness check
+description: "基于终端V2.1 PRD模板的PRD生成与分析工具。支持：(1)根据需求描述生成完整的PRD文档 (2)分析PRD文档的完整性和规范性 (3)提取KEP/KEI列表 (4)验证公共需求/能力交互影响分析 (5)检查竞品分析章节完整性 (6)生成PRD分析报告。适用于用户请求：(1)生成PRD文档 (2)分析或审查PRD文档 (3)从PRD中提取KEP/KEI列表 (4)检查PRD完整性或一致性 (5)验证PRD格式合规性 (6)验证公共需求/能力分析完整性。关键词：PRD生成、PRD分析、KEP提取、KEI提取、完整性检查、公共需求分析、竞品分析检查、generate PRD、analyze PRD、completeness check"
 ---
 
 # PRD Generator
@@ -591,11 +591,11 @@ description: 基于终端V2.1 PRD模板的PRD生成与分析工具。支持：(1
 
 ### KEP/KEI 验证
 - **KEP验证**: [references/kep_validation.md](references/kep_validation.md)
-- **KEI验证**: [references/kei_validation.md](references/kei_validation.md)
+- **KEI验证**: 本节 KEI 完整性与度量检查
 
 ### 公共需求分析
 - **公共需求分析**: [references/public_requirements.md](references/public_requirements.md)
-- **竞品分析**: [references/competitive_analysis.md](references/competitive_analysis.md)
+- **竞品分析**: 按需求、功能、证据日期逐项对比，未知项明确标注
 
 ### 规范性检查
 - **收集个人信息清单**: [references/personal_info_collection.md](references/personal_info_collection.md)
@@ -604,7 +604,7 @@ description: 基于终端V2.1 PRD模板的PRD生成与分析工具。支持：(1
 
 ## 报告模板
 
-自定义报告格式，参见 [assets/report_template.md](assets/report_template.md)。
+自定义报告格式，采用本文报告结构并记录每条问题的原文位置和修改建议。
 
 ## 错误处理
 

@@ -1,6 +1,4 @@
 interface:
-  display_name: "iOS 初始化"
-  default_prompt: |
-    Run $a2h-init: check this host first, including Windows Swift and available Xcode Release settings on Windows; confirm native iOS/HarmonyOS/DevEco/hvigorw/hdc paths, preserve user configuration and authorization, and mark paths confirmed. Product/capability scope belongs to SPEC. Local operation does not require telemetry enrolment.
-policy:
-  allow_implicit_invocation: true
+  display_name: a2h-init
+  short_description: 初始化 iOS 源根、鸿蒙目标与工具路径；确认 source_platform=ios，保留用户配置，区分本地源分析、目标…
+  default_prompt: 请使用 $a2h-init，按本技能的输入、执行步骤和验收条件完成当前任务。

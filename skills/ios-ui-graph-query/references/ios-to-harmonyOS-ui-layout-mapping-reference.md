@@ -26,7 +26,3 @@ Source safeAreaInsets / safeAreaLayoutGuide / ignoresSafeArea / safeAreaInset de
 - A percentage child under an unconstrained parent is not proof it matches the parent's content size. Retain the original checks for unbounded scrolling and percentage backgrounds.
 - Use source-defined size/ratio for Image. Dynamic/unknown geometry remains an explicit implementation question.
 - Original ArkTS component/state/navigation/build rules stay in their domain skills. Validate the actual target SDK API before using it.
-
-## Modal defaults
-
-When mapping source sheets to ArkUI `bindSheet`, compare visible system chrome as well as dismissal bindings. The official `SheetOptions.showClose` default is true; explicitly select the value that preserves the source's actual close controls and presentation. Do not universally force false or add a second close control. Preserve the source cancellation/result and parent dismissal chain.

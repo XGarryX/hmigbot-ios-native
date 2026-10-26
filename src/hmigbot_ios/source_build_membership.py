@@ -19,9 +19,11 @@ not build authenticity, IPA authorship, runtime behavior or test evidence.
 from __future__ import annotations
 
 from pathlib import Path
+import platform
 import re
 
 from .contracts import require
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
 
 KIND = "source_build_membership"
@@ -234,9 +236,31 @@ def _location(path: Path) -> tuple[str | None, str | None]:
     return target, architecture
 
 
-def _classify(value: str, source_posix: str, derived_posix: str, source: Path, snap: dict) -> tuple[str, str | None, str | None]:
+def _normalize_capture_path(value, aliases=()):
+    for old, new in aliases:
+        if value == old or value.startswith(old + '/'):
+            return new + value[len(old):]
+    return value
+
+
+def _path_aliases(document):
+    rows = document.get('path_aliases', [])
+    require(isinstance(rows, list), 'Invalid captured path aliases')
+    allowed = {'/tmp': '/private/tmp', '/var': '/private/var'}
+    require(not rows or document.get('schema_version') == 2, 'Path aliases require membership schema 2')
+    seen = set()
+    for row in rows:
+        require(isinstance(row, dict) and set(row) == {'from', 'to'}
+                and row.get('from') in allowed and row.get('to') == allowed[row['from']]
+                and row['from'] not in seen, 'Invalid captured Darwin system path alias')
+        seen.add(row['from'])
+    return [(row['from'], row['to']) for row in rows]
+
+
+def _classify(value: str, source_posix: str, derived_posix: str, source: Path, snap: dict, aliases=()) -> tuple[str, str | None, str | None]:
     if not _absolute(value):
         return "relative", None, "Compiler input is not an absolute path"
+    value = _normalize_capture_path(value, aliases)
     prefix = source_posix.rstrip("/") + "/"
     if not value.startswith(prefix):
         if derived_posix and value.startswith(derived_posix.rstrip("/") + "/"):
@@ -320,9 +344,12 @@ def collect(source: Path, derived_data: Path, capture: Path, selection: dict,
     declared_architectures: set = set()
     selection = _selection(selection, declared_architectures)
     selected_targets = {item.casefold() for item in selection["targets"]}
-    current = snapshot(source)
+    current = source_snapshot(source)
     snap = {item["path"]: item for item in current["files"]}
     source_posix, derived_posix = source.as_posix(), derived_data.as_posix()
+    from .core import trusted_system_alias
+    aliases = [(name, '/private' + name) for name in ('/tmp', '/var')
+               if platform.system() == 'Darwin' and trusted_system_alias(Path(name))]
 
     files: dict[str, bytes] = {}
     sources: list[dict] = []
@@ -376,6 +403,9 @@ def collect(source: Path, derived_data: Path, capture: Path, selection: dict,
             artifact = None
             if build_log.is_relative_to(capture):
                 artifact = build_log.relative_to(capture).as_posix()
+            else:
+                artifact = 'build-logs/compile.log'
+                files[artifact] = raw_log
             build_log_record = {"artifact": artifact, "sha256": digest(raw_log), "bytes": len(raw_log),
                                 "swift_entries": sum(1 for item in invocations["entries"]
                                                      if item["origin"] == ORIGIN_BUILD_LOG_SWIFT),
@@ -407,7 +437,7 @@ def collect(source: Path, derived_data: Path, capture: Path, selection: dict,
             record["origins"].add(item["origin"])
             record["targets"].add(target)
             continue
-        category, relative, detail = _classify(item["path"], source_posix, derived_posix, source, snap)
+        category, relative, detail = _classify(item["path"], source_posix, derived_posix, source, snap, aliases)
         if category == "member":
             entry = snap[relative]
             kind, analysis = _member_kind(relative)
@@ -445,14 +475,14 @@ def collect(source: Path, derived_data: Path, capture: Path, selection: dict,
 
     # A path attributed to a selected target cannot stay excluded by target scope.
     member_paths = {source_posix.rstrip("/") + "/" + path for path in members}
-    for key in [key for key in excluded if key in member_paths]:
+    for key in [key for key in excluded if _normalize_capture_path(key, aliases) in member_paths]:
         excluded.pop(key)
 
     expected_by_directory: dict = {}
     for item in captured:
         target, architecture = item.get("target"), item.get("architecture")
         if target and architecture and target.casefold() in selected_targets:
-            expected_by_directory.setdefault((target, architecture), set()).add(item["path"])
+            expected_by_directory.setdefault((target, architecture), set()).add(_normalize_capture_path(item["path"], aliases))
     object_counts = _object_files(derived_data, selected_targets)
     directories, unmatched = [], []
     for (target, architecture), names in sorted(object_counts.items()):
@@ -514,12 +544,13 @@ def collect(source: Path, derived_data: Path, capture: Path, selection: dict,
         limitations.append("build_log_cross_check_unavailable")
 
     document = {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": 2,
         "kind": KIND,
         "scope": SCOPE,
         "membership_status": status,
         "selection": selection,
         "capture_roots": {"source": source_posix, "derived_data": derived_posix},
+        "path_aliases": [{"from": old, "to": new} for old, new in aliases],
         "source_sha256": current["sha256"],
         "architectures": sorted(observed),
         "source_files": sorted(members),
@@ -589,6 +620,7 @@ def _replay_membership(source, capture, document, snap, selected):
     sources = evidence.get("sources")
     require(isinstance(sources, list), "Membership evidence sources must be a list")
     source_root, derived_root = _capture_roots(document, source)
+    aliases = _path_aliases(document)
     captured, observed, required_unresolved, artifacts = [], set(), set(), set()
     for item in sources:
         require(isinstance(item, dict) and item.get("kind") == ORIGIN_SWIFT_FILE_LIST,
@@ -664,11 +696,11 @@ def _replay_membership(source, capture, document, snap, selected):
         require(not complete or target and architecture,
                 "Complete membership cannot hide unknown compiler target or architecture")
         if target and architecture and target.casefold() in selected:
-            directories.setdefault((target, architecture), set()).add(value)
+            directories.setdefault((target, architecture), set()).add(_normalize_capture_path(value, aliases))
         if target and target.casefold() not in selected:
             category, relative, reason = "excluded", None, EXCLUDED_TARGET
         else:
-            category, relative, _ = _classify(value, source_root, derived_root, source, snap)
+            category, relative, _ = _classify(value, source_root, derived_root, source, snap, aliases)
             if category in {"relative", "escaping", "missing"}:
                 required_unresolved.add(({"relative": "relative_compile_input", "escaping": "escaping_compile_input",
                                           "missing": "missing_compile_input"}[category], value))
@@ -749,7 +781,7 @@ def validate(source: Path, document, *, capture: Path | None = None) -> dict:
     if isinstance(document, (str, Path)):
         document = read_json(Path(document))
     require(isinstance(document, dict), "Membership document must be an object")
-    require(type(document.get("schema_version")) is int and document["schema_version"] == SCHEMA_VERSION
+    require(type(document.get("schema_version")) is int and document["schema_version"] in (1, 2)
             and document.get("kind") == KIND and document.get("scope") == SCOPE,
             "Unsupported source build membership contract")
     status = document.get("membership_status")
@@ -758,8 +790,9 @@ def validate(source: Path, document, *, capture: Path | None = None) -> dict:
     require(document["selection"] == selection, "Membership selection must be normalized")
     selected = {item.casefold() for item in selection["targets"]}
     _capture_roots(document, source)
+    _path_aliases(document)
     _names(document.get("architectures"), "Membership architectures")
-    current = snapshot(source)
+    current = source_snapshot(source)
     require(document.get("source_sha256") == current["sha256"],
             "Membership source fingerprint is stale or modified")
     snap = {item["path"]: item for item in current["files"]}
@@ -821,6 +854,9 @@ def validate(source: Path, document, *, capture: Path | None = None) -> dict:
         _count(counts.get(key), expected, "Membership count " + key)
     if capture is not None:
         _replay_membership(source, Path(capture).resolve(), document, snap, selected)
+        if (Path(capture) / 'target-scope.json').is_file():
+            from .native_product_scope import validate_scope
+            validate_scope(source, capture, document)
     return {"schema_version": SCHEMA_VERSION, "kind": KIND, "integrity_passed": True,
             "membership_status": status, "source_sha256": current["sha256"],
             "source_files": paths, "claim_validation": "not_performed",

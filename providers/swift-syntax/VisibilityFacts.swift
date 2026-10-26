@@ -1,4 +1,6 @@
-// Additive syntax facts only; overload resolution and page semantics remain Phase A work.
+// Adapted from Garry ios.32's additive SwiftSyntax facts. Overload resolution,
+// source/target equivalence and runtime visibility remain separate review work.
+import Foundation
 import SwiftSyntax
 
 private final class VisibilityReferences: SyntaxVisitor {
@@ -54,8 +56,8 @@ final class VisibilityCollector: SyntaxVisitor {
         let labels: [String]
         let contentClosures: Set<Int>
     }
-    // Derived from the public WidgetKit init signatures documented in
-    // widget-builder-slots.json. Indices refer to declaration parameters, so
+    // Derived from public WidgetKit init signatures (see README.md for scope).
+    // Indices refer to declaration parameters, so
     // explicit and forward-scanned trailing closures use the same slot.
     // ActivityConfiguration.dynamicIsland is a DynamicIsland-returning UI
     // configuration closure, not a ViewBuilder parameter.

@@ -1,0 +1,4 @@
+interface:
+  display_name: tdd-enforcer
+  short_description: TDD 执行约束 skill，在 migbot-increment-applying 阶段对每个 task 强制执行 RE…
+  default_prompt: 请使用 $tdd-enforcer，按本技能的输入、执行步骤和验收条件完成当前任务。

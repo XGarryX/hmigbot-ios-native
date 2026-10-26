@@ -114,13 +114,13 @@ python3 $SK/skill-checker/scripts/quality_scan.py --dir $SK --skill <skill>   # 
 
 ---
 
-## D. Worked example — app-relationship-tree（F，两版并列）
+## D. Worked example — ios-project-inspector（F，两版并列）
 
 快速分级: `F（🚩5/⚠️3）` body≈9.2k tok  架构: mono(0 ref)
 
 | 维度 | verdict | 脚本信号 | LLM 判定 |
 |---|---|---|---|
-| P1 路由 | 🚩 | F8 无负向边界 | D7：与上游 `toolkit-fact-indexer` 高度可混（"产 fact-tree/关系树"两者都命中）→ 必补边界 |
+| P1 路由 | 🚩 | F8 无负向边界 | D7：与上游 `ios-ui-analyzer` 高度可混（"产 fact-tree/关系树"两者都命中）→ 必补边界 |
 | P2 Body | 🚩 | F3 9.2k / F6 代码块24 / F4 自我介绍≥2 | **B4 Core≈30%**（Bg≈30% §1.1+§6+§4+§3.5；Tmpl≈25% jsonc/伪代码；Ex≈15%）|
 | P3 References | ✓ | 无（但因 monolithic 无 ref 可拆） | — |
 | P4 架构 | 🚩 | A1 monolithic 0 ref | A2：6 phase 的 jsonc schema/伪代码全堆 body |
@@ -138,7 +138,7 @@ python3 $SK/skill-checker/scripts/quality_scan.py --dir $SK --skill <skill>   # 
 #### A. 修改项（P0×2 / P1×1 / P2×1）
 | # | 优先级 | 维度 | 问题项 | 证据 | 可实操修改 |
 |---|---|---|---|---|---|
-| 1 | P0 | P1 | 缺负向边界，与 toolkit-fact-indexer 可混 | SKILL.md `description` | 末尾加「不要用于：首次从 toolkit 产物生成 fact-tree（用 toolkit-fact-indexer）；改 HMOS 现状（不读 ArkTS）」 |
+| 1 | P0 | P1 | 缺负向边界，与 ios-ui-analyzer 可混 | SKILL.md `description` | 末尾加「不要用于：首次从 toolkit 产物生成 fact-tree（用 ios-ui-analyzer）；改 HMOS 现状（不读 ArkTS）」 |
 | 2 | P0 | P2/P4 | Core 30% + monolithic + 9.2k + 自我介绍(F4) | §1.1/§6/§4/§3.5(背景) + Phase 2.5–4(jsonc schema) + §1 自我介绍 | 建 `references/`：背景→references/、schema→references/templates/、删自我介绍；body 留 phase 骨架+铁律+Phase5自检 |
 | 3 | P1 | P6 | v6.x 版本标(29 处, W10) | 各 `### Phase …（v6.x …）` + §6 | 段标删 `(v6.x …)`，版本史只留 §6 表 |
 | 4 | P2 | P6 | 末尾无 Remember（W8 已降 ℹ️） | SKILL.md 末尾 | 可选：加 `> Remember:` 重述 top-3 铁律 |
@@ -151,11 +151,11 @@ python3 $SK/skill-checker/scripts/quality_scan.py --dir $SK --skill <skill>   # 
 **量化目标**：body 9.2k→≤3.5k tok ｜ Core≥60% ｜ tiered（有 references/）｜ 负向边界✓ ｜ P0 红旗(F8/A1/F4)清零。
 
 ```bash
-SK=arkts-skills/skills; F=$SK/app-relationship-tree/SKILL.md
+SK=arkts-skills/skills; F=$SK/ios-project-inspector/SKILL.md
 grep -q '不要用于' $F && echo '✓#1 边界'
-[ -d $SK/app-relationship-tree/references ] && echo '✓#2 tiered'
+[ -d $SK/ios-project-inspector/references ] && echo '✓#2 tiered'
 grep -qE '（v[0-9]' $F && echo '✗#3 残留版本标' || echo '✓#3'
-python3 $SK/skill-checker/scripts/quality_scan.py --dir $SK --skill app-relationship-tree  # 复核：🚩 必修应清零
+python3 $SK/skill-checker/scripts/quality_scan.py --dir $SK --skill ios-project-inspector  # 复核：🚩 必修应清零
 ```
 
 | 验收项 | 判据 | 方式 |

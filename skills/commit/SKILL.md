@@ -1,6 +1,6 @@
 ---
 name: commit
-description: ArkTS 迁移/修复工作的 git commit 生成器，强制 7 字段结构化 commit message（大类/问题分类/Skill/工具/Spec参考/修复方式/Summary）。即使用户只说"提交"、"commit"、"帮我记录下这次修改"，也应触发。
+description: "ArkTS 迁移/修复工作的 git commit 生成器，强制 7 字段结构化 commit message（大类/问题分类/Skill/工具/Spec参考/修复方式/Summary）。即使用户只说\"提交\"、\"commit\"、\"帮我记录下这次修改\"，也应触发。"
 metadata:
   type: tool
   domain: engineering

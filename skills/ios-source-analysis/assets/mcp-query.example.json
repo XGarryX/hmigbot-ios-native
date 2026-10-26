@@ -1,0 +1,7 @@
+{
+  "source_sha256": "replace-with-current-ios-facts-source-sha256",
+  "graph_sha256": "replace-with-canonical-ios-facts-json-sha256",
+  "fact_ids": ["replace-with-real-IF-id"],
+  "tool": "find_symbol",
+  "arguments": {"name_path_pattern": "SearchViewModel/search", "include_body": true}
+}

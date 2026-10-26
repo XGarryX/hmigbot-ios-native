@@ -3,6 +3,10 @@ name: migbot-increment-reviewing
 description: 审阅 SDD / Spec 类 Markdown 文档（spec、arch、design）及需求提案、需求解析、需求澄清、代码仓理解产物，先判断作者意图与文档类型，再输出更贴近原意的优化稿。默认走轻量模式；只有在用户明确要求完整审计时，才进入 audit mode。
 ---
 
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+
 # SDD / Spec 文档审阅
 
 面向 `spec`、`arch`、`design` 及 OpenSpec 中可映射到这三类的 Markdown 文档；同时支持需求提案、需求解析、需求澄清、代码仓理解四类需求分析产物。非支持类型的输入内容只能作为背景上下文辅助判断，不进入主输出文档集合。

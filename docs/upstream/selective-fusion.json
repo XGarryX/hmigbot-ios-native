@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "tool_version": "0.13.4",
+  "release_profile": "macos-arm64",
+  "upstream": {
+    "repository": "https://github.com/XGarryX/hmigbot-ios-native",
+    "ref": "hmigbot-ios-1.5.2.32",
+    "observed_commit": "368756aca3c88897ee5fc7ce22cfb43430b75ef3",
+    "source_files": [
+      {
+        "path": "providers/swift-syntax/VisibilityFacts.swift",
+        "sha256": "1b2525c6b13698cd2d2aed71e157de24f9fe50ff177e8bc99b6d294b3aad353c"
+      },
+      {
+        "path": "skills/a2h-execute/scripts/feature_status_writeback.py",
+        "sha256": "09bb545ebae45e81901b0466edc03167055f534e87076cd913f2e0aabe3538fc"
+      },
+      {
+        "path": "skills/a2h-execute/scripts/registry_table_format.py",
+        "sha256": "237a922df1d7434ed1478f23801cc8319bc88d2e5acf675bdfa47adb2dd344b5"
+      },
+      {
+        "path": "src/hmigbot_ios152/env_doctor.py",
+        "sha256": "05e45c076dc9d07a4bcdabe462de4906450a51f1e7b3d5fa511f4923edf0a3a1"
+      }
+    ]
+  },
+  "policy": "Choose one authority by capability and actual consumer; intentional deferrals are not required conversion gates",
+  "capability_decisions": [
+    {
+      "id": "A01",
+      "decision": "retain_local",
+      "reason": "One formally published SwiftSyntax evidence chain"
+    },
+    {
+      "id": "A02",
+      "decision": "defer",
+      "reason": "Cross-process compiler cache is optional; avoid a second cache permission/identity protocol in the basic path"
+    },
+    {
+      "id": "A03",
+      "decision": "retain_local",
+      "reason": "Actual scheme/configuration/SDK/architecture and embedded product membership"
+    },
+    {
+      "id": "A04",
+      "decision": "retain_local",
+      "reason": "Official conditional compiler views bound to source and original build"
+    },
+    {
+      "id": "A05",
+      "decision": "retain_local",
+      "reason": "Clang per-unit and mixed bridge evidence"
+    },
+    {
+      "id": "A06",
+      "decision": "official_substitution",
+      "reason": "Apple plutil owns OpenStep grammar; retain local target resolution"
+    },
+    {
+      "id": "A07",
+      "decision": "exclude_redundant",
+      "reason": "No additional legacy inventory format without a current consumer"
+    },
+    {
+      "id": "A08",
+      "decision": "share_existing",
+      "reason": "Official facts and applicable expertise signals, no duplicate source parser"
+    },
+    {
+      "id": "U01",
+      "decision": "fuse",
+      "reason": "Garry SwiftSyntax visibility collector with local active-view consumer"
+    },
+    {
+      "id": "U02",
+      "decision": "fuse",
+      "reason": "Public WidgetKit rendering slots, unresolved custom signatures remain unknown"
+    },
+    {
+      "id": "U03",
+      "decision": "fuse_optional",
+      "reason": "Real meta/view/visibility CLI consumer; no new mandatory stage"
+    },
+    {
+      "id": "U04",
+      "decision": "defer",
+      "reason": "Runtime geometry requires external evidence and authorization"
+    },
+    {
+      "id": "U05",
+      "decision": "retain_bounded",
+      "reason": "Current graph/router adapters do not claim complete native UI semantics"
+    },
+    {
+      "id": "U06",
+      "decision": "defer",
+      "reason": "Special binding projection declarations and extra SDK oracle are outside basic conversion"
+    },
+    {
+      "id": "U07",
+      "decision": "defer_special_protocol",
+      "reason": "Retain current contract_refs and obligation-to-AC reuse; dedicated owner-instance projection is not silently claimed equivalent"
+    },
+    {
+      "id": "R01",
+      "decision": "share_existing",
+      "reason": "One asset/resource conversion authority"
+    },
+    {
+      "id": "R02",
+      "decision": "share_existing",
+      "reason": "One localization conversion authority"
+    },
+    {
+      "id": "R03",
+      "decision": "retain_local",
+      "reason": "Current product scope and target resource consumers"
+    },
+    {
+      "id": "R04",
+      "decision": "retain_bounded",
+      "reason": "IB tooling and inventory do not establish full ArkUI layout equivalence"
+    },
+    {
+      "id": "E01",
+      "decision": "share_fused",
+      "reason": "Local frozen contracts and selected Garry indexed engine"
+    },
+    {
+      "id": "E02",
+      "decision": "retain_local",
+      "reason": "Existing structural consumers and exact input-signature reuse"
+    },
+    {
+      "id": "E03",
+      "decision": "defer",
+      "reason": "Additional orphan SDK projections require a specific consumer and explicit declarations"
+    },
+    {
+      "id": "E04",
+      "decision": "retain_local",
+      "reason": "Existing task join and ownership evidence"
+    },
+    {
+      "id": "E05",
+      "decision": "fuse",
+      "reason": "Local permission choices plus adapted Garry target-environment three-state network diagnostics"
+    },
+    {
+      "id": "E06",
+      "decision": "bounded",
+      "reason": "Model execution and supported rules; not an unrestricted automatic converter"
+    },
+    {
+      "id": "E07",
+      "decision": "share_optimized",
+      "reason": "One formal handoff validation; exact current bindings required to reuse successful result"
+    },
+    {
+      "id": "X01",
+      "decision": "defer",
+      "reason": "Only macOS ARM64 executable release; other hosts explicitly marked"
+    }
+  ],
+  "shared_implementation_reasons": {
+    "source": "One original file/configuration identity avoids contradictory facts and repeated parsing",
+    "conditional_views": "All consumers use the same compiler-selected active regions and per-unit coordinates",
+    "plan_acceptance": "Only current exact frozen bindings reuse actual success; no new native execution claim",
+    "writeback": "One selected upstream chain plus strict local readback preserves sole control writer",
+    "target_environment": "One direct argv diagnostic entry; actual SDK build remains separate",
+    "release_boundary": "Packaging and installation select the same runtime inputs; development data remains external"
+  },
+  "official_references": [
+    "https://developer.apple.com/documentation/xcode/xcode-command-line-tool-reference",
+    "https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode",
+    "https://github.com/swiftlang/swift-syntax",
+    "https://docs.swift.org/latest/documentation/the-swift-programming-language/statements/",
+    "https://developer.apple.com/documentation/widgetkit/creating-a-widget-extension",
+    "https://developer.huawei.com/consumer/en/doc/harmonyos-guides/ide-hvigor-commandline"
+  ],
+  "application_acceptance": "not_established_by_tool_fusion"
+}

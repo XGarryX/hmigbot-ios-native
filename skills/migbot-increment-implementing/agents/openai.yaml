@@ -1,0 +1,4 @@
+interface:
+  display_name: migbot-increment-implementing
+  short_description: Migbot-Increment IMPLEMENTING 阶段 skill，用于代码开发任务分解与规划。 当用户说"执行…
+  default_prompt: 请使用 $migbot-increment-implementing，按本技能的输入、执行步骤和验收条件完成当前任务。

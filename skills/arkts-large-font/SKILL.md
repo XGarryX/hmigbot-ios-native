@@ -11,6 +11,10 @@ metadata:
   - accessibility
   - layout
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # arkts-large-font — ArkTS 大字体/适老化排查技能
 
 > HarmonyOS 设置 → 显示与亮度 → 字体大小/显示大小 被用户调大（尤其"适老化"档位）后，ArkUI 页面出现的截断、溢出、错位、图标失真、菜单变形等一系列缺陷的根因定位。
@@ -48,7 +52,7 @@ metadata:
 
 - **fp**（font pixel）：文本专用，**会**跟随 `fontSizeScale` 放大
 - **vp**（virtual pixel）：布局专用，**不**跟随字体缩放
-- 坑 1：`SymbolGlyph.fontSize(...)` 的裸数字默认按 **fp** 解析，会跟随系统字号；`Image` 不提供 `fontSize`，其尺寸按源与 `width` / `height` 的实际声明核对
+- 坑 1：`SymbolGlyph` / `Image.fontSize(...)` 若不显式写单位，默认按 **fp** 解析，图标会跟着字号放大
 - 坑 2：把系统资源 `$r('sys.float.Caption_L')`（fp 基）拿去做容器高度，容器跟着变高
 - 坑 3：`$r` 资源若不显式指定单位，测量阶段可能被当作 fp，引起文字闪烁/测量异常
 
@@ -180,7 +184,7 @@ onConfigurationUpdate(newCfg: Configuration): void {
 - grep `.maxFontScale(`、`.minFontScale(`——看哪些文本组件**没**设
 - grep `.height(` / `.constraintSize(`——看是否对文本/按钮/Tab 容器写死高度
 - 找自定义弹窗：`@CustomDialog` / `CustomDialogController` / `bindSheet` / `bindMenu` / `bindContextMenu` / `Picker` / `AlertDialog`
-- 找图标类：`SymbolGlyph(`、`Image(`（核对 `width` / `height`）、`Chip(`、`SubHeader(`
+- 找图标类：`SymbolGlyph(`、`Image(...).fontSize(`、`Chip(`、`SubHeader(`
 - 找子窗 / 扩展：`createSubWindow`、`UIExtensionComponent`、`IsolatedComponent`
 - 找配置回调：`onConfigurationUpdate(`——确认是否已存在并响应 `fontSizeScale`
 
@@ -189,7 +193,7 @@ onConfigurationUpdate(newCfg: Configuration): void {
 翻到 `references/patterns.md` 里你匹配的模式，最常命中的错误特征：
 
 - 文本/按钮缺 `.maxFontScale(...)`，适老化档位下被撑爆
-- `SymbolGlyph.fontSize` 的裸数字默认 fp，随系统字号缩放；不要向 `Image` 添加不存在的 `fontSize`
+- `SymbolGlyph` / `Image.fontSize` 不带单位，按 fp 解析跟着字号放大
 - 用 `$r('sys.float.Caption_L')` 这类 fp 资源做容器 `.height(...)`，容器随字号长高
 - `.height(56)` 写死的页签 / 标题栏，大字体下文字被裁
 - 自定义弹窗在 `onConfigurationUpdate` 中未销毁重建，切档不刷新

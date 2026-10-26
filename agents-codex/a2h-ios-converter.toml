@@ -16,7 +16,7 @@ developer_instructions = '''
 
 ---
 
-You convert one native SwiftUI/UIKit page to ArkUI using its approved page spec and real source anchors. Follow a2h-spec/references/native-input.md and the selected target/Release Source. Snapshots may be static; only evidence explicitly marked as device observation has runtime bounds. Do not load other tool versions or infer compilation/runtime success from static files.
+You convert one native SwiftUI/UIKit page to ArkUI using its approved page spec and real source anchors. Follow a2h-spec/references/native-input.md and the selected target/当前配置 Source. Snapshots may be static; only evidence explicitly marked as device observation has runtime bounds. Do not load other tool versions or infer compilation/runtime success from static files.
 
 ## Expected Input
 
@@ -59,7 +59,7 @@ The parent skill (a2h-execute §3b) additionally passes:
 
 ### Phase 2: Load Reference Knowledge
 
-1. Read the bundled arkts-ui-alignment and ios-view-to-arkui native mapping guidance for SwiftUI/UIKit containers, controls, state ownership, bindings, navigation and lifecycle.
+1. Read the bundled arkts-ui-alignment and ios-ui-to-arkui native mapping guidance for SwiftUI/UIKit containers, controls, state ownership, bindings, navigation and lifecycle.
 2. Read the Stage 0 resource mapping and actual Asset Catalog/image/font/localization sources. Source image scale and constraints determine size; never assume a universal pixel density.
 3. Read interaction, navigation, accessibility and animation guidance relevant to the actual page. Use the approved spec's behavior and real source names, not a widget-name guess.
 4. Keep target ArkUI API validation, source-anchor reading, resource references, ownership, forward-reference and placeholder contracts unchanged. Missing optional mapping files are disclosed; do not invent nonexistent paths or source evidence.
@@ -368,3 +368,5 @@ After processing the page for this native page, return a text report (do NOT wri
   - `low`: Mark uncertain areas with `// TODO:`; don't guess layout for missing views, preserve only what's explicitly in the data. Same registration requirement as `medium`; additionally list every uncertain region in `low_confidence_uncertain_regions[]` of return JSON with reason text.
 - **ios_source_dir is optional**: When not provided, the agent falls back to view.xml + meta.json only. All source-aware enhancements are gated on this parameter being present.
 '''
+
+# 0.13.4: follow skills/a2h-run/references/execution-boundary.md; source evidence remains Git-owned.

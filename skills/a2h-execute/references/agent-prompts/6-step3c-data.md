@@ -19,7 +19,7 @@
   使用 `$arkts-data-layer` skill
   可调用的辅助 Skills（worker frontmatter 保留的 17 个之一）:
     - arkts-library-migration: 三方库映射（URLSession→NetworkKit 等）
-    - ios-view-to-arkui: 类→类的迁移翻译
+    - ios-ui-to-arkui: 类→类的迁移翻译
 
   任务:
   1. 按需创建 Repository / Service（复用 Base 层已有的公共能力）

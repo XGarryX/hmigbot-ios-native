@@ -1,4 +1,4 @@
-﻿# arkts-structural-closure / scripts
+# arkts-structural-closure / scripts
 
 Deterministic detection scripts implementing the structural verification
 protocol defined in [`../SKILL.md`](../SKILL.md). All scripts produce

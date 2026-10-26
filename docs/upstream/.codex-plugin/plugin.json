@@ -1,0 +1,18 @@
+{
+  "name": "migbot",
+  "version": "1.6.1",
+  "description": "Android-to-ArkTS (HarmonyOS) migration toolkit: 90 skills, 7 subagents, and the a2h runtime. Triggers skills with the $ prefix (e.g. $a2h-run), not /commands — Codex has no custom slash commands.",
+  "author": {
+    "name": "fuxi-ailabs"
+  },
+  "homepage": "https://github.com/fuxi-ailabs/hmigbot-CodeX",
+  "repository": "https://github.com/fuxi-ailabs/hmigbot-CodeX",
+  "license": "MIT",
+  "keywords": [
+    "android",
+    "harmonyos",
+    "arkts",
+    "migration"
+  ],
+  "skills": "./skills/"
+}

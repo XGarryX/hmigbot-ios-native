@@ -1,0 +1,30 @@
+{
+  "color": [
+    { "name": "color_main",                  "value": "#3D7FFF" },
+    { "name": "color_page_bg",               "value": "#FFFFFF" },
+
+    { "name": "color_text",                  "value": "#1F2329" },
+    { "name": "color_text_hint",             "value": "#86909C" },
+    { "name": "color_text_low",              "value": "#C5CCD4" },
+
+    { "name": "color_main_btn_bg_start",     "value": "#3D7FFF" },
+    { "name": "color_main_btn_bg_end",       "value": "#5B9CFF" },
+    { "name": "color_main_btn_bg_disabled",  "value": "#D9E3F5" },
+
+    { "name": "color_title",                 "value": "#1F2329" },
+    { "name": "color_title_right",           "value": "#3D7FFF" },
+
+    { "name": "color_dialog_bg",             "value": "#FFFFFF" },
+    { "name": "color_dialog_title",          "value": "#1F2329" },
+    { "name": "color_dialog_content",        "value": "#4E5969" },
+
+    { "name": "color_dialog_sure_bg_start",  "value": "#3D7FFF" },
+    { "name": "color_dialog_sure_bg_end",    "value": "#5B9CFF" },
+    { "name": "color_dialog_sure_text",      "value": "#FFFFFF" },
+
+    { "name": "color_dialog_cancel_bg",      "value": "#F2F3F5" },
+    { "name": "color_dialog_cancel_text",    "value": "#4E5969" },
+
+    { "name": "color_dialog_disable_bg",     "value": "#D9E3F5" }
+  ]
+}

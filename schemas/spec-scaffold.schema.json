@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/spec-scaffold.schema.json",
+  "title": "spec-scaffold-candidate",
+  "description": "Canonical derived candidate produced by native_scaffold.scaffold(). Every artifact is unreviewed (candidate/needs_review=true, spec_complete/behavior_verified=false) and never enterable as a plan until independently reviewed.",
+  "type": "object",
+  "required": ["schema_version", "kind", "source_platform", "source_sha256", "candidate", "needs_review", "spec_complete", "behavior_verified", "enterable_plan", "summary", "candidates", "files", "inventory_diff"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 2},
+    "kind": {"type": "string", "const": "spec-scaffold-candidate"},
+    "scaffold_schema": {"type": "string"},
+    "source_platform": {"type": "string", "const": "ios"},
+    "source_sha256": {"type": "string"},
+    "candidate": {"type": "boolean", "const": true},
+    "needs_review": {"type": "boolean", "const": true},
+    "spec_complete": {"type": "boolean", "const": false},
+    "behavior_verified": {"type": "boolean", "const": false},
+    "enterable_plan": {"type": "boolean", "const": false},
+    "source_change_detected": {"type": "boolean"},
+    "summary": {
+      "type": "object",
+      "required": ["total_candidates", "pages", "features", "components", "bridges", "extensions", "unknown_templates"],
+      "properties": {
+        "total_candidates": {"type": "integer"},
+        "pages": {"type": "integer"},
+        "features": {"type": "integer"},
+        "components": {"type": "integer"},
+        "bridges": {"type": "integer"},
+        "extensions": {"type": "integer"},
+        "unknown_templates": {"type": "integer"}
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "decl_kind", "candidate_type", "framework", "confidence", "is_ui", "is_extension", "is_bridge", "unknown_template", "anchor", "stable_key", "enterable_plan"],
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "decl_kind": {"type": "string", "enum": ["struct", "class", "enum", "actor", "extension"]},
+          "candidate_type": {"type": "string", "enum": ["page", "component", "bridge", "extension", "unknown"]},
+          "framework": {"type": "string", "enum": ["swiftui", "uikit", "unknown"]},
+          "confidence": {"type": "string", "enum": ["low", "none"]},
+          "is_ui": {"type": "boolean"},
+          "is_extension": {"type": "boolean"},
+          "is_bridge": {"type": "boolean"},
+          "unknown_template": {"type": "boolean"},
+          "page_id": {"type": ["string", "null"]},
+          "feature_id": {"type": ["string", "null"]},
+          "anchor": {
+            "type": "object",
+            "required": ["path", "line", "sha256"],
+            "properties": {
+              "path": {"type": "string"},
+              "line": {"type": "integer"},
+              "sha256": {"type": "string"}
+            }
+          },
+          "stable_key": {"type": "string"},
+          "enterable_plan": {"type": "boolean", "const": false}
+        }
+      }
+    },
+    "files": {"type": "object"},
+    "file_contents": {"type": "object"},
+    "inventory_diff": {
+      "type": "object",
+      "required": ["new_pages", "new_features", "unknown_templates", "extensions"],
+      "properties": {
+        "new_pages": {"type": "array", "items": {"type": "string"}},
+        "new_features": {"type": "array", "items": {"type": "string"}},
+        "unknown_templates": {"type": "array", "items": {"type": "string"}},
+        "extensions": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

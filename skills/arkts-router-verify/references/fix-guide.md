@@ -1,3 +1,9 @@
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
 # 修复指南 — 四维度路由问题(改 HMOS / ArkTS 源码)
 
 > 铁律一:**改之前先读 HMOS 源码确认问题是真的**。很多 `missing_jump` 是抽取盲点(跳转其实存在)、
@@ -114,7 +120,7 @@ sortDialogCtrl: CustomDialogController = new CustomDialogController({
 
 **修法(确属真缺弹窗)** —— 五步,全部以 `dialog_specs.json` 为依据:
 1. **读 specs**: `dialogs[Name]` 的 ctor_params/callbacks/controls;控件数可疑地少(RadioGroup 空组)
-   → 回读 `file` 指向的 Kotlin 类体,把动态 add 的选项抄全。
+   → 回读 `file` 指向的真实 Swift/UIKit 源与已审定事实，补齐有证据的动态选项。
 2. **建组件** `entry/src/main/ets/dialogs/Name.ets`(@CustomDialog,§2 形状):
    props=ctor_params 去 activity/binding 类参数;onConfirm=callbacks 签名;build()=controls 翻译
    (RadioGroup→Radio 列,CheckBox→Checkbox,EditText→TextInput,SeekBar→Slider;文案有 $r 资源用资源,

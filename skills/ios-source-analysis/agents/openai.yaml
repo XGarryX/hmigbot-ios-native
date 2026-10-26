@@ -1,0 +1,4 @@
+interface:
+  display_name: ios-source-analysis
+  short_description: 原生 iOS 仓理解的统一入口：组织工程、UI、功能、API 四类分析，把 Swift、Objective-C、Swift…
+  default_prompt: 请使用 $ios-source-analysis，按本技能的输入、执行步骤和验收条件完成当前任务。

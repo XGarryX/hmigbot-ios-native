@@ -1,0 +1,4 @@
+interface:
+  display_name: rq-codebase
+  short_description: 需求分析时的代码仓理解能力，通过分析代码仓输出 info.md，为需求分析提供代码层面的上下文。当用户提出需求并需要进行代…
+  default_prompt: 请使用 $rq-codebase，按本技能的输入、执行步骤和验收条件完成当前任务。

@@ -40,14 +40,12 @@ Row() {
 
 ### ZStack / UIView 层叠 → Stack
 
-> ⚠️ **陷阱（57 处实锤事故，2026-08-24）**：把 `.align()` 挂在 Stack 的子项上，
-> 不能据此认定该子项已被定位到父 Stack 的指定位置；例如 `Image(...).align(Alignment.End)`
-> 不能代替父容器的子项定位，仍须按真实组件语义核对（图标叠标题正中、按钮浮顶遮内容）。
-> 子项定位仍只采用原三条映射：全子统一 `Stack({alignContent})`（可等价在 Stack 本体
-> 设置 `.align()`），逐子异向 `RelativeContainer+alignRules`，标题栏左中右 `Row+对称占位块`；
-> 撑满后的自身内容对齐仍按该组件支持的属性核验。
-> **这不是禁止 Stack 本体调用 `.align()`**：官方 `CommonMethod.align` 声明其在 Stack 上
-> 与 `Stack.alignContent` 同效，设置容器内子项对齐；两者同时设置时，按 `StackAttribute` 声明以后设置者为准。
+> ⚠️ **陷阱（57 处实锤事故，2026-08-24）**：`.align()` 修饰符只对齐**组件自身内容**，
+> **不能定位 Stack 子项**——未区分源 alignment 与目标定位语义就写 `Image(...).align(Alignment.End)`
+> 会让子项按 Stack 的 alignContent 叠放（图标叠标题正中、按钮浮顶遮内容）。
+> 子项定位只有三条路：全子统一 `Stack({alignContent})`、逐子 `RelativeContainer+alignRules`、
+> 标题栏左中右 `Row+对称占位块`。`.align()` 唯一合法场景 = 子项已撑满
+> （`layoutWeight(1)`/`height('100%')`）后钉自身内容。
 
 ```swift
 ZStack(alignment: .bottom) {

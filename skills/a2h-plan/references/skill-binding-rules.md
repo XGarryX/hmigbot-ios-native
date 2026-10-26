@@ -1,74 +1,41 @@
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> **当前发行 profile：设备/视觉后端延期。** `arkts-scenario-runner`、`arkts-visual-verify`、`arkts-ui-verifier`、`ios-screenshot-analyzer`（及历史 Android 截图别名）和 `scenario-builder` / `visual-fixer` / `visual-fixer-reviewer` 未作为本包可运行能力交付。不得调用、派发、要求安装或因其缺件阻断基本转换/构建/报告。相关本次实际调用记 deferred/not_run；可只读消费开发者提供的外部原始证据，核对源/目标版本、配置、范围和来源，保留外部实际结果，不能写成本工具已实测。没有证据不记 PASS，真实已归因产品失败继续保留。下文相关调用/目录仅为未来兼容标记。
 
-<!-- when: §4 给 task 标注 suggested_skills 时加载 -->
-<!-- topics: suggested_skills, task→skill 映射, Domain Skill 绑定, 特殊领域追加 -->
-<!-- 分工: 本表是 task→skill 映射数据的唯一权威(plan 期标注 + execute runtime 漏标兜底共用同一张表); execute 派发前的覆盖/注入/降级行为规则见 a2h-execute references/skill-binding-override.md -->
+# iOS 迁移的目标技能绑定
 
-# suggested_skills 主映射表
+按 spec 行为与接口绑定；关键词只作候选，不代表 SDK 可用或行为等价。每项读取完整技能和适用参考。
 
-根据 task 内容 / 业务类别匹配到对应 Domain Skill。一个 task 可标注多个 skill（按执行顺序排列）。
+| 需求/源事实 | 包内技能 |
+|---|---|
+| 工程初始化 | arkts-project-scaffolder |
+| 资源/本地化 | ios-resources-convert, arkts-i18n |
+| 页面转换 | ios-ui-to-arkui, arkts-component-builder |
+| 状态所有权/Binding/模型 | arkts-state-manager |
+| 约束/对齐/安全区 | arkts-ui-alignment, arkts-immersive-safearea |
+| 导航/模态/深链 | arkts-navigation-builder |
+| 网络/持久化/数据模型 | arkts-data-layer |
+| 网络契约联调 | arkts-network-troubleshoot |
+| 平台调用/权限/文件 | arkts-system-capabilities |
+| 三方依赖 | arkts-library-migration, hmos-sdk-docs |
+| 登录/授权 | arkts-login |
+| 支付/订阅 | arkts-payment |
+| 广告 | arkts-ad |
+| 客服/IM | arkts-customer-service |
+| 视频/音频 | arkts-video-playback, arkts-media-playback |
+| 动画 | arkts-animation-migrate, arkts-animation-builder |
+| Web 内容 | arkts-webview |
+| 下载 | arkts-download-manager |
+| 身份 | arkts-app-identity |
+| 无障碍/字号/多语言 | arkts-accessibility, arkts-large-font, arkts-i18n |
+| 多设备/窗口/深色 | arkts-multi-device, arkts-multi-window, arkts-dark-mode |
+| 主题/字面量 | arkts-design-tokens-extractor |
+| 文本截断 | arkts-text-truncation, arkts-truncation-fix |
+| 图片尺寸 | arkts-icon-sizing |
+| 结构/编译 | arkts-structural-closure, hmos-fix-build-errors |
+| UI/功能覆盖 | arkts-ui-coverage-auditor, arkts-feature-coverage-auditor |
+| 逻辑 | arkts-ut-verifier（仅按本次明确选择与实际能力） |
+| 交互/视觉（延期） | arkts-ui-verifier / arkts-visual-verify 仅未来标记；当前不强绑、不派发，deferred/not_run，可消费开发者外部证据 |
 
-「典型 iOS 厂商 SDK」列同时供 a2h-plan §Step 4.1 三方 SDK 决策树使用：feature spec 中提到的 SDK 命中本列任一关键词 → 直接 `suggested_skills` 追加对应 skill，**不登记 placeholder-registry**；未命中 → 登记 `kind=thirdparty-sdk` 等待适配方案到位。
-
-| Task 内容 / 业务类别（关键词） | suggested_skill | 典型 iOS 厂商 SDK / 库                     |
-|------------------------------|----------------|-------------------------------------------|
-| UI 页面转换 | `a2h-ios-converter` (agent) | —                                         |
-| 项目结构 / 模块配置 | `arkts-project-scaffolder` | —                                         |
-| 第三方库替换 | `arkts-library-migration` | —                                         |
-| 三方 SDK 集成事实（初始化/API 签名/权限/ohpm 包名版本） | `hmos-sdk-docs` | 极光推送 / 环信 / 融云 / 声网 / 友盟 / 支付宝 / 穿山甲 / 高德 |
-| 数据库 / DAO / Model / 网络请求 / HTTP / 持久化 | `arkts-data-layer` | Core Data / SwiftData / URLSession / SQLite         |
-| 网络层联调 / 拦截器签名（HMAC）/ 响应 unwrap / API contract 对账 / 抓包验证 / 启动期初始化排障 | `arkts-network-troubleshoot` | URLProtocol / RequestInterceptor / Keychain / 自定义签名链        |
-| 文件操作 / 权限 / 扫码 / 震动 / 相机 / PhotoViewPicker / 系统能力 | `arkts-system-capabilities` | Zxing / 系统 API                            |
-| 导航框架 / 路由 | `arkts-navigation-builder` | Navigation Compose / ARouter              |
-| 状态管理 / 数据绑定 / 全局状态 / 持久化偏好 | `arkts-state-manager` | Observable / Combine / UserDefaults       |
-| 页面组件 / 列表 | `arkts-component-builder` | —                                         |
-| 音频播放 / AVPlayer / 后台播放 | `arkts-media-playback` | iOS MediaPlayer                       |
-| 大文件下载 / 断点续传 | `arkts-download-manager` | OkDownload / FileDownloader               |
-| 动画 / 转场 | `arkts-animation-builder` | —                                         |
-| Lottie / 帧动画 / 共享元素转场 / SVGA / ObjectAnimator | `arkts-animation-migrate` | Lottie / SVGA                             |
-| 编译修复 | `hmos-builder` (agent)；Stage 1 Batch / Stage 3 group 收尾 subagent 内改调 `hmos-fix-build-errors` | —                                         |
-| API 验证 | `arkts-knowledge-verifier` | —                                         |
-| App 身份配置 | `arkts-app-identity` | —                                         |
-| 资源转换 | `ios-resources-convert` | —                                         |
-| UI 页面转换（含 FrameLayout/层叠/复杂对齐） | `arkts-ui-alignment` | Stage 1 converter / Step 3a 必带——.align 误用 60 处事故后 HARD |
-| 文本截断/省略号缺陷修复 | `arkts-truncation-fix` | Step 3a UI 修复语境按需（供给线闸 0824：OFF skill 零点名=知识孤儿） |
-| iOS截图辅助分析（ui-snapshots 含截图时） | `ios-screenshot-analyzer` | spec Phase A 按需；快照纯合成（无截图）时不适用 |
-| 公共组件库 | `arkts-component-builder`, `arkts-pattern-library` | —                                         |
-| 客服 / IM / 在线聊天 | `arkts-customer-service` | 七鱼 / 云信 / 腾讯云 IM                          |
-| 沉浸式 / 安全区 / 状态栏 / 全屏背景 / NavDestination 模板 | `arkts-immersive-safearea` | —                                         |
-| **任一涉及 page** 的 Slice，且该 page 的 meta.json 含 `needs_immersive_safearea: true` | **强绑** `arkts-immersive-safearea`| —                                         |
-| 登录 / 授权 / OAuth / 一键登录 / 第三方账号 | `arkts-login` | 微信登录 / 支付宝登录 / 华为账号                       |
-| 支付 / 收银台 / 订单 / IAP / 订阅签约 | `arkts-payment` | 微信支付 / 支付宝 / 华为 IAP                       |
-| 广告 SDK / 开屏 / 插屏 / 信息流 / 激励视频 / Banner / Splash | `arkts-ad` | 穿山甲 / 优量汇 / 快手 / GroMore / 百度联盟 / HMS Ads |
-| 魔鬼数字 / 硬编码 / 设计系统 / DesignTokens / 资源化 / 字面量去重 | `arkts-design-tokens-extractor` | —                                         |
-| 视频 / 视频播放 / XComponent / Surface / 横屏播放器 / Letterbox / PiP | `arkts-video-playback` | ExoPlayer / Aliyun Player                 |
-| UI 覆盖率 / 漏页 / 补页 / 子页对齐 / 二三层 UI | `arkts-ui-coverage-auditor` | —                                         |
-| 多设备 / 平板 / 折叠屏 / 车机 / TV / 断点 sm/md/lg/xl | `arkts-multi-device` | iOS Adaptive layouts                  |
-| 分屏 / 自由窗口 / 悬浮窗 / PiP / UIExtension | `arkts-multi-window` | —                                         |
-| 深色模式 / dark / resources/dark / ColorMode | `arkts-dark-mode` | DayNight                                  |
-| 大字体 / 字体缩放 / fontSizeScale | `arkts-large-font` | —                                         |
-| 无障碍 / 适老化 / 读屏 / 焦点 / tabIndex / 触达热区 | `arkts-accessibility` | —                                         |
-| 文本截断 / Ellipsis / maxLines / 弹窗超屏裁切 | `arkts-text-truncation` | —                                         |
-| 国际化 / 多语言 | `arkts-i18n` | —                                         |
-| 架构重构 / 整改 / 私仓接入 / develop_rule / lib_common | `arkts-architecture-refactor` | —                                         |
-| API 清单 / 接口梳理 / 接口文档 / 有哪些 API | `ios-api-inventory` | —                                         |
-| 页面关系树 / 导航关系图 / app-relationship | `app-relationship-tree` | —                                         |
-| 视觉对比 / 源端真实截图与 hdc 目标截图验证 | `arkts-visual-verify` | —                                         |
-| WebView / Web 组件 / 网页加载 / CSS 注入 / JS 注入 / 页内搜索 / 页面翻译 / TTS 朗读 | `arkts-webview` | 系统 WebView / X5 内核 / Crosswalk            |
-
-**匹配规则**：feature spec 中提到的关键词命中"Task 内容 / 业务类别"列或"典型 iOS 厂商 SDK"列任一时，按对应 skill 处理；同时含多个关键词时取最具体的。
-
-**未命中本表的 SDK**（如自研、小众厂商、埋点、风控等本仓尚未覆盖类别）：
-- 登记 `kind=thirdparty-sdk` placeholder
-- `trigger_condition = <业务类别> SDK 入仓`（描述业务类别即可，不强依赖具体 skill 名；开发者后续可通过任一形式提供适配方案）
-- 例：`trigger_condition = 埋点 SDK 入仓` / `trigger_condition = 风控 SDK 入仓` / `trigger_condition = 火山引擎 AppLog SDK 入仓`
-- 适配方案到位的多种形式（任一命中即 resolved）：
-  ① 新 skill 入仓 arkts-skills/skills/
-  ② 私仓 har 包入仓 oh_modules/
-  ③ 官方 SDK 适配文档发布
-  ④ 团队内部决策完成（记入 spec/migration-decisions.md）
-
----
+未有目标方案的接缝进入 decision/placeholder，不能因出现厂商名字视为适配完成。
 
 ## 基于 meta.json 字段的强绑规则（HARD-RULE）
 
@@ -88,7 +55,7 @@
 **强绑 skill**：`arkts-immersive-safearea`
 
 **说明**：
-- `page_type` 由 `ios-ui-graph-builder/scripts/synthesize_meta_json.py` 的 `detect_page_type()` 自动判定（4 类：`full_screen_page` / `modal_overlay` / `dialog` / `sub_component`）
+- `page_type` 由 ios-ui-analyzer 按真实呈现/生命周期事实判定并在 meta 中注明证据（4 类：`full_screen_page` / `modal_overlay` / `dialog` / `sub_component`）
 - 不依赖词汇匹配——即使 spec / Slice 任务描述里完全没出现「沉浸式」「安全区」等关键词，只要任一 page 是 `full_screen_page`，本 skill 必须出现在 suggested_skills
 - 设计依据：iOS 默认系统处理状态栏避让，源码层面无信号；HarmonyOS 全屏页必须显式四件套，否则系统栏遮挡内容（详见 `docs/immersive-safearea-coupling.md`）
 

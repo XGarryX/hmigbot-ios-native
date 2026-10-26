@@ -1,0 +1,4 @@
+interface:
+  display_name: ios-project-inspector
+  short_description: 读取原生 iOS 工程边界、有效目标线索、语言、依赖和生命周期入口；分析 Xcode project/workspace、…
+  default_prompt: 请使用 $ios-project-inspector，按本技能的输入、执行步骤和验收条件完成当前任务。

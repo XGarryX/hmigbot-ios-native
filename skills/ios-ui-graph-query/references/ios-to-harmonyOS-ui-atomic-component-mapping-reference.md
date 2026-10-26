@@ -23,11 +23,3 @@ Graph style/behavior/accessibility attributes are normalized evidence slots, not
 SwiftUI explicit .id, ForEach key, accessibilityIdentifier, restorationIdentifier and IB object ID have distinct semantics. Record their kind and anchors. Canonical analysis IDs are not runtime identities.
 
 New target components follow the original V2-first policy in arkts-component-builder and arkts-state-manager. Do not change existing V1 components solely to satisfy this mapping. A generated component still requires the original compilation and behavior checks.
-
-## Font size and scaling
-
-Apple's [Fonts overview](https://developer.apple.com/documentation/technologyoverviews/fonts) distinguishes fixed `Font.system(size:)` / `UIFont.systemFont(ofSize:)` from semantic text styles. Preserve that distinction for text and SF Symbol uses. Inspect actual source values and modifiers: `@ScaledMetric`, `UIFontMetrics`, custom-font `fixedSize` / `relativeTo`, and source Dynamic Type settings can change the effective scaling; a numeric argument alone is not proof of fixed behavior.
-
-ArkUI `Text.fontSize` and `SymbolGlyph.fontSize` use fp for bare numbers. When the source is fixed, retain its system-font scaling behavior with the supported local `minFontScale` / `maxFontScale` controls or an explicitly verified unit mapping; do not lock semantic fonts globally. Resource font values can remain fp: the consuming component's scaling contract still matters.
-
-Source `minimumScaleFactor` describes shrink-to-fit behavior, which is separate from system font scaling. ArkUI `minFontSize` / `maxFontSize` are size bounds, not `minFontScale` / `maxFontScale`; verify both contracts independently against the actual component API. `Image` has no `fontSize` attribute: preserve image geometry through its supported size/aspect properties.

@@ -1,4 +1,5 @@
 """Xcode/OpenStep structure, without pretending to evaluate an Xcode build."""
+from .core import trusted_system_alias
 from pathlib import Path, PurePosixPath
 import re
 
@@ -60,7 +61,7 @@ def synchronized_membership(root, project_path, objects, targets):
         candidate = base / local
         # Check before resolve so an in-repository link is also rejected.
         for part in (candidate, *candidate.parents):
-            if part.is_symlink() or (hasattr(part, 'is_junction') and part.is_junction()):
+            if (part.is_symlink() or (hasattr(part, 'is_junction') and part.is_junction())) and not trusted_system_alias(part):
                 raise MigrationError(f'Synchronized source links require materialization: {candidate}')
             if part == root:
                 break
@@ -100,9 +101,7 @@ def synchronized_membership(root, project_path, objects, targets):
         locations.append(actual)
         owners = associations.get(gid, set())
         if not owners:
-            # Unattached groups are not target declarations. Strict scope resolution
-            # still rejects any compile file left without an owner after this scan.
-            continue
+            raise MigrationError(f'Synchronized root has no associated target: {gid}')
         excluded = {tid: set() for tid in owners}
         exception_evidence = []
         for eid in strings(group.get('exceptions', []), f'{gid} exceptions'):
@@ -140,9 +139,6 @@ def synchronized_membership(root, project_path, objects, targets):
             if not child.is_file() or child.suffix.lower() not in compile_types:
                 continue
             local = child.relative_to(actual).as_posix()
-            if (any(part.startswith('.') for part in child.relative_to(actual).parts)
-                    and any(local not in excluded[tid] for tid in owners)):
-                raise MigrationError(f'Synchronized hidden compile source requires explicit resolution: {local}')
             if child.name == 'Package.swift' or child.suffix not in compile_types:
                 raise MigrationError(f'Unsupported synchronized compile file: {local}')
             if any('.' in part for part in child.relative_to(actual).parts[:-1]):
@@ -160,19 +156,30 @@ def synchronized_membership(root, project_path, objects, targets):
 
 
 class OpenStep:
-    """Compatibility interface backed exclusively by Apple's property-list parser."""
+    """Compatibility facade over Apple's read-only property-list parser.
+
+    plutil owns OpenStep string/escape syntax. This establishes serialized
+    project structure only; actual target membership still comes from Xcode.
+    """
     def __init__(self, text):
         self.text = text
 
     def parse(self):
-        import plistlib
-        from .apple_tools import run
-        result = run(['/usr/bin/plutil', '-convert', 'xml1', '-o', '-', '-'],
-                     data=self.text.encode('utf-8'), timeout=30)
+        import json
+        import subprocess
+        command = ['/usr/bin/plutil', '-convert', 'json', '-o', '-', '--', '-']
         try:
-            return plistlib.loads(result.stdout)
-        except (ValueError, plistlib.InvalidFileException) as exc:
-            raise MigrationError('Apple plutil returned invalid property-list data') from exc
+            result = subprocess.run(command, input=self.text.encode('utf-8'),
+                                    capture_output=True, timeout=15, shell=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise MigrationError('Apple plutil could not read project structure: ' + str(exc)) from exc
+        if result.returncode:
+            detail = result.stderr.decode('utf-8', errors='replace').strip()
+            raise MigrationError('Apple plutil rejected property-list structure: ' + detail)
+        try:
+            return json.loads(result.stdout)
+        except (ValueError, UnicodeError) as exc:
+            raise MigrationError('Apple plutil returned invalid JSON') from exc
 
 
 def project_inventory(root, files):

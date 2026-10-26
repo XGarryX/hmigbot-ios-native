@@ -1,2 +1,4 @@
-policy:
-  allow_implicit_invocation: false
+interface:
+  display_name: ios-api-inventory
+  short_description: 提取原生 iOS 服务 API、系统框架、权限、entitlements、隐私与三方 SDK 接缝；保存调用和数据契约证据…
+  default_prompt: 请使用 $ios-api-inventory，按本技能的输入、执行步骤和验收条件完成当前任务。

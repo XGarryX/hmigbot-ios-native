@@ -1,0 +1,4 @@
+interface:
+  display_name: arkts-codebase-debug
+  short_description: 针对ArkTS语言的Harmony应用代码仓功能缺陷类问答技能。专门用于回答"xx不生效"、"报错怎么办/为什么？"等功能…
+  default_prompt: 请使用 $arkts-codebase-debug，按本技能的输入、执行步骤和验收条件完成当前任务。

@@ -1,0 +1,2341 @@
+{
+  "schema_version": 1,
+  "status": "runtime_catalog_not_execution_evidence",
+  "count": 93,
+  "count_basis": "Unique independent semantic contracts at the listed operational abstraction; no commands/files/wrappers/platform backends/checklist items/roles counted again.",
+  "capabilities": [
+    {
+      "id": "source.snapshot",
+      "name": "源内容快照",
+      "independent": true,
+      "stage": "all",
+      "implementation": [
+        "src/hmigbot_ios/core.py"
+      ],
+      "aliases": [
+        "snapshot"
+      ],
+      "contract": "按当前字节与路径闭包计算身份，变化使旧证据失效",
+      "purpose_and_object": "源内容快照",
+      "input_output_evidence": "按当前字节与路径闭包计算身份，变化使旧证据失效",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "runtime.capability-discovery",
+      "name": "宿主与工具能力诊断",
+      "independent": true,
+      "stage": "init",
+      "implementation": [
+        "src/hmigbot_ios/doctor.py",
+        "src/hmigbot_ios/host.py"
+      ],
+      "aliases": [
+        "doctor"
+      ],
+      "contract": "发现态与实际执行态分开，按源/目标/设备报告",
+      "purpose_and_object": "宿主与工具能力诊断",
+      "input_output_evidence": "发现态与实际执行态分开，按源/目标/设备报告",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D33"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "runtime.preflight",
+      "name": "所选动作准入",
+      "independent": true,
+      "stage": "init",
+      "implementation": [
+        "src/hmigbot_ios/environment.py",
+        "src/hmigbot_ios/native_pipeline.py"
+      ],
+      "aliases": [
+        "preflight",
+        "validate"
+      ],
+      "contract": "按动作验证必要路径，源扫描不要求目标工具或设备",
+      "purpose_and_object": "所选动作准入",
+      "input_output_evidence": "按动作验证必要路径，源扫描不要求目标工具或设备",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "runtime.entry-permissions",
+      "name": "受控入口执行位准备",
+      "independent": true,
+      "stage": "init",
+      "implementation": [
+        "src/hmigbot_ios/init_environment.py"
+      ],
+      "aliases": [
+        "init-environment"
+      ],
+      "contract": "仅明确清单内且位于项目托管runtime的入口，保留字节与收据",
+      "purpose_and_object": "受控入口执行位准备",
+      "input_output_evidence": "仅明确清单内且位于项目托管runtime的入口，保留字节与收据",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D01"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "runtime.quarantine",
+      "name": "项目隔离属性修复",
+      "independent": true,
+      "stage": "init",
+      "implementation": [
+        "src/hmigbot_ios/macos_permissions.py"
+      ],
+      "aliases": [
+        "repair-permissions",
+        "init-environment"
+      ],
+      "contract": "精确属性、项目包含关系、安全内部链接、拒绝硬链接与越界",
+      "purpose_and_object": "项目隔离属性修复",
+      "input_output_evidence": "精确属性、项目包含关系、安全内部链接、拒绝硬链接与越界",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D05"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "runtime.execution",
+      "name": "原生载荷运行",
+      "independent": true,
+      "stage": "all",
+      "implementation": [
+        "src/hmigbot_ios/portable_helper.py",
+        "src/hmigbot_ios/native_pipeline_runtime.py",
+        "src/hmigbot_ios/ios_scheduler.py",
+        "src/hmigbot_ios/process_runtime.py"
+      ],
+      "aliases": [
+        "portable-helper"
+      ],
+      "contract": "所选macOS ARM64载荷、受控临时布局与真实进程结果；其他宿主deferred",
+      "purpose_and_object": "原生载荷运行",
+      "input_output_evidence": "所选macOS ARM64载荷、受控临时布局与真实进程结果；其他宿主deferred",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D02",
+        "D03",
+        "D04",
+        "D32"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "runtime.timeouts",
+      "name": "子进程时间界限",
+      "independent": true,
+      "stage": "all",
+      "implementation": [
+        "src/hmigbot_ios/runtime_timeouts.py"
+      ],
+      "aliases": [
+        "timeout_for"
+      ],
+      "contract": "操作时限与共享截止，保留真实失败输出",
+      "purpose_and_object": "子进程时间界限",
+      "input_output_evidence": "操作时限与共享截止，保留真实失败输出",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D31"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.project-survey",
+      "name": "源工程概览",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/analyze.py",
+        "src/hmigbot_ios/weak_swiftui.py",
+        "src/hmigbot_ios/native_pipeline.py",
+        "src/hmigbot_ios/swift_native.py",
+        "providers/swift-syntax/main.swift"
+      ],
+      "aliases": [
+        "scan",
+        "source-index"
+      ],
+      "contract": "结构/技术栈/声明线索与源锚点；不提升为编译成员或完整语义",
+      "purpose_and_object": "源工程概览",
+      "input_output_evidence": "结构/技术栈/声明线索与源锚点；不提升为编译成员或完整语义",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.project-membership",
+      "name": "工程声明成员识别",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/project_scope.py",
+        "src/hmigbot_ios/xcode.py"
+      ],
+      "aliases": [
+        "atom project-inventory"
+      ],
+      "contract": "含同步组保守子集，未知声明阻断；声明不等于实际编译",
+      "purpose_and_object": "工程声明成员识别",
+      "input_output_evidence": "含同步组保守子集，未知声明阻断；声明不等于实际编译",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D13"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.dependency-inventory",
+      "name": "依赖声明盘点",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/xcode.py",
+        "src/hmigbot_ios/manifest_scope.py"
+      ],
+      "aliases": [
+        "atom dependency-inventory"
+      ],
+      "contract": "锁文件、依赖作用域与明确未解析状态",
+      "purpose_and_object": "依赖声明盘点",
+      "input_output_evidence": "锁文件、依赖作用域与明确未解析状态",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.compile-membership",
+      "name": "实际编译成员识别",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/source_build_membership.py",
+        "src/hmigbot_ios/native_product_scope.py"
+      ],
+      "aliases": [
+        "source_build_membership"
+      ],
+      "contract": "版本化实际编译单元与selection完整性；旧证据只读适配",
+      "purpose_and_object": "实际编译成员识别",
+      "input_output_evidence": "版本化实际编译单元与selection完整性；旧证据只读适配",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D14"
+      ],
+      "classification": "same_field_name_different_meaning",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "semantic_distinction": "compiled source units versus preprocessing dependency/active-text evidence; source_files interpreted by its versioned enclosing contract",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.conditional-evidence",
+      "name": "预处理依赖及生效文本核验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/conditional_evidence.py"
+      ],
+      "aliases": [
+        "conditional-capture"
+      ],
+      "contract": "Clang原始上下文、依赖输入与行观察；不混写编译单元集合",
+      "purpose_and_object": "预处理依赖及生效文本核验",
+      "input_output_evidence": "Clang原始上下文、依赖输入与行观察；不混写编译单元集合",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D17"
+      ],
+      "classification": "same_field_name_different_meaning",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "semantic_distinction": "compiled source units versus preprocessing dependency/active-text evidence; source_files interpreted by its versioned enclosing contract",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.build-settings",
+      "name": "Xcode生效配置读取",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/providers.py",
+        "src/hmigbot_ios/atoms.py",
+        "src/hmigbot_ios/native_product_scope.py"
+      ],
+      "aliases": [
+        "atom build-settings"
+      ],
+      "contract": "直接配置优先或冻结bundle；不把showBuildSettings当实际成员证据",
+      "purpose_and_object": "Xcode生效配置读取",
+      "input_output_evidence": "直接配置优先或冻结bundle；不把showBuildSettings当实际成员证据",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D15"
+      ],
+      "classification": "similar_names_different_objects",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.swift-syntax",
+      "name": "Swift原生语法采集",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/providers.py",
+        "src/hmigbot_ios/swift_native.py"
+      ],
+      "aliases": [
+        "atom swift-syntax"
+      ],
+      "contract": "SwiftParser/SwiftSyntax 真实语法、UTF-8词项、声明及字面量产物；facts/literals/candidates/Preview门禁消费；不宣告类型绑定",
+      "purpose_and_object": "Swift原生语法采集",
+      "input_output_evidence": "SwiftParser/SwiftSyntax 真实语法、UTF-8词项、声明及字面量产物；facts/literals/candidates/Preview门禁消费；不宣告类型绑定",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.clang-ast",
+      "name": "Clang原生AST采集",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/providers.py"
+      ],
+      "aliases": [
+        "atom clang-ast"
+      ],
+      "contract": "真实TU及Xcode编译argv；response与DerivedData活到消费结束",
+      "purpose_and_object": "Clang原生AST采集",
+      "input_output_evidence": "真实TU及Xcode编译argv；response与DerivedData活到消费结束",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D16"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.interface-builder",
+      "name": "IB结构与连接采集",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/atoms.py"
+      ],
+      "aliases": [
+        "atom interface-builder"
+      ],
+      "contract": "真实XML节点、约束/连接与未知引用，拒绝DTD实体",
+      "purpose_and_object": "IB结构与连接采集",
+      "input_output_evidence": "真实XML节点、约束/连接与未知引用，拒绝DTD实体",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.asset-inventory",
+      "name": "资产及变体盘点",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/resources.py"
+      ],
+      "aliases": [
+        "atom asset-inventory"
+      ],
+      "contract": "xcassets内容、引用与变体缺口",
+      "purpose_and_object": "资产及变体盘点",
+      "input_output_evidence": "xcassets内容、引用与变体缺口",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.localization-inventory",
+      "name": "本地化目录读取",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/resources.py"
+      ],
+      "aliases": [
+        "atom localization-inventory"
+      ],
+      "contract": "xcstrings/strings/stringsdict及明确未支持变体",
+      "purpose_and_object": "本地化目录读取",
+      "input_output_evidence": "xcstrings/strings/stringsdict及明确未支持变体",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.asset-conversion",
+      "name": "资产资源转换",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/resources.py"
+      ],
+      "aliases": [
+        "atom asset-convert"
+      ],
+      "contract": "源绑定的目标资源输出，不批准视觉等价",
+      "purpose_and_object": "资产资源转换",
+      "input_output_evidence": "源绑定的目标资源输出，不批准视觉等价",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.localization-conversion",
+      "name": "本地化资源转换",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/resources.py"
+      ],
+      "aliases": [
+        "atom localization-convert"
+      ],
+      "contract": "保留原文本与默认locale，缺口显式登记",
+      "purpose_and_object": "本地化资源转换",
+      "input_output_evidence": "保留原文本与默认locale，缺口显式登记",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.reading",
+      "name": "格式与源坐标服务",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/source_scope.py",
+        "src/hmigbot_ios/ios_facts.py",
+        "src/hmigbot_ios/execution_source.py",
+        "src/hmigbot_ios/graph_wire.py",
+        "src/hmigbot_ios/source_ui_wire.py"
+      ],
+      "aliases": [
+        "source_anchor_info"
+      ],
+      "contract": "严格文本、plist真实格式、BOM/CRLF、resource_document摘要；缓存仅同次验证字节",
+      "purpose_and_object": "格式与源坐标服务",
+      "input_output_evidence": "严格文本、plist真实格式、BOM/CRLF、resource_document摘要；缓存仅同次验证字节",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D11",
+        "D12",
+        "D26"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.facts",
+      "name": "源事实与义务提取",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/ios_facts.py",
+        "src/hmigbot_ios/objc_state.py",
+        "src/hmigbot_ios/computed_properties.py",
+        "src/hmigbot_ios/swiftui.py",
+        "src/hmigbot_ios/swift_native.py"
+      ],
+      "aliases": [
+        "facts",
+        "facts-view"
+      ],
+      "contract": "一个事实引擎融合Swift/ObjC/资源/条件上下文与identity分类；语言解析和缓存为内部实现不重复计",
+      "purpose_and_object": "源事实与义务提取",
+      "input_output_evidence": "一个事实引擎融合Swift/ObjC/资源/条件上下文与identity分类；语言解析和缓存为内部实现不重复计",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.literal-inventory",
+      "name": "原始源字面量提取",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/ios_literals.py",
+        "src/hmigbot_ios/swift_native.py"
+      ],
+      "aliases": [
+        "literals"
+      ],
+      "contract": "文本/动态表达式/数值/颜色分开，未知转义不伪造值",
+      "purpose_and_object": "原始源字面量提取",
+      "input_output_evidence": "文本/动态表达式/数值/颜色分开，未知转义不伪造值",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.manifest-evaluation",
+      "name": "清单真实工具求值",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/manifest_evidence.py"
+      ],
+      "aliases": [
+        "manifest-evaluate"
+      ],
+      "contract": "真实命令、作用域、输出与源摘要绑定",
+      "purpose_and_object": "清单真实工具求值",
+      "input_output_evidence": "真实命令、作用域、输出与源摘要绑定",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.mcp-evidence",
+      "name": "源只读MCP证据采集",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/source_mcp.py"
+      ],
+      "aliases": [
+        "mcp-query"
+      ],
+      "contract": "白名单、分页、原响应与摘要，拒绝过期或无关语义链接",
+      "purpose_and_object": "源只读MCP证据采集",
+      "input_output_evidence": "白名单、分页、原响应与摘要，拒绝过期或无关语义链接",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.expertise-integrity",
+      "name": "专业资料完整性核验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/expertise.py"
+      ],
+      "aliases": [
+        "expertise-audit"
+      ],
+      "contract": "固定许可/来源/逐文件摘要，不代表本项目已审阅",
+      "purpose_and_object": "专业资料完整性核验",
+      "input_output_evidence": "固定许可/来源/逐文件摘要，不代表本项目已审阅",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.expertise-review",
+      "name": "项目专业资料审阅合同",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/expertise.py",
+        "src/hmigbot_ios/swift_native.py"
+      ],
+      "aliases": [
+        "expertise-plan",
+        "expertise-review"
+      ],
+      "contract": "固定官方资源章节与真实源观察的应用记录；拒绝仅确认加载；不机械证明模型判断或运行等价",
+      "purpose_and_object": "项目专业资料审阅合同",
+      "input_output_evidence": "固定官方资源章节与真实源观察的应用记录；拒绝仅确认加载；不机械证明模型判断或运行等价",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.provider-attempts",
+      "name": "Provider采集尝试管理",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/provider_plan.py",
+        "src/hmigbot_ios/provider_runs.py"
+      ],
+      "aliases": [
+        "provider-plan"
+      ],
+      "contract": "全计划预检、实际消费输入身份、独占attempt、失败保留与成功复核；不自动复用旧成功",
+      "purpose_and_object": "Provider采集尝试管理",
+      "input_output_evidence": "全计划预检、实际消费输入身份、独占attempt、失败保留与成功复核；不自动复用旧成功",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D29"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.reviewed-refresh",
+      "name": "受审源索引刷新",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/native_pipeline.py"
+      ],
+      "aliases": [
+        "source-refresh"
+      ],
+      "contract": "显式审阅、历史归档、稳定身份与原恢复位置",
+      "purpose_and_object": "受审源索引刷新",
+      "input_output_evidence": "显式审阅、历史归档、稳定身份与原恢复位置",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.content-contract",
+      "name": "规格内容合同检查",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/spec_contract.py",
+        "src/hmigbot_ios/artifact_contract.py"
+      ],
+      "aliases": [
+        "spec-check"
+      ],
+      "contract": "章节/表格/共享合同/源真值与适用schema，严格作者与副作用边界",
+      "purpose_and_object": "规格内容合同检查",
+      "input_output_evidence": "章节/表格/共享合同/源真值与适用schema，严格作者与副作用边界",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.responsibility",
+      "name": "源责任投影",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/source_responsibility.py"
+      ],
+      "aliases": [
+        "responsibility"
+      ],
+      "contract": "all/active_target/source_history、批准替代与冻结证明；历史不重算普通产品义务",
+      "purpose_and_object": "源责任投影",
+      "input_output_evidence": "all/active_target/source_history、批准替代与冻结证明；历史不重算普通产品义务",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D20"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.coverage-ownership",
+      "name": "产品义务AC归属核验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/ios_harness.py"
+      ],
+      "aliases": [
+        "coverage_check"
+      ],
+      "contract": "普通产品路径/共享合同必须匹配，合法历史责任不重新绑定目标AC",
+      "purpose_and_object": "产品义务AC归属核验",
+      "input_output_evidence": "普通产品路径/共享合同必须匹配，合法历史责任不重新绑定目标AC",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D21"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.object-discovery",
+      "name": "规格对象集合核验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/spec_discovery.py",
+        "src/hmigbot_ios/spec_helpers.py"
+      ],
+      "aliases": [
+        "build_traceability_index",
+        "lint_divergence"
+      ],
+      "contract": "中文/ASCII对象同集合；原helper解析为权威，完整分母与active指标分开",
+      "purpose_and_object": "规格对象集合核验",
+      "input_output_evidence": "中文/ASCII对象同集合；原helper解析为权威，完整分母与active指标分开",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D19"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.finding-identity",
+      "name": "提取诊断稳定身份",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/finding_identity.py"
+      ],
+      "aliases": [
+        "extraction_finding"
+      ],
+      "contract": "目标/配置/位置差异保留独立finding，原队列仍为唯一写者",
+      "purpose_and_object": "提取诊断稳定身份",
+      "input_output_evidence": "目标/配置/位置差异保留独立finding，原队列仍为唯一写者",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D22"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.content-rendering",
+      "name": "未审规格初稿渲染",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/gate_artifacts.py",
+        "src/hmigbot_ios/source_candidates.py",
+        "src/hmigbot_ios/native_scaffold.py"
+      ],
+      "aliases": [
+        "spec-scaffold",
+        "gate-artifacts spec"
+      ],
+      "contract": "唯一候选发现/内容生产；保留main模板与稳定ID，预览纯读取，旧CLI薄适配",
+      "purpose_and_object": "未审规格初稿渲染",
+      "input_output_evidence": "唯一候选发现/内容生产；保留main模板与稳定ID，预览纯读取，旧CLI薄适配",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D18"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.content-commit",
+      "name": "候选受控创建",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/artifact_commit.py",
+        "src/hmigbot_ios/native_scaffold.py"
+      ],
+      "aliases": [
+        "spec-scaffold --apply",
+        "source-analysis --apply-scaffold"
+      ],
+      "contract": "重算/白名单/全路径预检、独占创建与仅回滚自己未改文件，不批准业务",
+      "purpose_and_object": "候选受控创建",
+      "input_output_evidence": "重算/白名单/全路径预检、独占创建与仅回滚自己未改文件，不批准业务",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D18"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.authoring-review",
+      "name": "原生语义作者候选核验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/native_authoring.py"
+      ],
+      "aliases": [
+        "spec-authoring"
+      ],
+      "contract": "当前源/MD/责任摘要绑定，未知/错锚/漏维度拒绝，输出不自动批准",
+      "purpose_and_object": "原生语义作者候选核验",
+      "input_output_evidence": "当前源/MD/责任摘要绑定，未知/错锚/漏维度拒绝，输出不自动批准",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.upgrade",
+      "name": "规格合同受审升级",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/spec_upgrade.py"
+      ],
+      "aliases": [
+        "spec-upgrade"
+      ],
+      "contract": "只读候选与显式应用，不切旧profile或继承PASS",
+      "purpose_and_object": "规格合同受审升级",
+      "input_output_evidence": "只读候选与显式应用，不切旧profile或继承PASS",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.literal-projection",
+      "name": "产品及历史字面量投影",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/quality_views.py"
+      ],
+      "aliases": [
+        "product-literals"
+      ],
+      "contract": "保留原ledger，按已验证责任分产品与历史",
+      "purpose_and_object": "产品及历史字面量投影",
+      "input_output_evidence": "保留原ledger，按已验证责任分产品与历史",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D12"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.coverage-report",
+      "name": "UI覆盖派生报告",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/gate_artifacts.py"
+      ],
+      "aliases": [
+        "gate-artifacts spec"
+      ],
+      "contract": "精确锚点、compound、零AC与BLOCKED诚实汇总",
+      "purpose_and_object": "UI覆盖派生报告",
+      "input_output_evidence": "精确锚点、compound、零AC与BLOCKED诚实汇总",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D24",
+        "D25"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "plan.contract-validation",
+      "name": "计划与规格对应校验",
+      "independent": true,
+      "stage": "plan",
+      "implementation": [
+        "src/hmigbot_ios/plan_contract.py",
+        "src/hmigbot_ios/ios_scheduler.py"
+      ],
+      "aliases": [
+        "plan-check"
+      ],
+      "contract": "indexed MD与typed任务逐字段对账，冻结传递输入及工具revision",
+      "purpose_and_object": "计划与规格对应校验",
+      "input_output_evidence": "indexed MD与typed任务逐字段对账，冻结传递输入及工具revision",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "plan.ir-generation",
+      "name": "原调度计划生成",
+      "independent": true,
+      "stage": "plan",
+      "implementation": [
+        "src/hmigbot_ios/ios_scheduler.py"
+      ],
+      "aliases": [
+        "plan-ir"
+      ],
+      "contract": "唯一owner、DAG、task输入/AC/fact与原控制账本合同，不另建调度器",
+      "purpose_and_object": "原调度计划生成",
+      "input_output_evidence": "唯一owner、DAG、task输入/AC/fact与原控制账本合同，不另建调度器",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "plan.prompt-scope",
+      "name": "任务提示输入投影",
+      "independent": true,
+      "stage": "plan",
+      "implementation": [
+        "src/hmigbot_ios/prompt_inputs.py"
+      ],
+      "aliases": [
+        "project_inputs"
+      ],
+      "contract": "显式消费者并集，未限定共享决策保留，全账本摘要固定",
+      "purpose_and_object": "任务提示输入投影",
+      "input_output_evidence": "显式消费者并集，未限定共享决策保留，全账本摘要固定",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D27"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "plan.input-validation",
+      "name": "冻结输入去重校验",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/execution_bridge.py",
+        "src/hmigbot_ios/ios_scheduler.py"
+      ],
+      "aliases": [
+        "_validate_task_inputs"
+      ],
+      "contract": "每次边界所有引用先验路径/冲突再去重hash，不跨命令继承PASS",
+      "purpose_and_object": "冻结输入去重校验",
+      "input_output_evidence": "每次边界所有引用先验路径/冲突再去重hash，不跨命令继承PASS",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D28"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "plan.replan",
+      "name": "受审重排",
+      "independent": true,
+      "stage": "plan",
+      "implementation": [
+        "src/hmigbot_ios/ios_scheduler.py"
+      ],
+      "aliases": [
+        "replan"
+      ],
+      "contract": "先回收或受审终止在途任务，保留历史与原稳定业务身份",
+      "purpose_and_object": "受审重排",
+      "input_output_evidence": "先回收或受审终止在途任务，保留历史与原稳定业务身份",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "plan.projection",
+      "name": "计划派生视图",
+      "independent": true,
+      "stage": "plan",
+      "implementation": [
+        "src/hmigbot_ios/gate_artifacts.py"
+      ],
+      "aliases": [
+        "gate-artifacts plan"
+      ],
+      "contract": "作者计划保护、责任预览及未就绪状态，不以报告存在批准实施",
+      "purpose_and_object": "计划派生视图",
+      "input_output_evidence": "作者计划保护、责任预览及未就绪状态，不以报告存在批准实施",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D24"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.dispatch",
+      "name": "原内核任务派发",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "skills/a2h-execute/SKILL.md",
+        "src/hmigbot_ios/execution_bridge.py",
+        "src/hmigbot_ios/ios_scheduler.py"
+      ],
+      "aliases": [
+        "next-batch"
+      ],
+      "contract": "原next_batch单写者、冻结/写权围栏、明确预算守卫",
+      "purpose_and_object": "原内核任务派发",
+      "input_output_evidence": "原next_batch单写者、冻结/写权围栏、明确预算守卫",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D03"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.landing",
+      "name": "原内核回执落账",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "skills/a2h-execute/scripts/apply_writeback.py",
+        "src/hmigbot_ios/indexed_evidence.py",
+        "src/hmigbot_ios/receipt_outputs.py"
+      ],
+      "aliases": [
+        "land-results"
+      ],
+      "contract": "真实v2回执、文件差异/哈希及原land_results，不因预算耗尽禁止回收",
+      "purpose_and_object": "原内核回执落账",
+      "input_output_evidence": "真实v2回执、文件差异/哈希及原land_results，不因预算耗尽禁止回收",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D03"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.recovery",
+      "name": "阻塞任务受审恢复",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/join_attempt.py",
+        "src/hmigbot_ios/replan_recovery.py",
+        "src/hmigbot_ios/receipt_outputs.py"
+      ],
+      "aliases": [
+        "recover-blocked"
+      ],
+      "contract": "核对原失败身份与审阅，过期/未知/硬门失败不能降门记债",
+      "purpose_and_object": "阻塞任务受审恢复",
+      "input_output_evidence": "核对原失败身份与审阅，过期/未知/硬门失败不能降门记债",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.usage-budget",
+      "name": "用量及全程预算",
+      "independent": true,
+      "stage": "all",
+      "implementation": [
+        "src/hmigbot_ios/usage_budget.py"
+      ],
+      "aliases": [
+        "usage-start",
+        "usage-record",
+        "usage-reserve",
+        "usage-release",
+        "usage-summary",
+        "usage-check",
+        "usage-finish"
+      ],
+      "contract": "schema1/2、真实用量、原子在途预留/结算/取消、可信启动身份与UNKNOWN；不缩短证据义务",
+      "purpose_and_object": "用量及全程预算",
+      "input_output_evidence": "schema1/2、真实用量、原子在途预留/结算/取消、可信启动身份与UNKNOWN；不缩短证据义务",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D30"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.join",
+      "name": "并行工作结果汇合",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/host_join.py",
+        "src/hmigbot_ios/join_attempt.py"
+      ],
+      "aliases": [
+        "join"
+      ],
+      "contract": "原证据/owner/回执和失败保留，平台运行与超时由统一后端承担",
+      "purpose_and_object": "并行工作结果汇合",
+      "input_output_evidence": "原证据/owner/回执和失败保留，平台运行与超时由统一后端承担",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.target-build",
+      "name": "鸿蒙目标构建",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/build.py",
+        "src/hmigbot_ios/native_pipeline.py"
+      ],
+      "aliases": [
+        "build-target",
+        "build"
+      ],
+      "contract": "真实hvigor命令与当前源/目标/规格摘要绑定；不用于源Xcode采集",
+      "purpose_and_object": "鸿蒙目标构建",
+      "input_output_evidence": "真实hvigor命令与当前源/目标/规格摘要绑定；不用于源Xcode采集",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "similar_names_different_objects",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.build-diagnostics",
+      "name": "鸿蒙构建日志诊断",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/harmony_diagnostics.py"
+      ],
+      "aliases": [
+        "diagnose-build"
+      ],
+      "contract": "真实返回码与矛盾成功日志拒绝，只适用目标构建",
+      "purpose_and_object": "鸿蒙构建日志诊断",
+      "input_output_evidence": "真实返回码与矛盾成功日志拒绝，只适用目标构建",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D34"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.migration-report",
+      "name": "迁移证据轴汇总",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/quality_views.py",
+        "src/hmigbot_ios/page_evidence.py",
+        "src/hmigbot_ios/indexed_evidence.py"
+      ],
+      "aliases": [
+        "spec-summary",
+        "migration-report",
+        "gate-artifacts execute"
+      ],
+      "contract": "生成/编译/行为/视觉分轴，原dispatch/journal身份与当前证据绑定",
+      "purpose_and_object": "迁移证据轴汇总",
+      "input_output_evidence": "生成/编译/行为/视觉分轴，原dispatch/journal身份与当前证据绑定",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D24"
+      ],
+      "classification": "similar_names_different_objects",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "verify.scope",
+      "name": "验证范围归一",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "src/hmigbot_ios/indexed_verify.py",
+        "src/hmigbot_ios/verification_scope.py"
+      ],
+      "aliases": [
+        "verify-scope"
+      ],
+      "contract": "CHECK1/2固定、3/4可选；CHECK5与附加behavior同义映射，pending不猜授权",
+      "purpose_and_object": "验证范围归一",
+      "input_output_evidence": "CHECK1/2固定、3/4可选；CHECK5与附加behavior同义映射，pending不猜授权",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "verify.behavior",
+      "name": "行为效果链核验",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "src/hmigbot_ios/behavior.py"
+      ],
+      "aliases": [
+        "behavior-check"
+      ],
+      "contract": "独立源oracle与显式真实执行，未运行不计PASS，不改变四项总体判定",
+      "purpose_and_object": "行为效果链核验",
+      "input_output_evidence": "独立源oracle与显式真实执行，未运行不计PASS，不改变四项总体判定",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "verify.report",
+      "name": "按范围生成验证报告",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "src/hmigbot_ios/indexed_verify.py",
+        "src/hmigbot_ios/gate_artifacts.py"
+      ],
+      "aliases": [
+        "verify-report",
+        "gate-artifacts verify"
+      ],
+      "contract": "按稳定检查语义输出当前范围结果、失败与未执行项；不按同名编号推定跨版等价",
+      "purpose_and_object": "四项验证报告",
+      "input_output_evidence": "main编号、当前输入/证据绑定与已选范围；行为单列，未选不读旧行为",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D24"
+      ],
+      "classification": "similar_names_different_objects",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "verify.oracle-comparison",
+      "name": "独立源目标观察比较",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "src/hmigbot_ios/workflow.py"
+      ],
+      "aliases": [
+        "compare-behavior"
+      ],
+      "contract": "oracle bundle与目标观察来源分开；局部用例不证明全应用等价",
+      "purpose_and_object": "独立源目标观察比较",
+      "input_output_evidence": "oracle bundle与目标观察来源分开；局部用例不证明全应用等价",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "workflow.evidence-workspace",
+      "name": "迁移证据工作区管理",
+      "independent": true,
+      "stage": "init",
+      "implementation": [
+        "src/hmigbot_ios/workflow.py"
+      ],
+      "aliases": [
+        "pipeline-init",
+        "pipeline-status"
+      ],
+      "contract": "仅证据目录/状态视图，不能代替当前主流程plan/dispatch或产生完成批准",
+      "purpose_and_object": "迁移证据工作区管理",
+      "input_output_evidence": "仅证据目录/状态视图，不能代替当前主流程plan/dispatch或产生完成批准",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "workflow.agent-packet",
+      "name": "代理任务证据包",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/tasks.py"
+      ],
+      "aliases": [
+        "task-create",
+        "task-check"
+      ],
+      "contract": "源绑定任务输入与结果合同，未知不自动实现",
+      "purpose_and_object": "代理任务证据包",
+      "input_output_evidence": "源绑定任务输入与结果合同，未知不自动实现",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.project-scaffold",
+      "name": "目标工程骨架生成",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/generate.py"
+      ],
+      "aliases": [
+        "scaffold"
+      ],
+      "contract": "独立创建目标项目，迁移行为仍未验证",
+      "purpose_and_object": "目标工程骨架生成",
+      "input_output_evidence": "独立创建目标项目，迁移行为仍未验证",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.closed-grammar-generation",
+      "name": "官方优先受限规则草稿转换",
+      "independent": true,
+      "stage": "execute",
+      "implementation": [
+        "src/hmigbot_ios/generate.py",
+        "src/hmigbot_ios/swiftui.py",
+        "src/hmigbot_ios/weak_swiftui.py",
+        "src/hmigbot_ios/swift_native.py",
+        "providers/swift-syntax/main.swift"
+      ],
+      "aliases": [
+        "generate",
+        "verify"
+      ],
+      "contract": "SwiftParser 优先到受限 ArkUI 草稿；仅独立入口在官方解析失败后尝试标记的弱草稿，保留两次原因；未知行为拒绝，弱结果不认证 Swift 语法或行为等价",
+      "purpose_and_object": "闭合SwiftUI子集草稿转换",
+      "input_output_evidence": "官方 AST 或完全消费的弱规则生成 ArkUI 草稿，后端/错误/弱验证状态显式记录，并校验源新鲜度",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "cloud.source-build",
+      "name": "源构建准备及采集",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/cloud.py"
+      ],
+      "aliases": [
+        "cloud-prepare"
+      ],
+      "contract": "私有构建资料、实际Xcode结果与成员，签名/设备仍独立",
+      "purpose_and_object": "源构建准备及采集",
+      "input_output_evidence": "私有构建资料、实际Xcode结果与成员，签名/设备仍独立",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "cloud.dispatch",
+      "name": "显式云构建派发",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/cloud.py"
+      ],
+      "aliases": [
+        "cloud-dispatch"
+      ],
+      "contract": "明确私有仓库/ref/run，原授权边界保持",
+      "purpose_and_object": "显式云构建派发",
+      "input_output_evidence": "明确私有仓库/ref/run，原授权边界保持",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "cloud.fetch",
+      "name": "云证据下载校验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/cloud.py"
+      ],
+      "aliases": [
+        "cloud-fetch"
+      ],
+      "contract": "选择真实run后核对源和artifact摘要",
+      "purpose_and_object": "云证据下载校验",
+      "input_output_evidence": "选择真实run后核对源和artifact摘要",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.evidence-package",
+      "name": "源证据封装与校验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/evidence.py"
+      ],
+      "aliases": [
+        "evidence-pack",
+        "evidence-check"
+      ],
+      "contract": "字节清单、kind与完整性，不能认证未执行的输入",
+      "purpose_and_object": "源证据封装与校验",
+      "input_output_evidence": "字节清单、kind与完整性，不能认证未执行的输入",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.capture",
+      "name": "显式外部观察采集",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/capture.py"
+      ],
+      "aliases": [
+        "capture"
+      ],
+      "contract": "保留实际工具原输出、错误与来源，不执行应用文本",
+      "purpose_and_object": "显式外部观察采集",
+      "input_output_evidence": "保留实际工具原输出、错误与来源，不执行应用文本",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "verify.ipa-inspection",
+      "name": "IPA内容检查",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "src/hmigbot_ios/iphone.py"
+      ],
+      "aliases": [
+        "ipa-inspect"
+      ],
+      "contract": "ZIP完整性、bundle与设备架构，检查不等于签名/安装成功",
+      "purpose_and_object": "IPA内容检查",
+      "input_output_evidence": "ZIP完整性、bundle与设备架构，检查不等于签名/安装成功",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "distribution.upgrade",
+      "name": "安装升级回滚",
+      "independent": true,
+      "stage": "init",
+      "implementation": [
+        "src/hmigbot_ios/upgrade_cleanup.py"
+      ],
+      "aliases": [
+        "manage_install"
+      ],
+      "contract": "精确机器产物归档、用户编辑保护、在途拒绝与失败回滚，预算/作者/原账本保留",
+      "purpose_and_object": "安装升级回滚",
+      "input_output_evidence": "精确机器产物归档、用户编辑保护、在途拒绝与失败回滚，预算/作者/原账本保留",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D35"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "distribution.package-integrity",
+      "name": "源码包完整性",
+      "independent": true,
+      "stage": "retrospect",
+      "implementation": [
+        "scripts/package_tree.py",
+        "scripts/verify_package.py"
+      ],
+      "aliases": [
+        "package_plugin",
+        "verify_package"
+      ],
+      "contract": "逐字节/权限/目录清单核验，不重复计包装入口",
+      "purpose_and_object": "源码包完整性",
+      "input_output_evidence": "逐字节/权限/目录清单核验，不重复计包装入口",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D36"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "distribution.release-audit",
+      "name": "发行合同核验",
+      "independent": true,
+      "stage": "retrospect",
+      "implementation": [
+        "scripts/audit_upstream.py"
+      ],
+      "aliases": [
+        "audit-hmigbot"
+      ],
+      "contract": "真实工具/上游资源/角色/技能检查，发行不冒充项目验收",
+      "purpose_and_object": "发行合同核验",
+      "input_output_evidence": "真实工具/上游资源/角色/技能检查，发行不冒充项目验收",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D37"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "scope": "maintainer_distribution_check",
+      "required_for_conversion": false,
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.static-lint",
+      "name": "ArkTS静态声明核验",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "src/hmigbot_ios/native_static_runtime.py"
+      ],
+      "aliases": [
+        "lint"
+      ],
+      "contract": "原静态规则与等价线性声明匹配器；输出不能提升设备行为",
+      "purpose_and_object": "ArkTS静态声明核验",
+      "input_output_evidence": "原静态规则与等价线性声明匹配器；输出不能提升设备行为",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.slice-wiring",
+      "name": "Slice接线闭包核验",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/arkts-structural-closure/scripts/verify_slice_wiring.py"
+      ],
+      "aliases": [
+        "verify_slice_wiring"
+      ],
+      "contract": "实际scope/跨层责任/当前证据闭包，不用另一任务结果顶替",
+      "purpose_and_object": "Slice接线闭包核验",
+      "input_output_evidence": "实际scope/跨层责任/当前证据闭包，不用另一任务结果顶替",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D04"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.assembly",
+      "name": "目标装配语义核验",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/arkts-structural-closure/scripts/assembly_gate.py"
+      ],
+      "aliases": [
+        "assembly_gate"
+      ],
+      "contract": "native装配合同与原检查器证据，失败/超时原输出保留",
+      "purpose_and_object": "目标装配语义核验",
+      "input_output_evidence": "native装配合同与原检查器证据，失败/超时原输出保留",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.binding",
+      "name": "目标绑定门禁",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/arkts-structural-closure/scripts/binding_gate.py"
+      ],
+      "aliases": [
+        "binding_gate"
+      ],
+      "contract": "原绑定算法与受控运行服务，未接线不计通过",
+      "purpose_and_object": "目标绑定门禁",
+      "input_output_evidence": "原绑定算法与受控运行服务，未接线不计通过",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.dead-shell",
+      "name": "空壳实现门禁",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/a2h-execute/scripts/dead_shell_gate.py"
+      ],
+      "aliases": [
+        "dead_shell_gate"
+      ],
+      "contract": "原独立空壳检查器与实际输入作用域",
+      "purpose_and_object": "空壳实现门禁",
+      "input_output_evidence": "原独立空壳检查器与实际输入作用域",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.carrier",
+      "name": "交互载体门禁",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/a2h-execute/scripts/carrier_gate.py"
+      ],
+      "aliases": [
+        "carrier_gate"
+      ],
+      "contract": "原交互载体检查器；不与命中区域检查合并",
+      "purpose_and_object": "交互载体门禁",
+      "input_output_evidence": "原交互载体检查器；不与命中区域检查合并",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.hit-test",
+      "name": "命中区域门禁",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/a2h-execute/scripts/hit_test_gate.py"
+      ],
+      "aliases": [
+        "hit_test_gate"
+      ],
+      "contract": "原事件命中区域检查器与独立失败结果",
+      "purpose_and_object": "命中区域门禁",
+      "input_output_evidence": "原事件命中区域检查器与独立失败结果",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.resource-names",
+      "name": "资源名称门禁",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/a2h-execute/scripts/resource_name_gate.py"
+      ],
+      "aliases": [
+        "resource_name_gate"
+      ],
+      "contract": "原资源命名检查器；不冒充资源转换或布局验收",
+      "purpose_and_object": "资源名称门禁",
+      "input_output_evidence": "原资源命名检查器；不冒充资源转换或布局验收",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.literal-readiness",
+      "name": "目标字面量就绪核验",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/a2h-execute/scripts/literal_gate.py"
+      ],
+      "aliases": [
+        "literal_gate"
+      ],
+      "contract": "产品/历史责任、目标真实使用与原ledger证据分开",
+      "purpose_and_object": "目标字面量就绪核验",
+      "input_output_evidence": "产品/历史责任、目标真实使用与原ledger证据分开",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.icon-sizing",
+      "name": "图标尺寸核验与受控修复",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/arkts-icon-sizing/scripts/icon_audit.py",
+        "src/hmigbot_ios/native_image_guard.py"
+      ],
+      "aliases": [
+        "icon_autofix"
+      ],
+      "contract": "真实目标图片作用域、修改边界与收据，不生成源截图",
+      "purpose_and_object": "图标尺寸核验与受控修复",
+      "input_output_evidence": "真实目标图片作用域、修改边界与收据，不生成源截图",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.capability-ledger",
+      "name": "目标能力接线账本核验",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/arkts-structural-closure/scripts/capability_ledger_gate.py"
+      ],
+      "aliases": [
+        "capability_ledger_gate"
+      ],
+      "contract": "能力声明、初始化、真实生产/消费接线与受审证据",
+      "purpose_and_object": "目标能力接线账本核验",
+      "input_output_evidence": "能力声明、初始化、真实生产/消费接线与受审证据",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.writeback",
+      "name": "实现回写合同核验",
+      "independent": true,
+      "stage": "verify",
+      "implementation": [
+        "skills/a2h-execute/scripts/apply_writeback.py",
+        "src/hmigbot_ios/indexed_evidence.py"
+      ],
+      "aliases": [
+        "writeback"
+      ],
+      "contract": "回写前后身份/claims/目标索引与实际触碰范围，原写者不变",
+      "purpose_and_object": "实现回写合同核验",
+      "input_output_evidence": "回写前后身份/claims/目标索引与实际触碰范围，原写者不变",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.source-provenance",
+      "name": "源索引及文档源归属",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/native_pipeline.py"
+      ],
+      "aliases": [
+        "source-check"
+      ],
+      "contract": "当前源索引、文档锚点、文件唯一归属与原原生语义合同；聚合入口不另计",
+      "purpose_and_object": "源索引及文档源归属",
+      "input_output_evidence": "当前源索引、文档锚点、文件唯一归属与原原生语义合同；聚合入口不另计",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.native-claims",
+      "name": "原生事实声明核验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/ios_harness.py"
+      ],
+      "aliases": [
+        "validate_native_claims"
+      ],
+      "contract": "typed状态值、fact链接、维度遗漏和NA矛盾，责任保留部分由同一投影解释",
+      "purpose_and_object": "原生事实声明核验",
+      "input_output_evidence": "typed状态值、fact链接、维度遗漏和NA矛盾，责任保留部分由同一投影解释",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D23"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "spec.obligation-coverage",
+      "name": "义务覆盖完整性核验",
+      "independent": true,
+      "stage": "spec",
+      "implementation": [
+        "src/hmigbot_ios/ios_harness.py"
+      ],
+      "aliases": [
+        "coverage_check"
+      ],
+      "contract": "完整义务分母、重复/未知/缺项、历史映射、非产品排除与独立判据；产品路径归属独立核验",
+      "purpose_and_object": "义务覆盖完整性核验",
+      "input_output_evidence": "完整义务分母、重复/未知/缺项、历史映射、非产品排除与独立判据；产品路径归属独立核验",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "original_requirements": [
+        "D23"
+      ],
+      "classification": "same_meaning_fused_or_shared_implementation",
+      "implementation_policy": "one authority; command aliases, wrappers and platform backends do not add counts",
+      "side_effects": "Read/validate current evidence; command-specific writes retain their documented owner, report-only and explicit-apply boundaries. See WORKFLOW.md.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "runtime.project-identity",
+      "name": "源目标身份配置",
+      "stage": "init",
+      "independent": true,
+      "implementation": [
+        "src/hmigbot_ios/native_pipeline.py",
+        "src/hmigbot_ios/cli.py"
+      ],
+      "aliases": [
+        "init"
+      ],
+      "contract": "源目标互不包含、已有源身份冲突拒绝；旧独立config与项目config是明确schema适配，默认写入范围保持",
+      "purpose_and_object": "源目标身份配置",
+      "input_output_evidence": "源目标互不包含、已有源身份冲突拒绝；旧独立config与项目config是明确schema适配，默认写入范围保持",
+      "classification": "distinct_existing_shared_contract",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "side_effects": "Existing command-specific ownership, schema and explicit selection remain unchanged",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.path-resolution",
+      "name": "唯一源路径解析",
+      "stage": "spec",
+      "independent": true,
+      "implementation": [
+        "src/hmigbot_ios/native_pipeline.py",
+        "src/hmigbot_ios/core.py"
+      ],
+      "aliases": [
+        "resolve"
+      ],
+      "contract": "路径包含与遍历拒绝、后缀定位唯一性和AMBIGUOUS/MISS；不等于文件格式读取",
+      "purpose_and_object": "唯一源路径解析",
+      "input_output_evidence": "路径包含与遍历拒绝、后缀定位唯一性和AMBIGUOUS/MISS；不等于文件格式读取",
+      "classification": "distinct_existing_shared_contract",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "side_effects": "Existing command-specific ownership, schema and explicit selection remain unchanged",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.contract-draft",
+      "name": "源功能任务包草稿",
+      "stage": "spec",
+      "independent": true,
+      "implementation": [
+        "src/hmigbot_ios/hmigbot.py"
+      ],
+      "aliases": [
+        "migration-contract"
+      ],
+      "contract": "旧显式单位合同的未审草稿；不生成主流程正式Spec/AC或业务代码",
+      "purpose_and_object": "源功能任务包草稿",
+      "input_output_evidence": "旧显式单位合同的未审草稿；不生成主流程正式Spec/AC或业务代码",
+      "classification": "distinct_existing_shared_contract",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "side_effects": "Existing command-specific ownership, schema and explicit selection remain unchanged",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "distribution.external-binding",
+      "name": "旧外部工具绑定完整性",
+      "stage": "init",
+      "independent": true,
+      "implementation": [
+        "src/hmigbot_ios/hmigbot.py"
+      ],
+      "aliases": [
+        "hmigbot-bind",
+        "hmigbot-check"
+      ],
+      "contract": "仅原公开支持的CodeX 1.6.1与明确manifest/资源摘要；其他版本继续拒绝，不默认绑定或自动切换",
+      "purpose_and_object": "旧外部工具绑定完整性",
+      "input_output_evidence": "仅原公开支持的CodeX 1.6.1与明确manifest/资源摘要；其他版本继续拒绝，不默认绑定或自动切换",
+      "classification": "distinct_existing_shared_contract",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "side_effects": "Existing command-specific ownership, schema and explicit selection remain unchanged",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "execution.legacy-handoff",
+      "name": "旧显式合同任务包交接",
+      "stage": "execute",
+      "independent": true,
+      "implementation": [
+        "src/hmigbot_ios/hmigbot.py"
+      ],
+      "aliases": [
+        "hmigbot-handoff",
+        "hmigbot-handoff-check"
+      ],
+      "contract": "按已有显式合同与binding生成/检查数据包，未知路由仍拒绝；不新增主控调度循环或自动执行",
+      "purpose_and_object": "旧显式合同任务包交接",
+      "input_output_evidence": "按已有显式合同与binding生成/检查数据包，未知路由仍拒绝；不新增主控调度循环或自动执行",
+      "classification": "distinct_existing_shared_contract",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "side_effects": "Existing command-specific ownership, schema and explicit selection remain unchanged",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "target.draft-integrity",
+      "name": "草稿源与产物完整性核验",
+      "stage": "verify",
+      "independent": true,
+      "implementation": [
+        "src/hmigbot_ios/generate.py"
+      ],
+      "aliases": [
+        "verify"
+      ],
+      "contract": "当前源及生成文件摘要核验；不把完整性当作编译或行为通过",
+      "purpose_and_object": "草稿源与产物完整性核验",
+      "input_output_evidence": "当前源及生成文件摘要核验；不把完整性当作编译或行为通过",
+      "classification": "distinct_existing_shared_contract",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "side_effects": "Existing command-specific ownership, schema and explicit selection remain unchanged",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "availability": "implementation_present_not_execution_evidence"
+    },
+    {
+      "id": "source.fact-provenance",
+      "name": "通用事实引用合同核验",
+      "stage": "spec",
+      "independent": true,
+      "implementation": [
+        "src/hmigbot_ios/contracts.py"
+      ],
+      "aliases": [
+        "check-facts"
+      ],
+      "contract": "独立中间事实格式的ID、来源及引用一致性；不替代iOS语义/覆盖harness",
+      "purpose_and_object": "通用事实引用合同核验",
+      "input_output_evidence": "独立中间事实格式的ID、来源及引用一致性；不替代iOS语义/覆盖harness",
+      "classification": "distinct_existing_shared_contract",
+      "source_policy": "Capability-level selection and shared authority; see docs/SELECTIVE-FUSION.md",
+      "side_effects": "Existing command-specific ownership, schema and explicit selection remain unchanged",
+      "original_requirements": [
+        "shared-existing-contract"
+      ],
+      "acceptance": "Capability description only; each project records actual calls, current evidence and unverified scope.",
+      "availability": "implementation_present_not_execution_evidence"
+    }
+  ],
+  "non_counting": [
+    "source-analysis orchestration",
+    "init-environment orchestration",
+    "a2h stage orchestrators",
+    "162 helper wrappers",
+    "Mac/Windows backends",
+    "62 internal checklist references",
+    "102 skill procedures and 31 role instructions (retained resources, not extra executable implementations)",
+    "target validation/structural-loop aggregate: constituent detectors counted below",
+    "source-check/harness-check aggregate: provenance/claims/obligations and product ownership counted below",
+    "capabilities command: metadata/catalog query, not an extra business capability",
+    "Native graph aliases, indexed source/plan handoff and original-writeback receipts project existing responsibilities; not duplicate independent capabilities"
+  ],
+  "platform_boundary": "Windows native paths/Job remain unverified; no target HAP/device/application equivalence claim.",
+  "release_profile": "macos-arm64"
+}

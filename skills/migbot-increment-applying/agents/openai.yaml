@@ -1,0 +1,4 @@
+interface:
+  display_name: migbot-increment-applying
+  short_description: Migbot-Increment APPLYING 阶段 skill，用于代码应用与测试。 当用户说"执行 migbot-…
+  default_prompt: 请使用 $migbot-increment-applying，按本技能的输入、执行步骤和验收条件完成当前任务。

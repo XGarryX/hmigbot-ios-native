@@ -1,2 +1,5 @@
-policy:
-  allow_implicit_invocation: true
+interface:
+  display_name: a2h-plan
+  short_description: iOS→ArkTS 迁移的执行计划生成（Pipeline 第二步）：读已审批的 spec/baseline/，产出 UI
+    …
+  default_prompt: 请使用 $a2h-plan，按本技能的输入、执行步骤和验收条件完成当前任务。

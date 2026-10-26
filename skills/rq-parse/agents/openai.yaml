@@ -1,0 +1,4 @@
+interface:
+  display_name: rq-parse
+  short_description: 解析用户原始需求，提取结构化信息（意图分类、领域映射、影响层次、关键实体、模糊点标记），并可选地执行竞品调研获取参考信息。…
+  default_prompt: 请使用 $rq-parse，按本技能的输入、执行步骤和验收条件完成当前任务。

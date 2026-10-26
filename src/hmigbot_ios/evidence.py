@@ -1,9 +1,10 @@
 """Portable source evidence bundles. Integrity is not authenticity or a test pass."""
 from pathlib import Path
 
+from .core import source_snapshot
 from .core import SCHEMA, MigrationError, digest, json_bytes, read_json, safe_child, snapshot, source_files, write_new_tree
 
-KINDS = {"source_build", "source_build_settings", "source_tests", "source_scenario", "source_screenshot", "source_snapshot",
+KINDS = {"source_build", "source_tests", "source_scenario", "source_screenshot", "source_snapshot",
          "source_trace", "source_network", "source_data", "source_debug", "source_performance"}
 
 
@@ -18,7 +19,7 @@ def pack(source: Path, artifacts: Path, output: Path, kind: str, provider: str):
     if not files:
         raise MigrationError("No evidence artifacts supplied")
     payload = {"artifacts/" + p.relative_to(artifacts).as_posix(): p.read_bytes() for p in files}
-    manifest = {"schema_version": SCHEMA, "source_sha256": snapshot(source)["sha256"],
+    manifest = {"schema_version": SCHEMA, "source_sha256": source_snapshot(source)["sha256"],
                 "kind": kind, "provider": provider, "origin": "user_supplied_source_evidence",
                 "claim_validation": "not_performed", "artifacts": {n: digest(b) for n, b in payload.items()}}
     payload["manifest.json"] = json_bytes(manifest)
@@ -35,7 +36,7 @@ def validate(source: Path, bundle: Path):
             or manifest.get("origin") != "user_supplied_source_evidence"
             or manifest.get("claim_validation") != "not_performed"):
         raise MigrationError("Evidence requires provider, source origin and unvalidated-claim metadata")
-    if manifest.get("source_sha256") != snapshot(source)["sha256"]:
+    if manifest.get("source_sha256") != source_snapshot(source)["sha256"]:
         raise MigrationError("Evidence source fingerprint does not match current source")
     artifacts = manifest.get("artifacts")
     if not isinstance(artifacts, dict) or not artifacts:

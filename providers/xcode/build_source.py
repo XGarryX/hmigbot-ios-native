@@ -12,9 +12,9 @@ import sys
 import zipfile
 
 
-def membership_selection(parsed, settings, *, scheme, configuration, sdk, xcode_version, product):
+def membership_selection(parsed, settings, *, scheme, configuration, sdk, xcode_version, product, targets=None):
     """Scope actual membership by the selected build settings, not by directory names."""
-    targets = sorted({entry.get('buildSettings', {}).get('TARGET_NAME') for entry in parsed
+    targets = sorted(set(targets)) if targets is not None else sorted({entry.get('buildSettings', {}).get('TARGET_NAME') for entry in parsed
                       if entry.get('buildSettings', {}).get('WRAPPER_EXTENSION') in {'app', 'appex'}
                       and entry.get('buildSettings', {}).get('TARGET_NAME')})
     if settings.get('TARGET_NAME') and settings['TARGET_NAME'] not in targets:
@@ -61,7 +61,7 @@ def main():
     if not runtime.is_dir():
         runtime = Path(__file__).resolve().parents[2] / 'src'
     sys.path.insert(0, str(runtime))
-    from hmigbot_ios.core import snapshot, safe_child, json_bytes
+    from hmigbot_ios.core import source_snapshot as snapshot, safe_child, json_bytes
     from hmigbot_ios.evidence import pack
     from hmigbot_ios.cloud import validate_config
     config = validate_config(json.loads(args.config.read_text(encoding='utf-8')))
@@ -125,6 +125,15 @@ def main():
                 raise RuntimeError('Unexpected device architecture')
             if bundle != app:
                 report['extensions'].append(bi['CFBundleIdentifier'])
+        from hmigbot_ios.native_product_scope import capture_scope
+        try:
+            product_scope = capture_scope(source, output / 'DerivedData', capture, parsed,
+                root_target=settings['TARGET_NAME'], scheme=config['scheme'], configuration=config['configuration'],
+                sdk='iphoneos', architectures=str(settings.get('ARCHS', '')).split(), source_sha256=before['sha256'],
+                command=run)
+        except (OSError, ValueError, RuntimeError) as exc:
+            raise MembershipIncomplete('Native product scope is unresolved after successful build: ' + str(exc)) from exc
+        parsed = product_scope['settings']
         # Capture actual compiled membership while the build tree still exists: the
         # cleanup below deletes the only record of which files really compiled.
         membership = record_source_membership(
@@ -133,7 +142,10 @@ def main():
             selection=membership_selection(parsed, settings, scheme=config['scheme'],
                 configuration=config['configuration'], sdk='iphoneos',
                 xcode_version=report.get('xcode_version') or 'xcodebuild',
-                product=report['bundle_id']))
+                product=report['bundle_id'], targets=product_scope['targets']))
+        report['selection'] = membership['selection']
+        report['target_scope'] = {'policy': product_scope['proof']['policy'],
+                                 'targets': product_scope['targets'], 'artifact': 'artifacts/target-scope.json'}
         report['source_membership'] = membership_summary(membership)
         if membership['membership_status'] != 'complete':
             raise MembershipIncomplete('Actual build source membership is '

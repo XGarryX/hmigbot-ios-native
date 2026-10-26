@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+# a2h-agreement — present the User Experience Improvement Plan to the USER
+# out-of-band, so the agreement's full text never has to be pasted into the
+# agent's context window.
+#
+#   Plan A (preferred): pop the agreement open in a GUI window using the OS's
+#     native file-opener — macOS `open`, Windows / Git Bash `Start-Process`,
+#     Linux desktop `xdg-open`, WSL `explorer.exe`. The documented hard cases
+#     are handled by FALLING BACK (never by dumping the text):
+#       • macOS TCC/automation limits — we use `open`, which needs no
+#         Automation permission, instead of `osascript display dialog`.
+#       • WSL / Git Bash / headless shells that cannot raise a window.
+#       • any opener that errors out or is missing.
+#   Plan B (fallback): print the absolute, openable path; the agent then asks
+#     the user to open and read it manually.
+#
+# The absolute path is ALWAYS printed, so even when Plan A silently fails the
+# user still has a way in. The final stdout line is compact JSON for the agent
+# to parse WITHOUT reading the policy body:
+#   {"shown":"popup"|"path"|"error","method":"...","path":"<abs>","lang":"..","reason":".."}
+#
+# Usage:  a2h-agreement [--lang zh|en] [--file <path>]
+# Exit:   0 always — a failed popup degrades to Plan B, it is not an error.
+
+set -uo pipefail
+
+# ── WSL-on-Windows guard (issue #41) ────────────────────────────────
+# If `bash` resolved to WSL on a Windows host, this script cannot see C:\
+# paths and would look for an extension-less binary -> every check misreports.
+# Hand off to the PowerShell twin (Windows-native view) instead. Git Bash /
+# MSYS is NOT WSL (no /mnt/<drive> mount, no "microsoft" kernel) and stays here.
+_a2h_wsl_handoff() {
+  local ps1="$1"; shift
+  local kr; kr="$(uname -r 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+  case "$kr" in *microsoft*|*wsl*) ;; *) return 1 ;; esac
+  case "$(pwd -P)" in /mnt/[a-zA-Z]/*) ;; *) return 1 ;; esac   # project lives on a Windows drive
+  local exe; exe="$(command -v powershell.exe 2>/dev/null || true)"
+  [ -n "$exe" ] || exe="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+  [ -x "$exe" ] && [ -f "$ps1" ] || return 1
+  local winps; winps="$(wslpath -w "$ps1" 2>/dev/null)" || return 1
+  exec "$exe" -NoProfile -ExecutionPolicy Bypass -File "$winps" "$@"
+}
+_a2h_ag_args=(); _a2h_prev=""
+for _a in "$@"; do
+  case "$_a2h_prev" in
+    --lang) _a2h_ag_args+=(-Lang "$_a") ;;
+    --file) _a2h_ag_args+=(-File "$_a") ;;
+  esac
+  [ "$_a" = "--check" ] && _a2h_ag_args+=(-Check)
+  _a2h_prev="$_a"
+done
+_a2h_wsl_handoff "$(cd "$(dirname "$0")" && pwd)/a2h-agreement.ps1" ${_a2h_ag_args[@]+"${_a2h_ag_args[@]}"} || true
+unset _a2h_ag_args _a2h_prev _a
+
+lang=""
+file=""
+check_only=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --lang) lang="${2:-}"; shift 2 ;;
+    --file) file="${2:-}"; shift 2 ;;
+    # Quiet probe: emit the current agreement version (+ path) WITHOUT raising
+    # any window. Lets /a2h-init silently detect a material policy bump (stored
+    # agreement_version != current) for an already-decided user and only then
+    # re-run the consent flow. Never shows the policy.
+    --check) check_only=1; shift ;;
+    *)      shift ;;
+  esac
+done
+
+[ -z "$lang" ] && lang="en"
+[ -z "$file" ] && file=".migbot/policies/user-experience-improvement-plan.${lang}.md"
+
+json_escape() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
+
+if [ ! -f "$file" ]; then
+  printf '{"shown":"error","method":"none","path":"%s","lang":"%s","reason":"policy file not found"}\n' \
+    "$(json_escape "$file")" "$(json_escape "$lang")"
+  exit 0
+fi
+
+# Absolute POSIX path (portable; no realpath dependency).
+abs="$(cd "$(dirname "$file")" 2>/dev/null && pwd)/$(basename "$file")"
+
+# Pull the agreement version (bottom "Version: vX.Y" / "版本号：vX.Y") so the
+# agent can record agreement_version without reading the policy body.
+version="$(grep -iE '^[[:space:]]*(version|版本号)' "$file" 2>/dev/null \
+  | grep -oE 'v[0-9]+(\.[0-9]+){1,2}' | tail -n1)"
+
+if [ "$check_only" = "1" ]; then
+  printf '{"shown":"check","method":"none","path":"%s","lang":"%s","version":"%s","reason":"version probe"}\n' \
+    "$(json_escape "$abs")" "$(json_escape "$lang")" "$(json_escape "$version")"
+  exit 0
+fi
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+uname_s="$(uname -s 2>/dev/null || echo unknown)"
+is_wsl=0
+if [ -r /proc/version ] && grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+  is_wsl=1
+fi
+
+# A human-friendly display path: native Windows form under Git Bash / WSL,
+# otherwise the POSIX absolute path.
+disp="$abs"
+case "$uname_s" in
+  MINGW*|MSYS*|CYGWIN*) have cygpath && disp="$(cygpath -w "$abs" 2>/dev/null || echo "$abs")" ;;
+  Linux) [ "$is_wsl" -eq 1 ] && have wslpath && disp="$(wslpath -w "$abs" 2>/dev/null || echo "$abs")" ;;
+esac
+
+method="none"
+shown="path"
+reason=""
+
+case "$uname_s" in
+  Darwin)
+    if have open; then
+      if open "$abs" >/dev/null 2>&1; then
+        method="open"; shown="popup"
+      else
+        reason="macOS 'open' failed (no window server or sandbox)"
+      fi
+    else
+      reason="'open' not available"
+    fi
+    ;;
+  Linux)
+    if [ "$is_wsl" -eq 1 ]; then
+      # WSL: hand the Windows path to Explorer. explorer.exe frequently returns
+      # a non-zero code even on success, so "launched without erroring out hard"
+      # is the best signal we have; the always-printed path covers the rest.
+      if have explorer.exe && [ "$disp" != "$abs" ]; then
+        explorer.exe "$disp" >/dev/null 2>&1 || true
+        method="explorer.exe"; shown="popup"
+      else
+        reason="WSL without explorer.exe/wslpath — cannot raise a window"
+      fi
+    elif [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+      if have xdg-open; then
+        ( xdg-open "$abs" >/dev/null 2>&1 & ); method="xdg-open"; shown="popup"
+      elif have gio; then
+        ( gio open "$abs" >/dev/null 2>&1 & ); method="gio"; shown="popup"
+      else
+        reason="no xdg-open/gio on this desktop"
+      fi
+    else
+      reason="headless shell (no DISPLAY) — cannot raise a window"
+    fi
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    # Git Bash / MSYS on native Windows. Start-Process raises the default .md
+    # handler in its own window without blocking this shell.
+    if have powershell.exe; then
+      if powershell.exe -NoProfile -Command "Start-Process -FilePath \"$disp\"" >/dev/null 2>&1; then
+        method="powershell"; shown="popup"
+      else
+        reason="powershell Start-Process failed"
+      fi
+    elif have cmd.exe; then
+      if cmd.exe //c start "" "$disp" >/dev/null 2>&1; then
+        method="start"; shown="popup"
+      else
+        reason="cmd start failed"
+      fi
+    else
+      reason="no powershell.exe/cmd.exe to open a window"
+    fi
+    ;;
+  *)
+    reason="unrecognised platform ($uname_s)"
+    ;;
+esac
+
+[ -z "$reason" ] && reason="opened in a GUI window via $method"
+
+printf '{"shown":"%s","method":"%s","path":"%s","lang":"%s","version":"%s","reason":"%s"}\n' \
+  "$shown" "$method" "$(json_escape "$disp")" "$(json_escape "$lang")" \
+  "$(json_escape "$version")" "$(json_escape "$reason")"
+exit 0

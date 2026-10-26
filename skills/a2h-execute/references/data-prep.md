@@ -1,53 +1,12 @@
-<!-- when: Stage 1 每页派发前做三源数据完整性预检查时加载 -->
-<!-- topics: 数据预检, synthesize_view_xml, synthesize_meta_json, enrich 模式, scaffold 模式 -->
+# Stage 1 源数据预检
 
-# 数据完整性预检查脚本调用（§3a-pre）
-
-**3 模式判定表**（对 Batch 中每个待转换页面 page_NNNN，派发 converter 前检查三源数据）：
-
-| meta.json 状态 | view.xml 状态 | 处理 |
-|---------------|-------------|------|
-| ✓ 含 layout_sources | ✓ 存在 | `synthesize_meta_json.py --mode enrich` 补充缺失字段 → 派发 |
-| ✓ 含 layout_sources | ✗ 缺失 | `synthesize_view_xml.py` 合成 → enrich → 派发 |
-| ✗ 缺失或无 layout_sources | — | `synthesize_meta_json.py --mode scaffold` → Phase A 按需 → `synthesize_view_xml.py` → enrich → 派发 |
-
-Batch 级批量执行；同一 Batch 内多个页面缺 view.xml 时可并行调用脚本合成。enrich 模式补充原接口的菜单/子容器/重复项槽位；值来自实际 SwiftUI/UIKit/IB，词法骨架不能代替层级、状态和导航语义复核。
-
-> **路径约定**：`$SKILLS_ROOT` = 本套 skills 安装根（与 app-relationship-tree 等 skill 同约定），常见为 `.agents/skills/`。
-
-补充合成 view.xml 的调用方式：
-```bash
-python3 $SKILLS_ROOT/ios-ui-graph-builder/scripts/synthesize_view_xml.py \
-  $IOS_SRC \
-  --layouts "{meta.json.layout_sources 逗号拼接}" \
-  --project-root {harmony_project_dir} \
-  --output spec/baseline/ui-snapshots/page_NNNN_XxxView/view.xml \
-  --package {package}
-```
-
-补充/修正 meta.json 确定性字段的调用方式：
-```bash
-python3 $SKILLS_ROOT/ios-ui-graph-builder/scripts/synthesize_meta_json.py \
-  $IOS_SRC \
-  --activity {真实SwiftUI页面或UIKit类型} \
-  --project-root {harmony_project_dir} \
-  --page-id {page_id} \
-  --output spec/baseline/ui-snapshots/page_NNNN_XxxView/meta.json \
-  --mode enrich \
-  --existing spec/baseline/ui-snapshots/page_NNNN_XxxView/meta.json \
-  --view-xml spec/baseline/ui-snapshots/page_NNNN_XxxView/view.xml \
-  --package {package}
-```
-
-## spec 补齐留痕（HARD-GATE）
-
-本节脚本会向 `spec/baseline/ui-snapshots/` **写入/修改 spec 域产物**——execute 补齐 spec 数据必须留痕，禁止静默补写。每个 Batch 跑完合成后，向 `spec/migration-report.md` 的「spec 数据补齐记录」段 append 一条（无该段则创建）：
-
-```yaml
-- kind: snapshot_synthesized          # 或 snapshot_enriched
-  affected_pages: [page_0043, page_0051]
-  tool: synthesize_view_xml / synthesize_meta_json --mode <enrich|scaffold>
-  reason: <缺 view.xml / meta 无 layout_sources 等一句话>
-```
-
-Batch 级一条即可（列全页面），不逐页开条。此记录是上游 `spec_change_request`（a2h-pipeline/v2 §12）的 legacy 等价物：将来 `contract_mode=v2` 时，本路径改为写 `spec/.a2h/change-requests/SCR-*.json` 并阻断受影响单元，等待新 Release；当前 legacy 模式下补写照常放行，仅强制留痕。
+执行 `python3 <runtime>/scripts/a2h_ios.py execution-contract --project <target> --apply`。
+从 `spec/execution/source-ui/manifest.json` 按 page_id 取 snapshot_dir。
+读取该目录的 meta.json、view.xml、原 page_spec、git facts/semantics 和当前源锚点。
+这是真实源锚点与官方词项的静态投影；bounds 为空、状态 unknown，不是运行层级。
+Phase A 用同一源证据补充语义；enrich 仅写该执行目录并记录补充来源，保留未知值。
+发现新增页面、源变更或影响 AC 的状态缺失，回 a2h-spec/plan 受审更新，不能就地改冻结 baseline。
+源读取统一使用 hmigbot_ios.execution_source.Source，不重跑 Garry 的另一套源解析器。
+返回 page_id、source_root、page_spec、ui_info、target、owning_slice、wiring_ownership_map、registered_placeholders 和 owned_files。
+禁止运行历史 ios-ui-graph-builder 合成命令代写 baseline；当前执行合同已提供所需 meta/outline。
+页面未完成分析不得根据类名创建已转换空壳；源/计划失败保持 blocked。

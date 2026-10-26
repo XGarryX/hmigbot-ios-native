@@ -112,7 +112,7 @@ if any(p in trigger_condition for p in BLOCKLIST_PHRASES):
 
 **执行期铸号**：全部铸号者（converter / worker / closer / repair）遵守 execute `_common.md` §2.1c 发号协议——写代码 marker **之前**先 append 本表行（**登记即占号**），瞬时 forward-ref 同样登记（检测器 Class 1 契约：marker 的 P-ID 不在本表即 FAIL）。
 
-**resolved 即清行（防膨胀）**：group-closer 收组时把本组已 resolved 的 P-ID 记入 writeback manifest `registry.resolve`，由 `apply_writeback.py` **删除** `kind=forward-ref` 行（历史记录在组 brief 小节）；lifecycle 类（`thirdparty-sdk` / `resource-pending-*` / `forward-ref-uncertain` / `deferred`）resolved 后**保留**（V2 解锁与审计需要）。删行安全性：若 marker 仍残留，dangling-fwd-ref Class 1（unregistered）照常 FAIL 兜底。本表稳态 ≈ 当前活债 + lifecycle 条目。
+**resolved 即清行（防膨胀）**：group-closer将本组已resolved的P-ID记入writeback manifest，由apply_writeback.py删除kind=forward-ref行（历史留brief）；其余既有kind保留resolved行供审计。`deferred_items`是brief类别，不是新kind。marker仍残留则dangling-fwd-ref Class 1照常FAIL。
 
 **单元格限长**：`trigger_condition` / `status` 等单元格 ≤120 字符；resolve 过程叙事写 brief，不塞表格。
 

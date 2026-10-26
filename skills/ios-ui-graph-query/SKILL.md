@@ -11,7 +11,18 @@ metadata:
   - query
 ---
 
-> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+
+
+> **统一源合同**：源码只经 hmigbot_ios.execution_source.Source 消费 git 已校验的 facts/官方词项；本技能处理图的输出/查询合同，不重跑另一套源解析或选择不同构建配置。源语义、范围与审批回 git 上游。先读 [执行交界](../a2h-run/references/execution-boundary.md)。禁止当前范围的屏幕/界面/远控操作。历史 Android/Compose 源扫描命令不可用于 iOS，未知值不能填成已观测或通过。
+
+
+
+> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../ios-source-analysis/SKILL.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 
 # iOS UI Graph Query — Migration Context Retrieval
 

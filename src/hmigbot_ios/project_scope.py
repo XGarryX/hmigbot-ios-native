@@ -5,6 +5,7 @@ build settings do not remove sources, and unresolved membership fails closed.
 """
 from pathlib import Path, PurePosixPath
 
+from .core import source_snapshot
 from .core import MigrationError, digest, safe_child, snapshot
 from .xcode import OpenStep, synchronized_membership
 
@@ -50,7 +51,7 @@ def resolve(source: Path, variant: dict, *, _context=False) -> dict:
     path = safe_child(source, project_path)
     if path.name != 'project.pbxproj' or path.parent.suffix != '.xcodeproj':
         raise MigrationError('project_path must name an actual .xcodeproj/project.pbxproj')
-    snap = snapshot(source)
+    snap = source_snapshot(source)
     if not path.is_file():
         raise MigrationError(f'Project does not exist: {project_path}')
     try:
@@ -252,8 +253,6 @@ class _Project:
                     if not actual.is_file():
                         raise MigrationError(f'Declared source does not exist: {actual}')
                     relative = actual.relative_to(self.source).as_posix()
-                    if key in self.synchronized_exclusions.get(relative, set()):
-                        raise MigrationError(f'Conflicting explicit/synchronized membership in target {target["name"]}: {relative}')
                     if relative in seen:
                         raise MigrationError(f'Duplicate source membership in target {target["name"]}: {relative}')
                     if actual.suffix.lower() not in COMPILE_SUFFIXES:
@@ -266,7 +265,7 @@ class _Project:
 
     def derive(self, requested, configuration, snap):
         roots = []
-        for name in sorted(requested):
+        for name in requested:
             if name not in self.names:
                 raise MigrationError(f'Unknown requested target: {name}')
             key = self.names[name]

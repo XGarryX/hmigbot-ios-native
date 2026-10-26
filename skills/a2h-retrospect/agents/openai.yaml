@@ -1,0 +1,4 @@
+interface:
+  display_name: a2h-retrospect
+  short_description: 第五步：回顾本轮迁移，沉淀经验，优化 skill。分析 plan vs 实际差异，提取确定性修正和设计决策。双 Pipel…
+  default_prompt: 请使用 $a2h-retrospect，按本技能的输入、执行步骤和验收条件完成当前任务。

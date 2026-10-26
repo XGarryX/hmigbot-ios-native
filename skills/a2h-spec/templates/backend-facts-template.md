@@ -38,7 +38,7 @@
 
 - 必填字段：__
 - 服务端 enum 约束：__（如 channel 允许取值列表）
-- DB NOT NULL：__（填写真实服务端表和字段，不把示例当事实）
+- DB NOT NULL：__（如 USER_INFO.iOS_ID）
 - 样例响应（可贴脱敏 JSON）：
 
 ```json

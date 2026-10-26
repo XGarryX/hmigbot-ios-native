@@ -10,6 +10,10 @@ metadata:
   - responsive
   - foldable
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS UI Truncation / Display Fix — 界面展示截断修复
 
 本 skill 用于诊断和修复 ArkTS 应用中的 UI 截断、布局溢出、文本溢出、折叠屏布局切换和多设备适配问题。这些问题在手机、平板、折叠屏等不同设备上表现各异，需要系统性排查。

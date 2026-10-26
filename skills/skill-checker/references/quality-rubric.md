@@ -119,7 +119,7 @@
 
 | ID | 检查 | 阈值 / 判据 | 严重度 | 检测 |
 |---|---|---|---|---|
-| M1 | 项目特定硬绑定 | desc/body/refs 含真实业务域名（非 `example.*`）、私有反向域名包名（非 `com.example`/`ohos.*`/`ios.*` 白名单）、厂商/客户专名、私有签名方案（XXTEA 等） | ⚠️ | 半（脚本捞候选 + LLM 确认） |
+| M1 | 项目特定硬绑定 | desc/body/refs 含真实业务域名（非 `example.*`）、私有反向域名包名（非 `com.example`/`ohos.*`/`iOS.*` 白名单）、厂商/客户专名、私有签名方案（XXTEA 等） | ⚠️ | 半（脚本捞候选 + LLM 确认） |
 | M2 | 脚本跨平台 | `scripts/*.{sh,py,ps1}` 含 GNU-only 写法（`grep…\b`/`sed -i`/`readlink -f`/`stat -c`/`date -d`）、平台专属命令（pbcopy/xclip）、写死绝对用户路径（`/Users/`·`/home/`·`C:\`） | 🚩 绝对路径 / ⚠️ 其余 | 脚本 |
 
 修复指向：M1→例子用占位名（`com.example` / `vendor-A` / `dev-api.example.com`）、只留结构、加 `_note` 说明已抽象；M2→词边界用 `grep -w`、路径相对/参数化、避开 BSD/GNU 分歧命令。完整踩坑例见作者指南 §3.2 桶 2 / 桶 5。

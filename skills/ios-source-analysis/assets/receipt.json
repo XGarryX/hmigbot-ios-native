@@ -1,0 +1,16 @@
+{
+  "ios_receipt_version": 2,
+  "task_id": "counter",
+  "domain": "counter",
+  "source_sha256": "Replace with actual source snapshot digest",
+  "plan_sha256": "Replace with actual plan file digest",
+  "status": "generated",
+  "final_state": "PASS",
+  "behavior_verified": false,
+  "ac_ids": ["F001-AC01"],
+  "file_hashes": {"entry/src/main/ets/pages/Counter.ets": "Replace with actual file digest"},
+  "files_touched": ["entry/src/main/ets/pages/Counter.ets"],
+  "fixed": [],
+  "skipped": [],
+  "findings": []
+}

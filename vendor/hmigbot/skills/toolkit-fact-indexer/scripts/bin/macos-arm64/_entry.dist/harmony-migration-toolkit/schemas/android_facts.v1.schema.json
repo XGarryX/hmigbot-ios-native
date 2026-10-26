@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyfix.local/schemas/android_facts.v1.schema.json",
+  "title": "android_facts_v1",
+  "type": "object",
+  "required": ["schema_version", "android_root", "gradle_modules", "manifest", "navigation_summary", "spec_tools_artifacts", "screens"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "android_root": { "type": "string" },
+    "ui_fidelity": {
+      "type": "string",
+      "enum": ["high_xml", "mixed", "low_for_compose"]
+    },
+    "gradle_modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "properties": {
+        "application_id": { "type": "string" },
+        "launcher_activity_class": { "type": "string" },
+        "launcher_activity_qualified": { "type": "string" }
+      }
+    },
+    "navigation_summary": {
+      "type": "object",
+      "properties": {
+        "total_nodes": { "type": "integer" },
+        "total_edges": { "type": "integer" },
+        "activity_nodes": { "type": "integer" },
+        "dialog_nodes": { "type": "integer" }
+      }
+    },
+    "spec_tools_artifacts": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "screens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["class_name", "layout", "noise"],
+        "properties": {
+          "class_name": { "type": "string" },
+          "layout": { "type": "string" },
+          "noise": {
+            "type": "string",
+            "enum": ["clean", "synthetic", "unknown"]
+          },
+          "kind": { "type": "string", "enum": ["activity", "dialog", "other"] }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -85,3 +85,5 @@ SUGGESTED_NEXT_STEP: <人工介入 | 等上游 Slice | 升级 arkts-knowledge-ve
 - **PASS / FAIL 二元**：无中间态；触达 20 轮上限算 FAIL
 - **placeholder 回填不归你管**：编译通过后 `spec/placeholder-registry.md` 的 trigger 白名单 6 类回填由主线程在收到你的 PASS 后自行执行
 '''
+
+# 0.13.4: follow skills/a2h-run/references/execution-boundary.md; source evidence remains Git-owned.

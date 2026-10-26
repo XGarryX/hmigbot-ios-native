@@ -1,0 +1,4 @@
+interface:
+  display_name: arkts-webview-manager
+  short_description: ArkTS/HarmonyOS WebView 开发技能（V2 优先，API 12+，兼容 V1）。覆盖 WebviewC…
+  default_prompt: 请使用 $arkts-webview-manager，按本技能的输入、执行步骤和验收条件完成当前任务。

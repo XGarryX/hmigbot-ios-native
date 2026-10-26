@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyfix.local/schemas/framework_map.v1.schema.json",
+  "title": "framework_map_v1",
+  "type": "object",
+  "required": ["schema_version", "rules_version", "mappings", "gap_items"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "rules_version": { "type": "string" },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "android_concept", "harmony_concept", "confidence"],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "android_concept": { "type": "string" },
+          "harmony_concept": { "type": "string" },
+          "notes": { "type": "string" },
+          "confidence": { "type": "string", "enum": ["rule", "heuristic", "manual"] }
+        }
+      }
+    },
+    "gap_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "source_ref", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string" },
+          "source_ref": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

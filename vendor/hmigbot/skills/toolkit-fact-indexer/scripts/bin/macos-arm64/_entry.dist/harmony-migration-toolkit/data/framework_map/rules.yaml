@@ -1,0 +1,40 @@
+# Deterministic Android → HarmonyOS framework-level mappings (conceptual).
+# rules_version must bump when rows change meaningfully.
+rules_version: "2026.04.25"
+
+mappings:
+  - rule_id: ACT_001
+    android_concept: android.app.Activity
+    harmony_concept: UIAbility (Stage UI)
+    notes: "One primary window surface per UIAbility; use router for secondary pages."
+  - rule_id: FRG_001
+    android_concept: androidx.fragment.app.Fragment
+    harmony_concept: Custom component / NavDestination / secondary UIAbility
+    notes: "Prefer router + @Component for simple cases; multi-window maps to multiple abilities."
+  - rule_id: CMP_001
+    android_concept: Jetpack Compose UI
+    harmony_concept: ArkUI declarative (@Component / @Builder)
+    notes: "No 1:1 AST transform in toolchain; mark gap for LLM implementation."
+  - rule_id: SVC_001
+    android_concept: android.app.Service
+    harmony_concept: ServiceExtension / WorkScheduler / background task policy
+  - rule_id: BRD_001
+    android_concept: android.content.BroadcastReceiver
+    harmony_concept: CommonEvent / emitter-subscriber patterns per Harmony guidelines
+  - rule_id: PRF_001
+    android_concept: SharedPreferences / DataStore
+    harmony_concept: preferences / relational store (distributedDataObject where applicable)
+  - rule_id: INT_001
+    android_concept: Intent / startActivity
+    harmony_concept: wantAgent / UIAbilityContext.startAbility
+  - rule_id: RES_001
+    android_concept: res/values/strings.xml
+    harmony_concept: src/main/resources/base/element/string.json
+  - rule_id: WEB_001
+    android_concept: android.webkit.WebView
+    harmony_concept: Web component / ArkWeb (API level dependent)
+    notes: "Often requires gap analysis for JS bridge and file access."
+  - rule_id: NTV_001
+    android_concept: JNI / NDK .so
+    harmony_concept: Native module / NAPI (rebuild per ABI)
+    notes: "Always emit gap_item; no automatic port."

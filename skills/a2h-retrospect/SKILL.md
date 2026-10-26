@@ -9,9 +9,20 @@ metadata:
   - migration
 ---
 
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
 
-> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
+
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
+
+> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../ios-source-analysis/SKILL.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 
 # a2h-retrospect
 
@@ -197,7 +208,7 @@ a2h-retrospect 是**经验沉淀层**，只读取产出做分析、**不调用**
 
 **步骤说明**
 
-- **#1** `count-lines` 产出 iOS / HarmonyOS 两侧按文件类型的行数，并记录 `ios_app_name` / `harmonyos_app_name`。其中 `file_type:"total"` 为**核心代码行数**——仅累加源码与 UI/资源（`.java/.kt/.xml/.ets/.ts/.arkt/.proto`），已排除构建/依赖配置（`gradle/kts/properties/json/yaml/yml`）与文档（`.md/.txt` 本就不在统计列表内）；各配置类型仍保留独立的 per-type 记录，仅不计入 `total`。
+- **#1** iOS 源行数从当前源字节及原生后缀统计；目标行数从当前 ArkTS 字节统计。历史 count-lines 的语言过滤不证明已统计 Swift/Objective-C，缺真实结果则记 unavailable，不补造计数。
 - **#2** `mark-stage a2h-retrospect` 写出本阶段的 stage-marks fact，并落下 `.migbot/metrics/<project>/retrospect.done` sentinel（命令会剥掉 `a2h-` 前缀）——**这个 sentinel 就是 `$a2h-run` 用来判定 retrospect 阶段完成的 marker**。受授权门控、尽力而为，忽略退出码、绝不阻断。
 
 ---

@@ -9,6 +9,10 @@ metadata:
   - project-structure
   - config
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS Project Scaffolder — 项目脚手架（V2 优先）
 
 ## API 版本与项目策略
@@ -32,8 +36,6 @@ metadata:
 生成配置文件时，根据用户的目标版本设置正确的 SDK 版本号。遇到版本兼容性或其他不确定的 ArkTS 知识点（如属性、语法、权限等），参阅 arkts-knowledge-verifier skill；状态装饰器选择见 arkts-state-manager skill。
 
 ---
-
-参考模板中的权限按已确认功能选用；纯本地应用不因模板自动新增 INTERNET，GET_NETWORK_INFO 仅在实际调用相关网络信息 API 时声明。模板权限列表不是所有应用的固定要求；已有工程权限不据此自动删除。
 
 ## 项目复杂度决策
 

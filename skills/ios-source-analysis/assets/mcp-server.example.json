@@ -1,0 +1,6 @@
+{
+  "provider": "serena",
+  "transport": "stdio",
+  "command": ["/absolute/path/to/pinned/serena", "start-mcp-server", "--project", "/absolute/path/to/ios-source"],
+  "timeout_seconds": 30
+}

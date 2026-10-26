@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyfix.local/schemas/harmony_arch.v1.schema.json",
+  "title": "harmony_arch_v1",
+  "type": "object",
+  "required": ["schema_version", "bundle_name", "modules", "abilities", "routes", "resource_conventions"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "bundle_name": { "type": "string" },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "role", "oh_package_name"],
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string", "enum": ["entry", "feature", "shared"] },
+          "oh_package_name": { "type": "string" },
+          "source_android_modules": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "abilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "screens"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["UIAbility", "ExtensionAbility"] },
+          "screens": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "module": { "type": "string" }
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "path_placeholder"],
+        "properties": {
+          "name": { "type": "string" },
+          "path_placeholder": { "type": "string" },
+          "android_screen_class": { "type": "string" },
+          "android_layout": { "type": "string" }
+        }
+      }
+    },
+    "resource_conventions": {
+      "type": "object",
+      "properties": {
+        "string_catalog": { "type": "string" },
+        "media_migration": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

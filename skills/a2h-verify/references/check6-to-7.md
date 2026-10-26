@@ -1,4 +1,6 @@
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> **当前发行 profile：设备/视觉后端延期。** `arkts-scenario-runner`、`arkts-visual-verify`、`arkts-ui-verifier`、`ios-screenshot-analyzer`（及历史 Android 截图别名）和 `scenario-builder` / `visual-fixer` / `visual-fixer-reviewer` 未作为本包可运行能力交付。不得调用、派发、要求安装或因其缺件阻断基本转换/构建/报告。相关本次实际调用记 deferred/not_run；可只读消费开发者提供的外部原始证据，核对源/目标版本、配置、范围和来源，保留外部实际结果，不能写成本工具已实测。没有证据不记 PASS，真实已归因产品失败继续保留。下文相关调用/目录仅为未来兼容标记。
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
 
 # CHECK-6 / 8：路由跳转验证 + 视觉对齐（两段委托）
 
@@ -44,7 +46,7 @@ CHECK-6 前置:
   3. spec/baseline/ui-manifest.md 存在最佳（无则 router-verify 退化为命名启发式，仍可跑）
 ```
 
-> **DEFERRED 仅在"拿不到 iOS 源码仓"或"skill 未安装"时合法**。注意 CHECK-6 **不依赖 hdc/adb**——
+本项源设备自动操作不可用于 iOS；当前所需观察记 not_run，读取已有独立源证据。
 > 设备不可用不是 CHECK-6 标 DEFERRED 的理由。
 
 ### 1.3 执行
@@ -84,67 +86,13 @@ router-verify 内部已完成"抽取→对账→triage→agent 修复→复检�
 
 ---
 
-## §2 CHECK-7 前置条件检测（设备段）
+## §2 CHECK-7：当前后端延期
 
-**前置 0（编译门禁，最先查）**：设备段要 build+install HAP，因此 **CHECK-1 终态编译必须可过**才跑它们。
-- CHECK-1 编译 FAIL → 本轮**跳过设备段**，进 SKILL.md §5 老路径先修编译再重跑（CHECK-6 路由静态，不受影响照常跑）
-- §5 回环耗尽仍编不过 → 设备段标 `DEFERRED（编译未过）`，不空转
-- CHECK-6 改完源码后，按 §3.0 重跑一次终态编译复检，门控以复检结果为准
+当前不运行设备探针、不调用 visual/UI/scenario skills 或三个延期角色，也不因这些包未安装而要求开发者补装。CHECK-7 本工具实际调用为 deferred/not_run；基本转换、当前SDK构建、路由静态检查与报告继续。
 
-**前置 0.5（skill 安装检测 + 显式禁用）**：由下方 `probe_devices.py` **一并机械判定**，读 JSON `checks` 即可，
-不要自己 `ls` 兄弟目录：
-- 对应 verifier skill（visual / ut / ui）未安装 → 该 CHECK 标 `DEFERRED（verifier skill 未安装：<name>）`；
+开发者可提供外部已有报告及原始截图/日志/trace文件。仅核对其实际源/目标版本、配置、页面/场景范围、产生工具与结果，按外部证据如实引用；不冒称本工具完成采集或复测，输入已变的旧观察不得直接当作当前通过。没有外部证据保持未验证，真实已证产品缺陷保留。
 
-编译可过后，**跑机械探针，按退出码路由**——不要自己 `which` / 搜路径 / 数 "device" 行：
-
-```text
-[历史源平台示例：不适用于 iOS，不可执行。iOS 源设备/构建按本文件适配及 native-input 协议；目标 hdc/hvigor 检查仍须实际执行。]
-python3 $SKILLS_ROOT/a2h-verify/scripts/probe_devices.py          # 默认每条探针 10s 硬超时
-#   0  ALL_READY         hdc+adb 都可用且各有在线设备 → CHECK-7 全部跑
-#  10  HMOS_ONLY         只有鸿蒙端在线            → CHECK-7 DEFERRED（visual 需双端）
-#  20  HMOS_UNAVAILABLE  hdc 缺 / 超时 / 无设备     → CHECK-7 全部 DEFERRED
-# stdout 一行 JSON：hdc/adb 路径、resolved、在线设备列表、*_timed_out、checks{CHECK-7: RUN|DEFERRED(原因)}
-```
-> **为什么改成脚本**（2026-08-17 用户实报"设备前置检查跑了 20+ 分钟没结果"）：
-> 此前这里是一段让模型自主执行的伪代码，三个结构性的慢——
-> ① 只列了 macOS/Linux 路径，**Windows 上模型只能自己搜盘**（`dir /s /b hdc.exe`，10-20 分钟起步）；
-> ② `hdc list targets` / `adb devices` **无超时**，hdc 服务端陈旧/挂死时无限期阻塞，模型就干等；
-> ③ 每条命令一次模型往返。脚本三平台候选表定位（含 Windows）+ 每条 10s 硬超时 + 一次出结论，秒级。
-> **DEFERRED 的原因字符串直接抄 JSON 里 `checks` 的值**（区分"hdc 没找到 / 超时 / 有工具无设备"，
-> 三者处置不同：设 env HDC / `hdc kill` 重试 / 起模拟器）。
-
-探针内部等价逻辑（供排障，**不要手动执行**）：hdc 按 env `HDC` → PATH → DevEco 安装根下的固定相对位置
-（macOS `/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/`、
-Windows `%ProgramFiles%\Huawei\DevEco Studio\sdk\...`、Linux `~/command-line-tools/sdk/...`）；
-# 原源平台历史命令（iOS 按本文件适配说明执行）: adb 按 env `ADB` → PATH → `$IOS_HOME/platform-tools` → 平台默认位。在线判定：
-`hdc list targets` 非空且不含 Empty；`adb devices` 状态列为 `device`（排除 offline/unauthorized）。
-
-> DEFERRED 仅在对应前置不满足时合法（工具不可用 / 编译未过 / skill 未安装，完整集见 `execution-discipline.md` §1.3）。其他情况必须出 PASS 或 FAIL；不允许"省时 SKIPPED"。
-
----
-
-## §3 设备段串行执行编排
-
-设备 verifier 严格串行，主线程内联调用：
-
-```pseudocode
-probe = json(python3 $SKILLS_ROOT/a2h-verify/scripts/probe_devices.py)   # §2 的探针结果，checks 里已含 设备/skill/暂停/禁用 四类判定
-# CHECK-7：视觉对齐（一次性，无循环）
-if probe.checks["CHECK-7"] == "RUN":   # 由 probe_devices.py 判：双端在线 + skill 已装 + 未暂停/禁用
-    $arkts-visual-verify        # 写 spec/fix/round-N/ui/{ALIGN,URL,CRASH}_*.md
-    sleep 5                            # 设备静默
-    读 spec/visual-verify/report.md → 立即落状态:
-        无失败文件 → PASS
-        仅 ALIGN → FAIL-visual（不门控）
-        存在 CRASH/URL → FAIL-functional（门控阻塞，进 §5 回环）
-else:
-    CHECK-7: DEFERRED
-
-```
-
-**铁律**（违反即流程作废）：
-
-1. **设备段 visual 跑完 sleep 5** 再进后续步骤（设备静默 / uitest daemon 排空）；今后若增设备类 verifier，一律串行、不得同一条消息派发
+以下历史产物路径只用于外部证据映射及未来兼容，不代表本profile已装可运行采集后端。
 
 ---
 
@@ -163,7 +111,7 @@ else:
 - 无 ALIGN/URL/CRASH 失败文件 → **PASS**
 - 仅存在 ALIGN（纯视觉差异）→ **FAIL-visual**（不阻塞门控、不进回环；差异列表写入 verify-report.md，由用户或后续 a2h-fixer 离线处理）
 - 存在 URL_* / CRASH_*（页面不可达/崩溃 = 功能性失败）→ **FAIL-functional**（阻塞门控，按 `failure-loop.md` 进 §5 老路径修复；ALIGN 部分仍只记录）
-- adb 或 hdc 任一不可用 → **DEFERRED**（visual 需双端截图）
+本项源设备自动操作不可用于 iOS；当前所需观察记 not_run，读取已有独立源证据。
 
 > visual-verify 不带循环。产出 markdown 后即退出；a2h-verify **不在本 CHECK 内**派 fixer——
 > CRASH/URL 的修复走 §5 回环（委托 a2h-execute），不是在本 CHECK 内重试。
@@ -174,7 +122,7 @@ else:
 
 | CHECK | 合法状态 | 备注 |
 |---|---|---|
-| CHECK-7 | PASS / FAIL-visual / FAIL-functional / DEFERRED | DEFERRED 仅 adb 或 hdc 任一不可用 / 编译未过 / skill 未安装；FAIL-functional（CRASH/URL）阻塞门控 |
+本项源设备自动操作不可用于 iOS；当前所需观察记 not_run，读取已有独立源证据。
 
 **禁止**：`NOT EXECUTED` / `SKIPPED for time` / `主线程自定义 SKIP` 不是合法状态；产出即视为流程未走完，必须补跑。
 

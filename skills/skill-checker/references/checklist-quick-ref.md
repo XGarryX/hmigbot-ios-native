@@ -36,7 +36,7 @@ model: opus                   # 可选
 |------|------|------|
 | Domain Skill | `arkts-` | arkts-data-layer |
 | Pipeline Skill | `a2h-` | a2h-spec |
-| 分析工具 | `ios-` | ios-screenshot-analyzer |
+| 分析工具 | `iOS-` | ios-ui-analyzer |
 | 风格 Skill | `arkts-` | arkts-ui-component |
 
 ## 目录结构要求

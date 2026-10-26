@@ -13,7 +13,7 @@ developer_instructions = """
 
 | skill | 何时用 | SKILL.md 路径 |
 |---|---|---|
-| ios-view-to-arkui | Audit, plan, and migrate iOS View/XML UI projects into HarmonyOS ArkUI/ETS in controlled feature batches. Use when you need to port an iOS XML… | .agents/skills/ios-view-to-arkui/SKILL.md |
+| ios-ui-to-arkui | Audit, plan, and migrate iOS View/XML UI projects into HarmonyOS ArkUI/ETS in controlled feature batches. Use when you need to port an iOS XML… | .agents/skills/ios-ui-to-arkui/SKILL.md |
 | arkts-component-builder | 生成 ArkTS/HarmonyOS 声明式 UI 组件代码（V2 优先，API 12+）。当用户需要创建页面、编写组件、设计布局（Column/Row/Stack/Grid/List/Flex）、创建自定义组件、编写 ForEach/LazyForEach/Repeat 列表、处理响应式断点适配、… | .agents/skills/arkts-component-builder/SKILL.md |
 | arkts-navigation-builder | 生成 ArkTS/HarmonyOS 页面导航和路由代码（V2 优先，API 12+）。当用户需要实现页面跳转、Navigation 容器、NavPathStack 导航栈、NavDestination 页面注册、Tab/底部/侧边栏导航、@Builder 路由映射、pushPathByName 传… | .agents/skills/arkts-navigation-builder/SKILL.md |
 | arkts-animation-builder | 生成 ArkTS/HarmonyOS 动画和交互效果代码（V2 优先，API 12+）。当用户需要实现 animateTo 显式动画、属性动画 animation()、transition 转场、geometryTransition 共享元素转场、Spring 弹簧动画、手势跟随、循环动画、淡入淡出… | .agents/skills/arkts-animation-builder/SKILL.md |

@@ -1,0 +1,370 @@
+#!/usr/bin/env bash
+# a2h-bootstrap — first-run provisioning for the migbot plugin.
+#
+# Plugin mode has no install.sh, so this script plays that role on first run:
+#   1) Stage the bundled runtime into the project's .migbot/bin (idempotent):
+#        a2h-tool, plus the platform-matched `a2h` raw-telemetry binary.
+#        Call sites use the subcommand form: `a2h mark-stage …`.
+#   2) Stage the policy docs into .migbot/policies (idempotent).
+#   3) Create .migbot/config.json skeleton (telemetry_consent=unset) if absent.
+#
+# Consent itself is NOT handled here — it lives in /a2h-privacy (single entry
+# point). This script only makes the runtime present so that flow can work.
+#
+# Usage: a2h-bootstrap [--lang zh|en]
+# Output (JSON to stdout):
+#   { "status": "created"|"exists"|"error", "path": "...",
+#     "provisioned": {...}, "config": {...} }
+set -uo pipefail
+
+CFG=".migbot/config.json"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# ── WSL-on-Windows guard (issue #41) ────────────────────────────────
+# If `bash` resolved to WSL on a Windows host, this script cannot see C:\
+# paths and would look for an extension-less binary -> every check misreports.
+# Hand off to the PowerShell twin (Windows-native view) instead. Git Bash /
+# MSYS is NOT WSL (no /mnt/<drive> mount, no "microsoft" kernel) and stays here.
+_a2h_wsl_handoff() {
+  local ps1="$1"; shift
+  local kr; kr="$(uname -r 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+  case "$kr" in *microsoft*|*wsl*) ;; *) return 1 ;; esac
+  case "$(pwd -P)" in /mnt/[a-zA-Z]/*) ;; *) return 1 ;; esac   # project lives on a Windows drive
+  local exe; exe="$(command -v powershell.exe 2>/dev/null || true)"
+  [ -n "$exe" ] || exe="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+  [ -x "$exe" ] && [ -f "$ps1" ] || return 1
+  local winps; winps="$(wslpath -w "$ps1" 2>/dev/null)" || return 1
+  exec "$exe" -NoProfile -ExecutionPolicy Bypass -File "$winps" "$@"
+}
+_a2h_bs_args=(); _a2h_prev=""
+for _a in "$@"; do
+  if [ "$_a2h_prev" = "--lang" ]; then _a2h_bs_args+=(-Lang "$_a"); fi
+  _a2h_prev="$_a"
+done
+_a2h_wsl_handoff "$SCRIPT_DIR/a2h-bootstrap.ps1" ${_a2h_bs_args[@]+"${_a2h_bs_args[@]}"} || true
+unset _a2h_bs_args _a2h_prev _a
+
+# ── Parse args ──────────────────────────────────────────────────────
+lang_override=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lang) lang_override="${2:-}"; shift 2 ;;
+    *)      shift ;;
+  esac
+done
+
+# ── Detect platform (OS + ARCH) ─────────────────────────────────────
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+case "$OS" in
+  darwin|linux) ;;
+  mingw*|msys*|cygwin*) OS="windows" ;;
+  *) ;;
+esac
+ARCH="$(uname -m)"
+case "$ARCH" in
+  x86_64|amd64)  ARCH="amd64" ;;
+  arm64|aarch64) ARCH="arm64" ;;
+esac
+EXT=""; [ "$OS" = "windows" ] && EXT=".exe"
+# One multicall binary per platform replaces the per-tool scripts and the six
+# standalone keygen binaries. It is installed under several names below and
+# dispatches on the name it is invoked as.
+MULTICALL_ASSET="a2h-${OS}-${ARCH}${EXT}"
+
+# ── Provision the bundled runtime into the project (idempotent) ─────
+# Mirrors what install.sh lays down, so the synced commands/scripts (which use
+# project-relative .migbot/bin and .migbot/policies) work unchanged.
+PROV_TOOL="missing"; PROV_RUNTIME="missing"; PROV_POLICIES="missing"
+
+# Install the platform-matched multicall binary under one runtime name, then
+# normalise permissions in one place (the unified, no-sudo step): make it
+# executable, and on macOS clear the com.apple.quarantine xattr so Gatekeeper
+# does not block the (ad-hoc signed) binary on first run.
+install_runtime() {
+  local name="$1" src dst
+  src="$SCRIPT_DIR/$MULTICALL_ASSET"
+  dst=".migbot/bin/${name}${EXT}"
+  # The repo installer stages the runtime under its FINAL name only — it
+  # never drops the arch-suffixed asset into .migbot/bin. An already-present
+  # target binary therefore IS the provisioned state; without this check the
+  # provision report says "missing" right after a successful install.
+  if [ ! -f "$src" ] && [ -f "$dst" ]; then
+    return 0
+  fi
+  [ -f "$src" ] || return 1
+  cp -f "$src" "$dst" 2>/dev/null || return 1
+  chmod +x "$dst" 2>/dev/null || true
+  if [ "$OS" = "darwin" ] && command -v xattr >/dev/null 2>&1; then
+    xattr -d com.apple.quarantine "$dst" 2>/dev/null || xattr -c "$dst" 2>/dev/null || true
+  fi
+  return 0
+}
+
+provision_toolchain() {
+  mkdir -p .migbot/bin .migbot/policies
+
+  if [ -f "$SCRIPT_DIR/a2h-tool" ]; then
+    cp -f "$SCRIPT_DIR/a2h-tool" .migbot/bin/a2h-tool 2>/dev/null \
+      && chmod +x .migbot/bin/a2h-tool 2>/dev/null && PROV_TOOL="ok" || true
+  fi
+  # ONE physical binary, installed as `a2h`. Every call site selects a
+  # subcommand explicitly — `hook` (wired to the Codex lifecycle hooks by
+  # install.sh's [hooks.*] block), `init-run`, `mark-stage`, `count-lines`,
+  # `status`, `flush`. The hook is exec'd directly from config.toml, so no
+  # launcher script is needed. One ~6 MB file, no links, fully portable.
+  install_runtime a2h && PROV_RUNTIME="ok" || true
+  # Sweep what older bootstraps left behind (the pre-a2h multicall runtime's
+  # per-name copies, plus the retired `a2h-codex` alias of this very binary).
+  # Best-effort; these are files this script created, never user content.
+  for stale in a2h-codex a2h-metrics a2h-stats a2h-keygen a2h-usage-hook; do
+    rm -f ".migbot/bin/${stale}${EXT}" 2>/dev/null || true
+  done
+  rm -f .migbot/bin/a2h-darwin-* .migbot/bin/a2h-linux-* .migbot/bin/a2h-windows-* 2>/dev/null || true
+  # Policy docs (both languages) — read verbatim by /a2h-privacy and /a2h-init.
+  if ls "$PLUGIN_ROOT"/policies/user-experience-improvement-plan.*.md >/dev/null 2>&1; then
+    cp -f "$PLUGIN_ROOT"/policies/user-experience-improvement-plan.*.md \
+      .migbot/policies/ 2>/dev/null && PROV_POLICIES="ok" || true
+  fi
+}
+provision_toolchain
+
+prov_json() {
+  printf '"provisioned":{"a2h_tool":"%s","a2h_codex":"%s","policies":"%s"}' \
+    "$PROV_TOOL" "$PROV_RUNTIME" "$PROV_POLICIES"
+}
+
+# ── Parse a string field from flat JSON on stdin (no jq) ────────────
+json_str_field() {
+  grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" \
+    | head -n1 \
+    | sed -E "s/^\"$1\"[[:space:]]*:[[:space:]]*\"(.*)\"$/\1/"
+}
+
+# ── Read + consume the install-time consent sidecar (if present) ────
+# install.sh / install.ps1 collect the User Experience Improvement Plan decision
+# in the user's real terminal (where a GUI popup CAN be raised — unlike inside
+# Codex's sandbox) and drop it here as .migbot/pending-consent.json. We read it
+# now, before the idempotency gate, so a stale sidecar is always consumed and a
+# just-collected decision can seed (or repair) the config. Malformed → "unset".
+SIDECAR=".migbot/pending-consent.json"
+CONSENT="unset"; CONSENT_AT_JSON="null"; SID=""; AGR_VER=""
+if [ -f "$SIDECAR" ]; then
+  sc="$(cat "$SIDECAR" 2>/dev/null)"
+  d="$(printf '%s' "$sc" | json_str_field telemetry_consent)"
+  case "$d" in
+    granted|denied)
+      CONSENT="$d"
+      _at="$(printf '%s' "$sc" | json_str_field telemetry_consent_at)"
+      [ -n "$_at" ] && CONSENT_AT_JSON="\"$_at\""
+      SID="$(printf '%s' "$sc" | json_str_field migbot_session_id)"
+      AGR_VER="$(printf '%s' "$sc" | json_str_field agreement_version)"
+      ;;
+  esac
+  rm -f "$SIDECAR" 2>/dev/null || true
+fi
+
+# ── Idempotency: config already exists → provisioning done, exit ────
+if [ -f "$CFG" ]; then
+  # If the installer just handed us a decision but the existing config is still
+  # undecided (a prior init aborted before consent), recreate it from the sidecar.
+  # Otherwise the existing config is authoritative — leave it untouched.
+  if [ "$CONSENT" != "unset" ] && grep -qE '"telemetry_consent"[[:space:]]*:[[:space:]]*"unset"' "$CFG" 2>/dev/null; then
+    rm -f "$CFG" 2>/dev/null || true
+  else
+    # Report the ACTUAL provisioned state, not the pre-provision defaults:
+    # this early exit never runs the provision block below, and the repo
+    # installer stages everything under final names — probe the files.
+    [ -f ".migbot/bin/a2h-tool" ] && PROV_TOOL="ok"
+    [ -f ".migbot/bin/a2h${EXT}" ] && PROV_RUNTIME="ok"
+    # Policy docs are read verbatim by /a2h-privacy and /a2h-init — both
+    # languages must be present for the docs to be considered provisioned.
+    if [ -f ".migbot/policies/user-experience-improvement-plan.en.md" ] \
+      && [ -f ".migbot/policies/user-experience-improvement-plan.zh.md" ]; then
+      PROV_POLICIES="ok"
+    fi
+    printf '{"status":"exists","path":"%s",%s}\n' "$CFG" "$(prov_json)"
+    exit 0
+  fi
+fi
+
+# ── Resolve language ────────────────────────────────────────────────
+detect_default_lang() {
+  case "${LC_ALL:-}${LANG:-}" in
+    zh_CN*|zh_*|*.zh*) echo zh ;;
+    *) echo en ;;
+  esac
+}
+
+LANG_CHOICE=""
+case "$lang_override" in
+  zh|en) LANG_CHOICE="$lang_override" ;;
+  *)     LANG_CHOICE="$(detect_default_lang)" ;;
+esac
+
+# ── Detect DevEco install ──────────────────────────────────────────
+detect_deveco_path() {
+  local exe found
+  for cmd_name in devecostudio64 devecostudio deveco-studio; do
+    if command -v "$cmd_name" >/dev/null 2>&1; then
+      exe="$(command -v "$cmd_name")"
+      found="$(cd "$(dirname "$exe")/.." 2>/dev/null && pwd)"
+      if [ -n "$found" ] && [ -d "$found" ]; then
+        echo "$found"; return 0
+      fi
+    fi
+  done
+
+  match_in_parent() {
+    local parent="$1" d base
+    [ -d "$parent" ] || return 1
+    for d in "$parent"/*; do
+      [ -d "$d" ] || continue
+      base="$(basename "$d")"
+      case "$base" in
+        DevEco*|deveco*|DevEcoStudio*) echo "$d"; return 0 ;;
+      esac
+    done
+    return 1
+  }
+
+  case "$OS" in
+    windows)
+      local drive parent
+      for drive in c d e f; do
+        local drive_root="/$drive"
+        [ -d "$drive_root" ] || continue
+        for parent in \
+          "$drive_root/Program Files/Huawei" \
+          "$drive_root/Program Files" \
+          "$drive_root/Program Files (x86)/Huawei" \
+          "$drive_root/Program Files (x86)" \
+          "$drive_root/codetool" \
+          "$drive_root/dev" \
+          "$drive_root/tools" \
+          "$drive_root/Tools" \
+          "$drive_root/devtools" \
+          "$drive_root/software" \
+          "$drive_root/apps" \
+          "$drive_root/Applications" \
+          "$drive_root"; do
+          if match_in_parent "$parent"; then return 0; fi
+        done
+      done
+      ;;
+    darwin)
+      local d
+      for d in \
+        "/Applications/DevEco-Studio.app" \
+        "/Applications/DevEco Studio.app" \
+        "/Applications/DevEcoStudio.app" \
+        "$HOME/Applications/DevEco-Studio.app" \
+        "$HOME/Applications/DevEco Studio.app"; do
+        if [ -d "$d" ]; then echo "$d"; return 0; fi
+      done
+      for parent in /Applications "$HOME/Applications"; do
+        if match_in_parent "$parent"; then return 0; fi
+      done
+      ;;
+    linux)
+      local d
+      for d in \
+        /opt/deveco-studio \
+        /opt/DevEco-Studio \
+        /opt/DevEcoStudio \
+        /usr/local/deveco-studio \
+        /usr/local/DevEco-Studio \
+        "$HOME/Applications/DevEco-Studio" \
+        "$HOME/Applications/deveco-studio" \
+        "$HOME/.local/share/deveco-studio"; do
+        if [ -d "$d" ]; then echo "$d"; return 0; fi
+      done
+      for parent in /opt /usr/local "$HOME/Applications" "$HOME/.local/share"; do
+        if match_in_parent "$parent"; then return 0; fi
+      done
+      ;;
+  esac
+
+  return 0
+}
+
+# ── Detect Android source path ─────────────────────────────────────
+detect_android_path() {
+  local hmos_root parent self
+  hmos_root="$(pwd)"
+  parent="$(cd "$hmos_root/.." 2>/dev/null && pwd)" || return 0
+  self="$(basename "$hmos_root")"
+
+  is_android_dir() {
+    local d="$1"
+    [ -f "$d/AndroidManifest.xml" ] || \
+    [ -f "$d/app/AndroidManifest.xml" ] || \
+    [ -f "$d/app/build.gradle" ] || \
+    [ -f "$d/app/build.gradle.kts" ] || \
+    [ -f "$d/settings.gradle" ] || \
+    [ -f "$d/settings.gradle.kts" ]
+  }
+
+  local candidate
+  for candidate in android-app android Android app; do
+    if [ -d "$parent/$candidate" ] && [ "$candidate" != "$self" ] && is_android_dir "$parent/$candidate"; then
+      echo "../$candidate"; return 0
+    fi
+  done
+
+  local d base
+  for d in "$parent"/*/; do
+    [ -d "$d" ] || continue
+    base=$(basename "$d")
+    [ "$base" = "$self" ] && continue
+    if is_android_dir "$d"; then
+      echo "../$base"; return 0
+    fi
+  done
+
+  return 0
+}
+
+android_path="$(detect_android_path)"
+[ -z "$android_path" ] && android_path="../android-app"
+
+deveco_path="$(detect_deveco_path)"
+
+# ── Write config skeleton (telemetry unset unless the installer decided it) ──
+mkdir -p .migbot
+
+esc() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
+android_esc=$(esc "$android_path")
+deveco_esc=$(esc "$deveco_path")
+sid_esc=$(esc "$SID")
+agr_esc=$(esc "$AGR_VER")
+
+cat > "$CFG" <<JSON
+{
+  "android": "$android_esc",
+  "harmonyos": ".",
+  "hvigorw": "",
+  "deveco": "$deveco_esc",
+  "adb": "",
+  "hdc": "",
+  "language": "$LANG_CHOICE",
+  "confirmed": false,
+  "telemetry_consent": "$CONSENT",
+  "telemetry_consent_at": $CONSENT_AT_JSON,
+  "migbot_session_id": "$sid_esc",
+  "agreement_version": "$agr_esc"
+}
+JSON
+
+# Register the pre-collected decision server-side (best-effort — the first
+# $a2h-run upload reconciles it anyway; mirrors $a2h-privacy §B/§D).
+if [ "$CONSENT" != "unset" ] && [ -x ".migbot/bin/a2h${EXT}" ]; then
+  if [ -n "$SID" ]; then
+    ".migbot/bin/a2h${EXT}" init-run --consent "$CONSENT" --migbot-session-id "$SID" >/dev/null 2>&1 || true
+  else
+    ".migbot/bin/a2h${EXT}" init-run --consent "$CONSENT" >/dev/null 2>&1 || true
+  fi
+fi
+
+printf '{"status":"created","path":"%s",%s,"config":{"android":"%s","harmonyos":".","deveco":"%s","language":"%s","confirmed":false,"telemetry_consent":"%s"}}\n' \
+  "$CFG" "$(prov_json)" "$android_esc" "$deveco_esc" "$LANG_CHOICE" "$CONSENT"

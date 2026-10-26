@@ -20,20 +20,6 @@
 
 ## 格式
 
-````markdown
-## 决策 D-014：pay 模块的会员校验放在哪一层？
-
-**背景**：`BaseMemberViewModel` 返回 `-605` 表示登录拦截（`Sources/Subscription/BaseMemberViewModel.swift:47`）
-**影响**：F005-AC12、F005-AC13、F006-AC04
-**不选的代价**：这三条 AC 无法进入 plan，功能 F005/F006 阻塞
-
-[1] ArkTS 侧复刻同一 VM 基类　← **推荐**：与 iOS 行为一致，改动最小
-[2] 提升到 network 拦截器统一处理　—　更干净，但改变错误时序
-[3] `-605` 原样透传给页面，各页自行判断　—　最快，但每页重复逻辑
-[4] 其他（请说明）
-
-回复编号即可。
-````
 
 规则：
 
@@ -69,18 +55,6 @@ Gate A / Gate B / Gate C 一律使用同一组选项，用户不必每次重新�
 当某阶段无法推进，且**责任归属无法机械判定**时（典型：AC 按当前描述实现不了——
 可能是 Spec 写错、Plan 切分错、或 Execute 没找到办法），用决策卡上报，由用户指定 owner：
 
-````markdown
-## 阻塞 B-003：F005-AC12 无法按当前描述实现
-
-**现状**：AC 要求「支付失败后 3 秒内自动重试」，但 `PayChannel` 无重试回调
-        （`Sources/Subscription/PayService.swift:212`）
-**已尝试**：查 `PayApiService` 与 `HuaweiSdkService`，均无对应回调
-
-[1] 改 Spec：AC 改为「失败后提示用户手动重试」　← **推荐**：与源码事实一致
-[2] 改 Plan：拆出独立重试封装包，由 Execute 自建轮询
-[3] 保留 AC，标记 deferred 并记录关闭条件
-[4] 其他（请说明）
-````
 
 选项与 owner 的对应关系写死，避免推诿：`[1]→owner_stage=spec`、`[2]→plan`、
 `[3]→当前阶段记 deferred`。用户选定后写入 `open-findings.json` 对应条目的 `decision_ref`。

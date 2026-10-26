@@ -15,7 +15,7 @@
 
 ## 登记
 
-在安装后的项目内使用 `.agents/hmigbot-runtime/scripts/join_attempt.py`（下称脚本）。先调用 `seal --project <绝对路径> --pristine-manifest <空备份清单> --pristine-sha256 <事先批准的清单SHA> --archive-manifest <归档清单> --out <项目外新receipt.json>`。脚本核对完整备份、完整归档和恢复后安装文件集。实际宿主完整历史另存只读快照及审计；历史失败仍保留 exit 1 和未收口数量。
+在安装后的项目内使用 `.hmigbot-ios/plugin/scripts/join_attempt.py`（下称脚本）。先调用 `seal --project <绝对路径> --pristine-manifest <空备份清单> --pristine-sha256 <事先批准的清单SHA> --archive-manifest <归档清单> --out <项目外新receipt.json>`。脚本核对完整备份、完整归档和恢复后安装文件集。实际宿主完整历史另存只读快照及审计；历史失败仍保留 exit 1 和未收口数量。
 
 读取 seal 实际返回的 receipt SHA，生成唯一 32 位小写十六进制 nonce，再用一个独立宿主工具调用执行：`python -B <脚本> begin --project <绝对路径> --receipt <receipt.json> --receipt-sha256 <实际SHA> --enrollment <nonce>`。该调用仅运行这一个进程，不混入其他命令或批次。在原始工具输出中保留进程 `exit_code` 及完整 JSON 输出。nonce 及 SHA 作为该次调用的明确参数，仅使用一次；不在后续命令中复制重发。使用宿主实际提供的 `CODEX_THREAD_ID`，禁止手动覆盖或借用其他线程身份。
 
@@ -30,10 +30,6 @@ begin 在工程 `.migbot/join-attempt.json` 写入真实 call_id、字节行尾�
 后续每次验证会从原始登记调用行之前的完整前缀，重新检查所有代理控制已返回及随后的完整空闲观察；不借用登记之后才出现的列表。未知 custom 代理控制格式在历史恢复、登记空档及当前尝试中均拒绝，不能漏计。
 
 旧快照之前形似 begin 的非规范命令作为 foreign 历史诊断保留，不能授权登记。当前 seal 之后再出现非规范登记时拒绝继续。若尚无 STATE/INIT 产物、工程仍与核验恢复树完全相同，可重新 seal，将先前失败纳入新快照；不得复用旧 receipt 或删除旧日志。已有 STATE 或半程材料时必须按授权完整归档恢复。
-
-安装布局升级时，历史行按原 receipt 链各代 `history.bytes` 的完整行边界及唯一 owned 登记脚本解释；原脚本字节须与下一代归档、原安装清单 SHA 一致。当前 seal 之后仍只接受当前规范入口，不允许复制旧入口作为别名。历史 foreign/failed 审计必须原样复现；若旧 foreign 原因依赖当时缺失的文件、无法复现，仍拒绝恢复，不改写旧审计。无 STATE 时旧规范入口也只用于检查状态丢失，不能建立新登记或范围。
-
-归档缺少上一 STATE 时，已知旧布局的同工程 active 调用仍阻断 seal；沿用原 active/failed 判定，不以改换目录掩盖状态丢失。此兼容要求历史链未包含曾漏掉该检查而跨布局的旧收据。只有明确失败的旧布局调用且无历史 STATE 时，不阻断恢复；因当前唯一规范路径已改变，这类调用在新快照中作为 foreign 保留，不授权其为新登记。
 
 ## 后续门禁
 

@@ -27,14 +27,25 @@
       "description": "Original capture-host roots, used only as exact textual prefixes when replaying on another host; never opened by the consumer. Optional only for legacy v1 documents that replay at their original source root.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["source", "derived_data"],
+      "required": [
+        "source",
+        "derived_data"
+      ],
       "properties": {
-        "source": {"$ref": "#/$defs/capture_root"},
-        "derived_data": {"$ref": "#/$defs/capture_root"}
+        "source": {
+          "$ref": "#/$defs/capture_root"
+        },
+        "derived_data": {
+          "$ref": "#/$defs/capture_root"
+        }
       }
     },
     "schema_version": {
-      "const": 1
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
     },
     "kind": {
       "const": "source_build_membership"
@@ -228,6 +239,32 @@
         "non_member_inputs": {
           "type": "integer",
           "minimum": 0
+        }
+      }
+    },
+    "path_aliases": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "enum": [
+              "/tmp",
+              "/var"
+            ]
+          },
+          "to": {
+            "enum": [
+              "/private/tmp",
+              "/private/var"
+            ]
+          }
         }
       }
     }

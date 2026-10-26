@@ -6,11 +6,15 @@ metadata:
   domain: migration
 ---
 
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
 
 # iOS Resources Convert
 
-先读 [原生输入协议](../a2h-spec/references/native-input.md)。本技能是原资源阶段的平台输入实现，不生成新的 SPEC/PLAN 或资源验收规则。
+先读 [原生输入协议](../ios-source-analysis/SKILL.md)。本技能是原资源阶段的平台输入实现，不生成新的 SPEC/PLAN 或资源验收规则。
 
 1. 原初始化保护：目标非空则跳过模板初始化；仅目标不存在/空目录时使用随包模板。
 2. 资源来源：优先使用用户已有且来源明确的 Release 构建产物/Asset Catalog 信息；Windows 静态场景读取源码资源并记录库/生成资源缺口。不运行其他源平台构建/解包工具，不为了静态分析强制 iOS 构建成功。

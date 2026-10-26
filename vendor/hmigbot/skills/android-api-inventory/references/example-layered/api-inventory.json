@@ -1,0 +1,363 @@
+{
+  "_note": "STRUCTURAL SKELETON (schema v1.2) — real output is ~120KB/4000 lines. Here 1 service (3 of its endpoints) + 1 third-party are kept intact to show data shape. 每个 service endpoint 为三段式 {endpoint, static, runtime, reconciled}：api-inventory 只写 static，runtime/reconciled 留 null，由 arkts-network-troubleshoot 抓包+DIFF 回填。本例 initUser 展示了已回填 runtime+reconciled 的样子；bindAli/bindMobile 是 api-inventory 刚产出时的 static-only 样子。v1.2 在 v1.1 三段式基础上新增了 platform 字段与 project_profile 段。具体项目名 / 厂商 / 路径已抽象为占位（ExampleApp / vendor-A / com.example.app / dev-api.example.com），只演示结构，不要照抄。",
+  "project": "ExampleApp",
+  "platform": "android",
+  "scan_time": "2026-04-15T12:07:34.509421",
+  "source_root": "/path/to/AndroidProject/ExampleApp",
+  "project_profile": {
+    "http_stack": "Retrofit+OkHttp",
+    "architecture": "多模块（多个 Gradle module：app + network + common + pay + feature_image + feature_video + push + tracking）",
+    "primary_auth": "多套并存：自有业务 Token + 自定义签名 (ss/tt)；AI 图像 vendor-A 走 AWS-style HMAC-SHA256；LLM vendor-B 走 Bearer Token",
+    "notes": "RxJava2 与 Kotlin coroutines 混用；97 个端点跨 17 个 Service；典型 Retrofit 多模块 + 多家第三方 SDK 结构"
+  },
+  "summary": {
+    "total_services": 17,
+    "total_endpoints": 97,
+    "total_third_party_apis": 5,
+    "total_params": 170,
+    "modules": [
+      "common",
+      "feature_image",
+      "feature_video",
+      "network",
+      "pay",
+      "push",
+      "tracking"
+    ]
+  },
+  "base_urls": [
+    {
+      "name": "主服务（生产）",
+      "url": "AppConfig.baseUrl（动态配置）",
+      "environment": "production",
+      "source_file": "common/src/main/java/com/example/app/common/AppConfig.kt"
+    },
+    {
+      "name": "主服务（开发）",
+      "url": "http://dev-api.example.com",
+      "environment": "debug",
+      "source_file": "common/src/main/java/com/example/app/common/AppConfig.kt"
+    },
+    {
+      "name": "AI 图像 vendor-A",
+      "url": "https://image-api.vendor-a.com",
+      "environment": "production",
+      "source_file": "feature_image/.../ImageService.kt"
+    },
+    {
+      "_note_": "...其余 base_urls 略"
+    }
+  ],
+  "services": [
+    {
+      "name": "UserApiService",
+      "module": "network",
+      "file_path": "network/src/main/java/com/example/app/network/api/UserApiService.kt",
+      "package": "com.example.app.network.api",
+      "base_path": "",
+      "auth_type": "Token",
+      "auth_detail": "自定义签名（ss / tt / token 三 Header）+ Token 注入（via RequestInterceptor）",
+      "endpoints": [
+        {
+          "endpoint": "POST /user/initUser",
+          "static": {
+            "method_name": "initUser",
+            "http_method": "POST",
+            "path": "/user/initUser",
+            "protocol": "REST",
+            "description": "初始化用户会话（设备信息 + token 获取）",
+            "is_suspend": false,
+            "is_multipart": false,
+            "line_number": 16,
+            "feature_ids": [
+              "F002"
+            ],
+            "request": {
+              "content_type": "application/json",
+              "params": [
+                {
+                  "name": "body",
+                  "type": "RequestBody",
+                  "annotation": "Body",
+                  "serialized_name": "body",
+                  "required": true,
+                  "description": "设备公参 platformInfo + token"
+                }
+              ]
+            },
+            "response": {
+              "type": "BaseBean<UserData>",
+              "model_class": "UserData",
+              "fields": [
+                {
+                  "json": "status",
+                  "name": "errorCode",
+                  "type": "int",
+                  "description": "业务码（@SerializedName 把 JSON status 映射到字段 errorCode）"
+                },
+                {
+                  "json": "token",
+                  "name": "token",
+                  "type": "String",
+                  "description": "会话 token"
+                },
+                {
+                  "json": "userId",
+                  "name": "userId",
+                  "type": "long",
+                  "description": "用户 ID"
+                },
+                {
+                  "json": "nickName",
+                  "name": "nickName",
+                  "type": "String",
+                  "description": "昵称"
+                }
+              ]
+            }
+          },
+          "runtime": {
+            "captured_at": "2026-04-16T09:20:11",
+            "source": "method-C-proxy",
+            "response_wrapper": "{code,msg,data}",
+            "business_code": {
+              "field": "status",
+              "success_value": 0
+            },
+            "field_types": [
+              {
+                "json": "userId",
+                "observed_type": "string",
+                "sample": "1000000123",
+                "default": "-1"
+              }
+            ],
+            "headers": [
+              {
+                "name": "ss",
+                "note": "签名头，hex 大写 32 字符"
+              },
+              {
+                "name": "tt",
+                "note": "毫秒时间戳"
+              }
+            ]
+          },
+          "reconciled": {
+            "status": "mismatch",
+            "diffed_at": "2026-04-16T09:25:00",
+            "discrepancies": [
+              {
+                "dimension": "response-wrapper",
+                "static": "源码 Bean 按扁平结构反序列化",
+                "runtime": "实测有 {code,msg,data} 外壳，业务体在 data",
+                "impact": "HMOS HttpClient 必须显式 unwrap data，源码推不出这一层"
+              },
+              {
+                "dimension": "field-type",
+                "static": "userId 声明为 long",
+                "runtime": "真实 JSON userId 是 string",
+                "impact": "HMOS Bean userId 用 string，勿用 number"
+              }
+            ]
+          }
+        },
+        {
+          "endpoint": "POST /user/bindAli",
+          "static": {
+            "method_name": "bindAli",
+            "http_method": "POST",
+            "path": "/user/bindAli",
+            "protocol": "REST",
+            "description": "支付宝账号绑定 / 登录",
+            "is_suspend": false,
+            "is_multipart": false,
+            "line_number": 22,
+            "feature_ids": [
+              "F002"
+            ],
+            "request": {
+              "content_type": "application/json",
+              "params": [
+                {
+                  "name": "body",
+                  "type": "RequestBody",
+                  "annotation": "Body",
+                  "serialized_name": "body",
+                  "required": true,
+                  "description": "支付宝 authCode + 公参"
+                }
+              ]
+            },
+            "response": {
+              "type": "BaseBean<UserData>",
+              "model_class": "UserData",
+              "fields": [
+                {
+                  "json": "status",
+                  "name": "errorCode",
+                  "type": "int",
+                  "description": "业务码"
+                },
+                {
+                  "json": "token",
+                  "name": "token",
+                  "type": "String",
+                  "description": "会话 token"
+                }
+              ]
+            }
+          },
+          "runtime": null,
+          "reconciled": null
+        },
+        {
+          "endpoint": "POST /user/bindMobileBySmsCode",
+          "static": {
+            "method_name": "bindMobile",
+            "http_method": "POST",
+            "path": "/user/bindMobileBySmsCode",
+            "protocol": "REST",
+            "description": "手机号 + 短信验证码绑定 / 登录（注意：方法名 bindMobile ≠ 服务端实际 path）",
+            "is_suspend": false,
+            "is_multipart": false,
+            "line_number": 28,
+            "feature_ids": [
+              "F002"
+            ],
+            "request": {
+              "content_type": "application/json",
+              "params": [
+                {
+                  "name": "body",
+                  "type": "RequestBody",
+                  "annotation": "Body",
+                  "serialized_name": "body",
+                  "required": true,
+                  "description": "mobile + smsCode + 公参"
+                }
+              ]
+            },
+            "response": {
+              "type": "BaseBean<UserData>",
+              "model_class": "UserData",
+              "fields": [
+                {
+                  "json": "status",
+                  "name": "errorCode",
+                  "type": "int",
+                  "description": "业务码"
+                },
+                {
+                  "json": "token",
+                  "name": "token",
+                  "type": "String",
+                  "description": "会话 token"
+                }
+              ]
+            }
+          },
+          "runtime": null,
+          "reconciled": null
+        },
+        {
+          "_note_": "...其余 9 个 endpoint 略（bindWx / bindHonor / bindHuawei / bindMobileByToken / getInfo / closeAccount / logout / getPackageList / uploadAppList）。每个都是同样的 {endpoint, static, runtime, reconciled} 三段式结构。"
+        }
+      ]
+    },
+    {
+      "_note_": "...其余 16 个 service 略。每个 service 结构同上。"
+    }
+  ],
+  "third_party_apis": [
+    {
+      "provider": "AI 图像 vendor-A (示范性 provider)",
+      "domain": "image-api.vendor-a.com",
+      "protocol": "REST",
+      "auth_type": "AWS-style",
+      "auth_detail": "HMAC-SHA256 签名（AccessKeyId + SecretAccessKey），Header: X-Date / Authorization / X-Content-Sha256 / Host",
+      "endpoints": [
+        {
+          "description": "图像生成 - 提交任务（同步转异步）",
+          "http_method": "POST",
+          "full_url": "https://image-api.vendor-a.com?Action={SubmitAction}&Version={Version}",
+          "feature_ids": [
+            "F003",
+            "F004",
+            "F005"
+          ]
+        },
+        {
+          "description": "图像生成 - 查询结果",
+          "http_method": "POST",
+          "full_url": "https://image-api.vendor-a.com?Action={ResultAction}&Version={Version}",
+          "feature_ids": [
+            "F003",
+            "F004",
+            "F005"
+          ]
+        },
+        {
+          "description": "异步任务提交（视频 / 动画）",
+          "http_method": "POST",
+          "full_url": "https://image-api.vendor-a.com?Action={SubmitTaskAction}&Version={Version}",
+          "feature_ids": [
+            "F010",
+            "F013"
+          ]
+        }
+      ]
+    },
+    {
+      "_note_": "...其余 4 个 provider 略（LLM vendor-B / TTS vendor-C / 分析 vendor-D / OAuth provider）。每个 provider 结构同上。"
+    }
+  ],
+  "url_constants": [
+    {
+      "constant_ref": "PushUrl.getuiCid",
+      "resolved_value": "/push/getuiCid",
+      "file_path": "common/src/main/java/com/example/app/common/HttpConstants.kt",
+      "line_number": 13
+    },
+    {
+      "constant_ref": "UrlConstants.PRIVACY_URL",
+      "resolved_value": "${AppConfig.baseUrl}/agreement/private/123.html",
+      "file_path": "common/src/main/java/com/example/app/common/UrlConstants.kt",
+      "line_number": 5
+    },
+    {
+      "constant_ref": "UrlConstants.AGREEMENT_URL",
+      "resolved_value": "${AppConfig.baseUrl}/agreement/user/123.html",
+      "file_path": "common/src/main/java/com/example/app/common/UrlConstants.kt",
+      "line_number": 6
+    },
+    {
+      "_note_": "...其余 url_constants 略"
+    }
+  ],
+  "coverage": {
+    "_mode": "audit",
+    "spec_documented": 36,
+    "inventory_found": 72,
+    "gaps": [
+      {
+        "type": "missing_in_spec",
+        "endpoint": "/ad/up",
+        "detail": "扫描发现但 spec 中未记录"
+      },
+      {
+        "type": "missing_in_spec",
+        "endpoint": "/anti/textCheat",
+        "detail": "扫描发现但 spec 中未记录"
+      },
+      {
+        "type": "missing_in_spec",
+        "endpoint": "/app/appLog",
+        "detail": "扫描发现但 spec 中未记录"
+      },
+      {
+        "_note_": "...其余 33 条 gaps 略"
+      }
+    ]
+  }
+}

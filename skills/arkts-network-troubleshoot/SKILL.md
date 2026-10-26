@@ -16,6 +16,10 @@ metadata:
   - runtime
   version: v1.3
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # iOS → HMOS NEXT ArkTS 迁移排查与预防 Skill
 
 ## 这个 skill 解决什么
@@ -59,7 +63,7 @@ iOS Swift/Objective-C 网络层迁移到 HarmonyOS NEXT ArkTS 时，编译通过
 | `ios-api-inventory` | spec | iOS / HMOS 侧有哪些接口 / 怎么签名 / 第三方 SDK 鉴权方式（写 contract **`static`** 段） | `spec/baseline/api-inventory/api-inventory.{json,md}` |
 | `arkts-network-troubleshoot`（本 skill）| execute | HMOS 侧怎么把这些接口跑通 + 启动期初始化 + 联调救火；抓真包写 **`runtime`** 段 + 产 **`reconciled`** DIFF | HttpClient / 拦截器 / SignUtil 实现 + 6 张对账表 + `api-contract-diff.md` |
 
-**API contract 字段所有权**：`api-inventory.json` 每个 endpoint 为三段式（`static` / `runtime` / `reconciled`，schema 见 [ios-api-inventory output_schema](../ios-api-inventory/references/output_schema.md)）。`static` 由 `ios-api-inventory` 写；`runtime`（抓包实测）与 `reconciled`（static↔runtime DIFF）由本 skill 写 —— 两个 skill 不抢写同一段。
+**API contract 字段所有权**：`api-inventory.json` 每个 endpoint 为三段式（`static` / `runtime` / `reconciled`，schema 见 [ios-api-inventory output_schema](../ios-api-inventory/SKILL.md)）。`static` 由 `ios-api-inventory` 写；`runtime`（抓包实测）与 `reconciled`（static↔runtime DIFF）由本 skill 写 —— 两个 skill 不抢写同一段。
 
 **复用约定**：进入 Phase 0 / Phase 1 前，先看工程内有没有 `spec/baseline/api-inventory/`：
 

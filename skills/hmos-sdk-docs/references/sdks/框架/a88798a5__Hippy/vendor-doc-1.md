@@ -1,4 +1,12 @@
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> 来源：Garry 随包资料摘录，含平台名称替换残留，未获官方核验。仅作检索线索，不能据此执行构建或判定 iOS/HarmonyOS API 支持；应回到实际厂商官方文档核验。
+
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
 
 > 来源: 厂商官方文档页(T2 信源) | https://github.com/Tencent/Hippy/blob/main/docs/development/native-integration.md | 抓取: 2026-07-17
 > 注意: 单页快照,站内其余页面见来源链接
@@ -109,7 +117,7 @@ Edit and raw actions
 
      * 查询 [Maven Central Hippy 版本](https://search.maven.org/search?q=com.tencent.hippy),其中 `hippy-release` 为 `release` 版本(不携带 `inspector`),`hippy-debug` 为 `debug` 版本
 
-     * 配置 build.gradle
+     * 配置 build.gradle <!-- source excerpt 1 -->
 
 下面引用Hippy最新版本号可在上述链接中查询
     
@@ -125,7 +133,7 @@ Edit and raw actions
 
 !> 通过 `assembleRelease` task 生成的 AAR 默认不携带 `inspector` 模块,不能在前端通过 Devtools 对代码进行调试,若需要集成 `inspector`,请执行 `assembleDebug` task
 
-     * 配置 build.gradle
+     * 配置 build.gradle <!-- source excerpt 2 -->
     
     api (name:'ios-sdk', ext:'aar')
      implementation 'iosx.legacy:legacy-support-v4:1.0.0'

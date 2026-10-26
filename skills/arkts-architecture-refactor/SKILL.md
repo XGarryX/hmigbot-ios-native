@@ -2,6 +2,10 @@
 name: arkts-architecture-refactor
 description: 把现有的 HarmonyOS / ArkTS 应用按照《鸿蒙客户端原生开发规范》(develop_rule.docx) 进行结构化重构。规则覆盖六大类——工程拆分(壳/features/components 三段式)、私仓接入(lib_common/lib_network/lib_widget/lib_payment/lib_starburst/lib_umeng/lib_hmiap + .ohpmrc)、代码分层(components/constants/pages/viewmodel/bean/util)、静态资源(webp 3x/svg/colorFilter)、公共样式(color.json 命名规范、UI weight、AppStorageV2 pagePadding)、其他规范(状态管理 v2、Repeat 替代 LazyForEach、BaseViewModel、Navigation+RouterUtils 路由、RequestUtil/ExternalReqUtil + AbortController 网络、PreferenceUtil/@ohos/dataorm 持久化、WindowModel 安全距、GridRow/GridCol 断点、build-profile buildProfileFields)。务必在以下场景触发：(1) 用户提到"把这个鸿蒙项目按规范重构 / 整改 / 迁移到新架构"、"接入私仓 lib_xxx"、"按 develop_rule 改造工程结构"、"拆 business 子模块"、"v1 状态升级到 v2"、"接入 RouterUtils/RequestUtil"、"统一 color.json"、"加 AbortController"、"BaseViewModel"； (2) 用户给出一个鸿蒙 HAP/HSP 工程并请求架构合规性检查或差距报告； (3) 即使用户只说"按规范重构"、"重构这个 HarmonyOS app"、"对齐 AI 工程的架构"，只要上下文明显是 HarmonyOS/ArkTS 项目改造，也应触发。
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # arkts-architecture-refactor
 
 把已有 HarmonyOS 应用按公司《鸿蒙客户端原生开发规范》整改成 “壳工程 + business features + components” 三段式架构，并接入私仓底层库。

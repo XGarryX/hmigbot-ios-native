@@ -3,7 +3,7 @@
 
 # 双计划审批门控输出模板（§8）
 
-双计划生成后向用户输出以下摘要，等待人工审批后才进入 a2h-execute。
+双计划检查通过后输出以下摘要；沿用当前用户授权。尚未授权执行时再等待确认，检查失败不能用确认豁免。
 
 ```
 ## 双计划生成完成
@@ -13,8 +13,8 @@
 - 批次: Y 个 Batch
 - ⚠️ Low confidence 页面: W 个（W=0 时省略本行）
 
-### 功能执行计划 (feature-plan.md, plan_format: indexed-v1)
-- Base 层任务: 7 个
+### 功能执行计划 (feature-plan.md, plan_format: indexed-v1, spec_contract_version: 2)
+- Base 层任务: <从实际任务投影计算> 个
 - Feature Slices: N 个（slice 文件在 plans/slices/）
 - 可并行组: M 组（size-1 组非 0 时附理由）
 
@@ -22,6 +22,9 @@
 - P0 (V1) 功能: 100% ✓
 - P1 (V1) 功能: XX%
 - UI 页面: XX%
+- AC: <当轮 active AC/覆盖明细，不复制旧统计>
+- MD→typed JSON: <来源映射、AC、写权、依赖、验证义务检查及证据路径>
+- 共享合同: <未解决冲突/unknown/过期输入数；为0才可放行>
 
 ### Placeholder Registry
 - 写入位置: spec/placeholder-registry.md（plan 期占位**直接写入**，无 coverage-matrix 中转）
@@ -41,7 +44,7 @@
 - Plan 待修订项: K 条（execute 阶段将按 ledger 覆盖 plan 原文）
 - escape 候选: J 条（待 retrospect 评审）
 
-请审阅 spec/baseline/plans/、spec/placeholder-registry.md、**spec/decision-ledger.md**，确认后执行 a2h-execute。
+产物: spec/baseline/plans/、spec/placeholder-registry.md、spec/decision-ledger.md。<已授权则继续执行；未授权则请求确认>。
 
 可调整项:
 - 调整 Batch 分组或页面排序
@@ -53,6 +56,6 @@
 ```
 
 用户可以：
-- 直接确认 → 进入 a2h-execute（execute 按 ledger 查表执行，不再交互式追问）
+- 已授权 / 直接确认 → 进入 a2h-execute（execute 按 ledger 查表执行）
 - 修改后确认 → 进入 a2h-execute
 - 要求重新生成 → a2h-plan 重新执行

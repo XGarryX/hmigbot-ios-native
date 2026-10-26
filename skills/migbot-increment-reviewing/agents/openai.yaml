@@ -1,0 +1,4 @@
+interface:
+  display_name: migbot-increment-reviewing
+  short_description: 审阅 SDD / Spec 类 Markdown 文档（spec、arch、design）及需求提案、需求解析、需求澄清、…
+  default_prompt: 请使用 $migbot-increment-reviewing，按本技能的输入、执行步骤和验收条件完成当前任务。

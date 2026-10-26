@@ -191,7 +191,7 @@ escalation:
     "resolve": ["P-S1-001", "P-S2-001"],  // kind=forward-ref → 删行（收组清行，历史留 brief）；其他 kind → status→resolved
     "retag": [{"pid": "P-S6-004", "column": "resolve_by", "value": "D-003（忠实占位·永久保留）"}]
   },
-  "ui_manifest": {"converted": ["0040"], "verified": ["0001", "0002"]},   // 键 = 序号
+  "ui_manifest": {"converted": ["page_0040"], "verified": ["page_0001", "page_0002"]},   // 键 = 序号
   "feature_index": {"implemented": ["F001"]},                             // 键 = F-ID
   "impl_claims": {                        // AC 级认领（modes: group/final；batch 无 AC 归属不产）
     "claims": [{"requirement_id": "F001-AC01", "packet_id": "slice-03-F001",
@@ -203,6 +203,15 @@ escalation:
 }
 ```
 
-可选 `registry.ensure_table_headers: true` 仅由 closer 在 manifest 中明确申请，用于修复历史无表头的六列登记行组。apply 在原引擎前逐字复制现有正式六列表头与分隔行，仅插入缺失表头/必要空行；数据行、顺序、状态及其他文字不改，fenced 代码块跳过。多张表的列名/顺序须一致，分隔线长度或空白差别不视为列歧义；无法确定正式列时非零返回。原引擎失败或前置处理异常则恢复 registry 原字节；原引擎其他语义不变。`--dry-run` 在私有 spec 副本中预演，项目零写入。旧 manifest 不含该字段时走原路径。此项不改变 resolve/retag、原出口等级或原有门禁。
-
 各段可省（mode=base 通常仅 `brief`）；`ui_manifest.verified` / `feature_index.implemented` 只在双前置成立（编译 PASS ∧ 结构 CONVERGED）时记入；defer 末组（`structural_verdict: deferred-to-FV`）不记这两段，由 mode=final 的 manifest 补翻。`impl_claims` 同守双前置；`requirement_ids`/`requirement_digests` **抄自 plan-coverage.json 对应 packet，不由 LLM 手写**；落盘幂等键 = `(requirement_id, packet_id, attempt)`（apply_writeback.py §5，重跑 apply 不重复）。
+
+统一输入使用 git 当前模板的 `序号` 列和稳定 `page_####` ID；manifest 不接受裸数字序号。execution-contract 在启动前校验该合同。旧冻结表头需按原受审更新/replan 恢复，执行器不暗改 baseline。
+
+
+### ios.32 显式终态与登记表修复（当前统一写回链）
+
+`mode=final` 可提交 `feature_index.verified: ["F001"]`，仅已 implemented/verified 的真实 F-ID 可晋级，不能与 implemented 重复、不能 pending 直升或逆向降级。该字段表示现有 final 收尾协议状态，不自动建立业务/设备验证结论；indexed receipt 的 behavior_verified 仍为 false。调用方必须满足原编译/结构及已选验收前置。
+
+历史登记表出现合法六列孤立行组时，可显式提交 `registry.ensure_table_headers: true`。只补相同表头/分隔行，不改登记数据；配合 resolve/retag 时仍核唯一 P-ID 和严格回读。未声明时不自动修复；不同 schema、重复ID、路径链接、越权字段和真实缺失继续拒绝。对已拆成行组的登记表继续使用该显式协议，不能将其当作任意 Markdown 格式重写授权。
+
+这两个开放适配器来自 Garry 1.5.2-ios.32；原编译 writer 仍在单一链内实际 dry-run/apply。Mac ARM 才执行，Intel/Windows 记 deferred；入口不自动 xattr。dry-run 不写真实工程，失败保留原始引擎输出；仅预期原引擎调用顺序且无 warning、严格回读相符时才落成功收据。

@@ -1,0 +1,4 @@
+interface:
+  display_name: arkts-architecture-refactor
+  short_description: 把现有的 HarmonyOS / ArkTS 应用按照《鸿蒙客户端原生开发规范》(develop_rule.docx) 进…
+  default_prompt: 请使用 $arkts-architecture-refactor，按本技能的输入、执行步骤和验收条件完成当前任务。

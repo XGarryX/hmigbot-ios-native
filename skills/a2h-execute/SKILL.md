@@ -9,9 +9,13 @@ metadata:
   - migration
 ---
 
-> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
 
-> **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`, `scenario-builder`, `visual-fixer`, `visual-fixer-reviewer`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)
+
+
+> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../ios-source-analysis/SKILL.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
+
+> **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)
 >
 > **Join 协议（收口五条款）。** Codex 子代理完成后**不会**唤醒主会话——结果必须由派发方主动收口，违者=静默卡死（实测事故）。
 > ① **循环 wait**：每个 `spawn_agent` 句柄用循环调用 `wait_agent` 收口；单次超时只代表"还在跑"，继续再调；**禁止以"等待子代理"为由结束回合**。醒后必调 `list_agents` 确认是谁完成——**完成的唯一合法信号 = `agent_status` 为 `{"completed": …}`，绝不是产物文件的存在/条数**（文件会中途落盘，读半截=实测事故）；completed 态会在数轮后从 list 中消失，所以每次醒来都要及时查。正文所有"等待完成 / join / 到点即收"表述一律指此循环。
@@ -24,7 +28,20 @@ metadata:
 
 原生 structural_loop.py / run_loop.sh 的退出码3为输入/IO停止，绝非CONTINUE。先检查本次进程退出码，3时不得读取或采信旧loop-result/state中的CONVERGED、不得finalize/写完成/推进阶段，也不得原地自动重试；读取本次guard证据并按已授权源事实修正输入后才能显式重调。守卫不修改旧result/state或原账本。
 
+> **当前发行 profile：设备/视觉后端延期。** `arkts-scenario-runner`、`arkts-visual-verify`、`arkts-ui-verifier`、`ios-screenshot-analyzer`（及历史 Android 截图别名）和 `scenario-builder` / `visual-fixer` / `visual-fixer-reviewer` 未作为本包可运行能力交付。不得调用、派发、要求安装或因其缺件阻断基本转换/构建/报告。相关本次实际调用记 deferred/not_run；可只读消费开发者提供的外部原始证据，核对源/目标版本、配置、范围和来源，保留外部实际结果，不能写成本工具已实测。没有证据不记 PASS，真实已归因产品失败继续保留。下文相关调用/目录仅为未来兼容标记。
+
+
 # a2h-execute
+
+启动时先运行 `python3 <runtime>/scripts/a2h_ios.py execution-contract --project <target> --apply`。
+该命令真实消费 git 的 source/spec gate、plan-ir 冻结输入和 indexed 计划；只在
+`spec/execution/` 生成下游合同与静态 meta/outline，不补写已冻结 baseline。
+失败则停在其恢复条件；成功后唯一执行顺序为 Stage 0 → UI Batch → Base → Slice Group → FV。
+不同时启动旧 `next-batch/receipt/land-results` domains 循环。旧 v2 在途任务须先正常回收或受审终止，
+工具升级改变合同 revision 时须 reviewed replan；不能自动沿用旧 PASS。
+已有选定预算时，在每次实际新派发前给 execution-contract 同时传 `--usage-ledger <原账本> --usage-run-id <原run-id>`，由原预算服务检查 UNKNOWN/耗尽与身份；不可只在启动时检查。预算耗尽阻止新派发，不阻止 writeback/join/报告回收。
+阶段开始和续跑都重跑 execution-contract 校验。页面 enrich 只写执行域，正式 spec/AC 变更回上游处理。
+
 
 ## 启动检查 — 待办 findings
 
@@ -33,9 +50,9 @@ metadata:
 | 情况 | 行动 |
 |---|---|
 | 有 `owner_stage: execute` 的条目 | 先处理这些，再做本轮正常工作；处理完重跑 `scripts/lint_execute_coverage.py` 确认消失 |
-| 有 `owner_stage` 属**上游阶段**且 `severity: blocking` 的条目 | 🔴 **拒绝开工**，列出条目并提示用户回到该阶段（a2h-spec / a2h-plan） |
-| 条目标记 `escalate: true`（同一问题连续 3 轮） | 🔴 停止自动重试，按 [a2h-spec 决策卡](../a2h-spec/templates/decision-card.md) §连续未收敛 出决策卡 |
-| 本阶段 section 标记 `halted`（进度停滞 3 轮 / 累计 10 轮） | 🔴 **停止修复尝试**，按 decision-card §连续未收敛 出决策卡；用户裁决后 `--clear-halt <决策ID>` 解除，再继续 |
+| 有上游当前有效的真实产品/源合同阻断 | 按 finding 的对象、消费者和任务依赖阻断受影响部分；独立诊断、构建和报告继续，不按整个队列拒绝开工 |
+| 条目标记 `escalate: true`（同一路径多次无进展） | 停止该技术重试路径，读取原错误与恢复条件；可执行替代方案继续，不因次数生成产品决策卡 |
+| 本阶段 section 标记 `halted` | 仅暂停该 section 的修复策略；修复真实缺陷或指定新的 `repair_strategy` 后重验。产品审批只用于真实的新产品取舍，预算/授权边界保留 |
 | 无条目 | ✅ 正常开工 |
 
 路由不靠猜：每个 linter 比对两份产物，**哪一侧缺条目就由哪一侧负责**。责任无法机械判定时
@@ -46,12 +63,12 @@ metadata:
 
 ## 关键约束（Critical）
 
-- **执行铁律**：execute 按 `spec/decision-ledger.md` 查表推进、**不交互式追问**；未命中 → fail-fast 写「决策缺口」段并阻断，由下一轮 grill 补齐。启动先 Read 项目指令文件（宿主别名 `PROJECT_INSTRUCTIONS_FILE`：Codex=项目根 `AGENTS.md` / Codex=项目根 `AGENTS.md`）+ ledger 顶部「决策索引」段（status 须 `approved`；正文按需 grep D-编号，不整份吞全文）。
+- **执行铁律**：execute 按 `spec/decision-ledger.md` 查表推进、**不交互式追问**；未命中时先区分技术可查证事实与新产品取舍；技术项自动查证，真实缺口只阻断受影响任务并给恢复路径，不强制下一轮 grill。启动先 Read 项目指令文件（宿主别名 `PROJECT_INSTRUCTIONS_FILE`：Codex=项目根 `AGENTS.md` / Codex=项目根 `AGENTS.md`）+ ledger 顶部「决策索引」段（status 须 `approved`；正文按需 grep D-编号，不整份吞全文）。
 - **Stage 0 资源前置最先跑**（§3.0，HARD-GATE）：全部 `$r(...)` 引用可解析或显式 MISSING_xxx 才进 Stage 1。
 - **合法占位 = 已登记的 5 类 kind 占位**（§2.1）：命中规范 marker（`// FWD-REF:` / `// PLACEHOLDER:` / 已登记 `// TODO:` / 资源 `[TODO: translate]`）**且** registry 6 字段齐全；未登记 / 自由文本（裸 `// TODO`、空回调、空 try-catch、假 `console.info('TODO')`、prose defer）一律 FAIL。§2.1 列 4 大延迟**归属**类，其中 placeholder 一类内部再细分 5 类 kind。
 - **共享文件单写者纪律**（Stage 1 §3b / Stage 3 §5a）：并发 converter / slice worker **只写自身 page/VM/repository 文件**，共享文件禁碰（`feature-plan.md` 等 plan 产物、跨文件接线），**仅两项 append-only 例外**——① `placeholder-registry.md` 登记行 append（§2.1c 发号协议）② 共享资源 JSON 直写（写前 Read + 只 append 缺失键，纪律见 `_common.md`）；跨文件接线与状态账本回写一律由 **Batch 收尾 subagent** / **group-closer** 唯一作者（账本变更经 **writeback manifest** 由主线程 `apply_writeback.py` 落盘，§3b 协议），收尾者对资源只做**残量兜底 + 只读校验**（冲突由编译门自曝）。
 - **编译闭环**：Stage 3 group 的组编译在**收尾 subagent 内部**调 `hmos-fix-build-errors`；**Stage 1 批内无编译**（页面间零编译依赖，统一 single-pass 在 §3d 收口，真编译门 = Base-7）；Stage 2 Base-7（§4d）/ Stage 3 Step 3a 建页 / §3d 收口 / FV-2 终态全量编译（§6 之后）派发 Codex 子代理 `hmos-builder`（定义于 `.codex/agents/hmos-builder.toml`），Base-7 失败阻断后续全部 Slice。**主线程禁止直接调底层 build skill**（Batch/group 收尾是 subagent，不算主线程）。
-- **结构性验证 = `$arkts-structural-closure` skill（参数：`mode=<stage|group|pipeline> target=<...>`）**（§3c stage / §5e group（含 size-1 组）/ §6 pipeline）：**禁止 grep / 自跑 scripts 替代**。中间步骤看 skill 返回的 verdict 即可；**§6 收尾 evidence 必产 brief 文件**，缺失不允许进 a2h-verify。
+- **结构性验证 = `$arkts-structural-closure` skill（参数：`mode=<stage|group|pipeline> target=<...>`）**（§3c stage / §5e group（含 size-1 组）/ §6 pipeline）：**禁止 grep / 自跑 scripts 替代**。中间步骤看 skill 返回的 verdict 即可；**§6 完整执行验收须有真实收尾 brief**；缺失时对应验收未完成，仍允许 verify 的独立诊断、构建和 partial 报告。
 - **接线完成性机械判定**（§5e 配套）：plan 产物（索引 + slice 文件）只读、零回填——完成性由 verify_slice_wiring.py C2 按结构化对从代码直接判定（调用方页面存在 + handler 已接 + target 被实例化，孤儿 VM 防线不变；完整契约见 §9a）。
 - **References / Templates 强制加载**（HARD-GATE）：body 中所有 `[references/X.md]` / `[templates/Y.md]` 引用，在对应步骤执行时**必须** Read 被引文件作为执行规范，不得仅靠 body 摘要执行（占位禁令 / FWD-REF 规则不得简化）。**派发 prompt 已按段拆分**：`references/agent-prompts/` 下 `1-converter.md` … `8-group-closer.md` 每个是对应派发点的完整模板，派发时 **Read 对应单段文件 + `agent-prompts/_common.md`（公共占位规则）即可**——**不要整份加载所有段**（旧单文件 413 行已废，索引见 `references/agent-prompts.md`）。跳过加载 = PROCESS_VIOLATION。规则适用于 LLM 主线程和派发的 subagent。
 
@@ -163,7 +180,7 @@ Stage 1 读取 `ui-plan.md`，按批次调用 `a2h-ios-converter` agent 将 iOS 
 
 Stage 1 使用 `a2h-ios-converter` agent（**不是** a2h-migration-worker）。
 
-每页用子代理派发，传入五参数 `activity_name` / `ui_info`（ui-snapshots 目录，含 view.xml + meta.json）/ `harmony_project_dir` / `references_dir`（ios-ui-graph-query/references/）/ `ios_source_dir`，外加 `source_anchors`（page spec 顶部）、`registered_placeholders`（按本页 `owning_slice` 前缀 grep `spec/placeholder-registry.md` 所得已登记占位）、`wiring_ownership_map`（coverage-matrix）。converter 消费三源数据：view.xml（注明实际观测或合成 outline）+ meta.json（页面元数据）+ source_anchors 指向的 SwiftUI/UIKit/Storyboard/XIB 原生源码与资源样式。静态 outline 不代表运行时层级。
+每页用子代理派发，传入五参数 `activity_name` / `ui_info`（ui-snapshots 目录，含 view.xml + meta.json）/ `harmony_project_dir` / `references_dir`（ios-ui-to-arkui/references/）/ `ios_source_dir`，外加 `source_anchors`（page spec 顶部）、`registered_placeholders`（按本页 `owning_slice` 前缀 grep `spec/placeholder-registry.md` 所得已登记占位）、`wiring_ownership_map`（coverage-matrix）。converter 消费三源数据：view.xml（注明实际观测或合成 outline）+ meta.json（页面元数据）+ source_anchors 指向的 SwiftUI/UIKit/Storyboard/XIB 原生源码与资源样式。静态 outline 不代表运行时层级。
 
 完整 converter prompt **MUST 加载** [references/agent-prompts/1-converter.md](./references/agent-prompts/1-converter.md) + [_common.md](./references/agent-prompts/_common.md) 作为派发模板（占位禁令 / `// FWD-REF:` marker 规则 / forward-ref 与 SDK 占位的合法形式等**不得简化为本 body 摘要**）。该 step 的 HARD-GATE 验收：
 
@@ -325,7 +342,11 @@ UI 补充必须引用 Base-6 公共组件库（Design Tokens + 共享组件）�
 
 ### 5f. Stage 3 完成标志
 
-Stage 3 所有 Slice 执行完毕 + §3c 一次性骨架审计通过后，输出统计（Slice 总数成功/失败 / verified 页面数 / 编译状态），然后进入 **主题收货闸**（`python3 <a2h-execute>/scripts/theme_gate.py --project <工程根>`：机械对账 resolved-theme 条目 ⊆ 产物绑定——色值未绑定/硬编码 hex/Button 形状落回胶囊/**必填回执键缺失**（闭集由 resolved-theme 推导，回执按页分片在 `spec/execution/theme-receipts/`）→ FAIL，派 1 轮修复后复跑，仍 FAIL → BLOCKED 记入报告；无 resolved-theme.json = 无事可对账，不阻塞。该闸已收编为 arkts-structural-closure pipeline 模式的必需 detector（`theme`），§6 FV-1 会再机械跑一遍并计入完成度闸——漏跑即 INCOMPLETE，不依赖本段散文被遵守）→ **字面量收货闸**（`python3 <a2h-execute>/scripts/literal_gate.py --project <工程根>`：spec 字面量 ⊆ 产物字面量的包含性对账——真值源 `spec/baseline/literal-ledger.json`（a2h-spec extract_literals.py 产）；页面级文案/色号缺失 FAIL、改写嫌疑与 ref 级缺失 WARN、尺寸/时长出覆盖率报表；无 ledger 不阻塞）→ **死壳检测**（`python3 <a2h-execute>/scripts/dead_shell_gate.py --project <工程根>`：视觉驱动变量零赋值=dead-driver FAIL（能编译能渲染但运行时死的那类）、@Param 默认值恒生效=WARN）。→ **载体降级检测**（`python3 <a2h-execute>/scripts/carrier_gate.py --project <工程根>`：spec 自定义弹窗/Toast 声明 vs 产物系统件使用——downgrade/mixed-usage/toast-systemized 全 WARN 报表级，由人核销或写 decision，不阻断）→ **交互命中闸**（`python3 <a2h-execute>/scripts/hit_test_gate.py --project <工程根>`：**无条件字面**或**显示时**（`visible ? Block : None`）`HitTestMode.Block` 挂在含交互子节点的容器 → FAIL——鸿蒙 Block 阻塞**子节点**触摸测试，弹窗按钮永久无响应（2026-08-26 实锤 18 弹窗 32 处全失灵；**2026-08-29 二次实锤**：条件形态曾被整类豁免，`ConfirmDialog` 一处 `visible ? Block : None` 让 6 个弹窗按钮全死、fixer 连修 5 轮落空）；**隐藏时** Block／纯遮罩／叶子组件合法不报）→ **资源名闭集闸**（`python3 <a2h-execute>/scripts/resource_name_gate.py --project <工程根>`：按名取资源（getStringByNameSync/getRawFileContent 等，含一跳包装函数传播）的字面名必须存在于全工程 resources 闭集；缺席且未登记（无 FWD-REF/P-ID、spec 债务面无此名）= 静默缺席 FAIL——注入槽无供值形态（AIPPT 实锤：aiPptAppId 资源从未创建、异常吞成 '' → AI 链路全部出网前即死且账面全绿）；缺席但已登记 / 计算名 = WARN）。五闸同样已收编为 pipeline 必需 detector（`literal`/`deadshell`/`carrier`/`hittest`/`resname`）→ **§6 Final Structural Closure（FV-1）→ FV-2 终态全量编译** → **冷启冒烟探针**（设备在线时：`bash <a2h-execute>/scripts/cold_start_probe.sh <bundleName>`，主判据=首个网络请求出网+不 crash，FAIL 按装配缺陷回修；无设备 → 探针 exit 3，记 `unverified-cold-start` 粘性债交 a2h-verify 门控）→ a2h-verify。
+Stage 3 完成后，输出实际 Slice、页面和编译状态，按所选产品执行主题、字面量、死壳、载体、交互命中和资源引用检查。保留真实接线、状态、触摸、资源缺件等有具体产品后果的检查；名称、文本和风格候选只作提示。
+
+这些 detector 在 FV-1 使用同一权威结果：规则版本、配置、产品范围和实际输入签名一致时复用当前完整原始报告及其摘要，不要求重复运行。相关修码、规则或 SDK 变化只使对应结果失效；不得把旧 PASS 用于新输入。
+
+随后进入 FV-1 结构收口和 FV-2 当前 SDK 构建。冷启使用 `cold_start_probe.sh` 只读已有、已授权采集的 CLI 进程/日志文件，显式提供应用、PID 和时间窗；命令不主动操作设备或读取界面。只有已确认首启需联网的场景才检查该进程请求，缺少观察记 unverified/not_run；真实归因崩溃仍作为对应运行缺陷处理，不因设备或网络日志缺失令其他验证轴全局失败。
 
 ---
 
@@ -343,7 +364,7 @@ Stage 3 全部 group brief 落地 + §5f 统计输出后，派 **`a2h-closer`（
 
 CONVERGED + evidence 就位 → FV-1 完成。CONTINUE 按 dispatch_prompt 派 repair worker（feat → `a2h-migration-worker` / ui → `a2h-ios-converter`）后重调；其他 verdict 处置见 skill 自身 SKILL.md §3.3。
 
-**FV-2 终态全量编译**：FV-1 通过后（其 fix-forward / repair / icon-sizing 自愈可能改码），派发 Codex 子代理 `hmos-builder`（定义于 `.codex/agents/hmos-builder.toml`；CALLER=a2h-execute, STAGE_HINT=fv-final-build，≤20 轮）确认可构建无回归——这是进 a2h-verify 前的最后 gate。**必须为真实构建**：`all tasks up-to-date` 秒级空转不构成 PASS 证据，命中则 touch 入口文件或动用本轮唯一 clean 强制重编（中间 closer 保持增量，发布门较真）。编译修复仅限编译级小改，**不回跑 FV-1**。
+**FV-2 当前 SDK 构建**：FV-1 之后执行或引用真实构建命令。输入、产品、配置、SDK 与产物摘要绑定一致且命令成功时，合法的 `all tasks up-to-date` 缓存命中有效；不强制 touch 或 clean。旧产物、错产品/配置、真实编译错误或缺少当前命令证据不能通过。修码后重新核验其实际依赖的构建/结构结果；未影响的同签名结果可复用。
 
 </HARD-GATE>
 
@@ -421,8 +442,6 @@ Stage 3 Step 3a 发现目标页面 ui-snapshots 数据缺失（status 非 conver
 
 自然语言触发时，a2h-execute 会列出待执行的 Stage 和任务数量，确认后开始执行。
 
-修复后从**最早实际受影响的具体步骤**恢复，结合实际差分、消费关系及已有 brief 判定；保留未受影响的已完成步骤和产物，只清理或重建受影响部分。例如 Base-2 的工具问题与 INIT、SPEC、Base-0/1 无关时，从 Base-2 断点继续；仅 Base-7 的编译修复则从 Base-7 继续。若影响更早的某个提取或审计步骤，只回到该具体步骤，再沿实际受影响的下游执行，不默认整阶段或整个 EXECUTE 重跑。工具版本、文件哈希变化本身不使所有旧结果失效，也不新增审批或门禁；原依赖顺序、编译/结构门、join 和 writeback 义务仍保留。manifest 已存在且只缺落盘时，仍按原协议重放 apply。
-
 ### 11a. 部分执行的实现
 
 | 用户指令 | 行为 |
@@ -467,19 +486,7 @@ manifest `impl_claims` 段形态：
 
 `packet_id` 词汇与 plan §7.3 同源钉死：`slice-NN-<fid> | base-plan | FV-N`，**禁止自造编号**。
 
-AC 认领检查按原 writeback 义务调用，而不是按所有收口单位统一调用：
-
-| 收口单位 | 原认领义务 | 调用时机 |
-|---|---|---|
-| `mode=batch` | 页面结算，无 AC 归属，不产 `impl_claims` | 不在 batch apply 后调用此 AC linter；原资源 sweep、join、巡检与后续编译照旧 |
-| `mode=base` 的仅 brief 收口 | Base 认领由原 `mode=final` 补记 | 在 final 补记并 apply 后检查；不在仅 brief 的 apply 后调用 |
-| 普通 `mode=group`（含 size-1 slice） | 编译 PASS 且结构 CONVERGED 后必须产 `impl_claims` | 每次 apply 成功后必须调用；认领缺失仍按原规则失败，不能据此跳过 |
-| 原 `deferred-to-FV` 末组 | 按原协议由 final 补记认领 | final 补记并 apply 后检查，不把未认领的组标成已完成 |
-| `mode=final` | 补记 base-plan / FV / defer 残余，并按原完整计划收货 | apply 成功后必须调用 |
-
-若某单元依原合同须产认领，即使文件或段落缺失也必须检查；不以项目特征、AC 数量或文件缺席决定跳过。原引擎在没有已执行集合时按全部计划检查，不能在无 AC 归属的 batch / 仅 brief 收口处用该调用宣称已有 packet 执行。原引擎、三类断言、严重度及最终完整覆盖要求保留。
-
-在上述应检查的收口点执行：
+每个阶段收口（batch / group / slice 的 apply 成功后）跑：
 
 ```bash
 python3 scripts/lint_execute_coverage.py --project-root $PROJECT_ROOT

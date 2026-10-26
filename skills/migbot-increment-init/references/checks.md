@@ -1,5 +1,3 @@
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
-
 # migbot-increment-init Check Specifications
 
 详细检查规格和失败处理定义。
@@ -15,7 +13,6 @@
 | 3 | 编译测试 | BLOCK | P0 | 必须修复错误 | 直到编译成功 |
 | 4 | TEST_ROOT 检测与确认 | BLOCK | P0 | 必须指定或创建 | 直到目录存在/确认 |
 | 5 | 系统环境变量 | INFO | P1 | 询问用户提供 | 记录到配置 |
-| 6 | 重要路径 (hvigorw/java/sdk) | WARN | P1 | 询问用户提供 | 记录到配置 |
 | 7 | 测试框架可用性 | WARN | P1 | 必须选择后备方案 | 直到确认方案 |
 
 ---
@@ -42,7 +39,6 @@ ls -la ./${PROJECT_NAME}-main/
 |---------|---------|
 | HarmonyOS | `hvigorw --version` |
 | Node.js | `node --version && npm --version` |
-| Gradle | `./gradlew --version` |
 
 ### 失败处理（循环直到修复）
 
@@ -58,7 +54,6 @@ ls -la ./${PROJECT_NAME}-main/
 |---------|---------|------|
 | HarmonyOS | `hvigorw assembleHap` | 10 分钟 |
 | Node.js | `npm run build` | 5 分钟 |
-| Gradle | `./gradlew assembleDebug` | 10 分钟 |
 
 ### 失败处理（循环直到修复）
 
@@ -101,7 +96,6 @@ ls -la ./${PROJECT_NAME}-main/
 | HARMONYOS_SDK_HOME | SDK 根目录 | `echo $HARMONYOS_SDK_HOME` |
 | HARMONY_SDK_ROOT | SDK 根目录 | `echo $HARMONY_SDK_ROOT` |
 | OHOS_SDK_ROOT | SDK 根目录 | `echo $OHOS_SDK_ROOT` |
-| JAVA_HOME | Java 运行环境 | `echo $JAVA_HOME` |
 | PATH | 系统路径 | `echo $PATH` |
 
 ### 用户提示
@@ -121,7 +115,6 @@ _
 | 工具 | 验证方式 |
 |------|---------|
 | hvigorw | `which hvigorw` 或 `{SDK}/hvigorw --version` |
-| Java | `which java` 或 `{JAVA_HOME}/bin/java --version` |
 | SDK | 目录存在性检查 |
 
 ### 用户提示
@@ -130,14 +123,12 @@ _
 | 工具 | 状态 |
 |------|------|
 | hvigorw | {✅/❌} |
-| Java | {✅/❌} |
 | SDK | {⚠️ 未设置} |
 
 请提供以下路径（如已知）：
 
 SDK 根目录：_
 hvigorw 路径：_
-Java 路径：_
 ```
 
 ---
@@ -150,7 +141,6 @@ Java 路径：_
 |---------|---------|
 | HarmonyOS | `hvigorw test@entry --help` |
 | Node.js | `jest --version` 或 `npm test -- --help` |
-| Gradle | `./gradlew test --help` |
 
 ### 失败处理（必须选择后备方案）
 
@@ -166,12 +156,10 @@ Java 路径：_
 ## SDK Configuration
 SDK_HOME: {sdk_path}
 hvigorw Path: {hvigorw_path}
-Java Path: {java_path}
 
 ## User Provided Paths
 SDK: {user_provided_sdk}
 hvigorw: {user_provided_hvigorw}
-Java: {user_provided_java}
 ```
 
 ### {PROJECT_ROOT}/README.md 配置摘要
@@ -183,7 +171,6 @@ Java: {user_provided_java}
 | Tool | Path | Version |
 |------|------|---------|
 | hvigorw | {path} | {version} |
-| Java | {path} | {version} |
 | SDK | {path} | {version} |
 
 ### Commands

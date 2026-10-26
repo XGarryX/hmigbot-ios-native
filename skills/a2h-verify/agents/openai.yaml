@@ -1,0 +1,4 @@
+interface:
+  display_name: a2h-verify
+  short_description: 第四步：验证 iOS→HarmonyOS 迁移产出，执行静态分析与 App 身份校验，并由用户选择视觉对齐和单元测试，汇总…
+  default_prompt: 请使用 $a2h-verify，按本技能的输入、执行步骤和验收条件完成当前任务。

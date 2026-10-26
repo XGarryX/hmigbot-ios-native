@@ -1,0 +1,4 @@
+interface:
+  display_name: mod-design
+  short_description: 根据需求分析阶段的产出物（proposal.md、delta-spec.md、info.md、task-lessons.m…
+  default_prompt: 请使用 $mod-design，按本技能的输入、执行步骤和验收条件完成当前任务。

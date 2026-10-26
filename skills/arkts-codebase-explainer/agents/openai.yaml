@@ -1,0 +1,4 @@
+interface:
+  display_name: arkts-codebase-explainer
+  short_description: 专门针对ArkTS语言HarmonyOS应用代码仓的功能解释类问题回答。用于回答"点击后会发生什么？""为什么会重试？""…
+  default_prompt: 请使用 $arkts-codebase-explainer，按本技能的输入、执行步骤和验收条件完成当前任务。

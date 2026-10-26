@@ -1,29 +1,68 @@
-# logs
-logs/
-*.log
-
-# editor / OS
-.DS_Store
-.idea/
-.vscode/
 __pycache__/
 *.pyc
+.venv/
+*.egg-info/
+build/
+dist/
+.hmigbot-ios/
+work/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.build/
+.swiftpm/
 
-# Customer-facing runtime state — written into a user's project by the
-# installer / $a2h-init. Should never appear in this repo; ignored defensively
-# in case someone tests the installer from inside this checkout.
-# NOTE: .agents/plugins/ and .codex-plugin/ ARE shipped (not ignored).
+# Local projects, credentials, generated evidence and delivery packages
 .migbot/
 .codex/
-.agents/skills/
-.claude/*
-!.claude/skills/
+.agents/
+.env
+.env.*
+!.env.example
+*.p12
+*.mobileprovision
+*.ipa
+*.hap
+*.zip
+*.tar
+*.log
+logs/
+docs/validation/
+docs/design-baseline/
 
-# Local reference notes
-DATA_REPORTING_MAP.md
+# Local development reports, evidence, snapshots and historical evaluation runs.
+# Rooted rules keep runtime vendor assets and tests/fixtures available to Git.
+# Already tracked files must be removed from the index manually; ignore is not untrack.
+/reports/
+/artifacts/
+/evidence/
+/receipts/
+/test-results/
+/benchmark-results/
+/.coverage
+/.coverage.*
+/coverage.xml
+/junit.xml
+/htmlcov/
+/docs/reports/
+/evaluations/
+/tests/evaluations/
 
-# Parity copy of coverage rules into Nuitka dist (issue #44)
-**/_entry.dist/coverage-rules.json
+# Integration audit outputs stay local. Keep the public capability declarations.
+/docs/integration/*
+!/docs/integration/CAPABILITIES.md
+!/docs/integration/capabilities.json
+!/docs/integration/public-routes.json
 
-# 测试 skill 的看板账号(本机私有,绝不提交)
-tools/**/.env
+# One-off implementation, validation, audit and handoff records.
+/docs/IMPLEMENTATION-STATUS.md
+/docs/VALIDATION.md
+/docs/*-AUDIT.md
+/docs/*-HANDOFF-*.md
+/docs/*-FOUNDATION-20*.md
+/docs/WORKBUDDY-*.md
+
+.DS_Store
+._*
+.idea/
+.vscode/

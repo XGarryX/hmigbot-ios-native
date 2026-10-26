@@ -1,0 +1,4 @@
+interface:
+  display_name: arkts-codebase-modifier
+  short_description: 针对ArkTS语言的Harmony应用代码仓功能修改类问题回答。专注于"给xx增加开关/参数/流程怎么做？"、"新增视频播…
+  default_prompt: 请使用 $arkts-codebase-modifier，按本技能的输入、执行步骤和验收条件完成当前任务。

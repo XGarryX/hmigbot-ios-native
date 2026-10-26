@@ -1,0 +1,4 @@
+interface:
+  display_name: arkts-codebase-config
+  short_description: 专门用于回答ArkTS语言的Harmony应用代码仓中功能配置/权限/开关类问题的技能。专注于回答配置项的定义位置、读取位…
+  default_prompt: 请使用 $arkts-codebase-config，按本技能的输入、执行步骤和验收条件完成当前任务。

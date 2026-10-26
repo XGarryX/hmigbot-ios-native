@@ -44,7 +44,6 @@
 
 - 龙雀JSVM内存
 - ArkWeb V8内存
-- KMP/Kotlin内存
 - Flutter/Dart内存
 - RN/Hermes内存
 
@@ -181,7 +180,6 @@
   - 匿名映射过大（mmap未释放）
   - ArkTS虚拟机堆过大
   - 龙雀JSVM虚拟机堆过大
-  - KMP/Kotlin堆过大
   - Flutter/Dart虚拟机堆过大
   - RN/Hermes虚拟机堆过大
   - ArkWeb V8虚拟机堆过大
@@ -323,29 +321,6 @@
 
 ---
 
-### 3.8 KMP/Kotlin内存
-
-**故障类型**: 三方框架内存泄漏
-
----
-
-**故障模式1**: KMP/Kotlin内存泄漏
-
-- **故障原因**:
-  - Kotlin对象被Global对象持有（JNI GLOBAL）
-  - Kotlin对象被线程本地存储或运行栈中对象持有（JAVA LOCAL）
-
-- **故障影响**: 应用闪退（三方框架内存泄漏）
-
-- **故障检测机制**: 
-  - 超过水线（待定）
-
-- **改进措施**:
-  - 避免全局变量持有Kotlin对象
-  - 正确使用@ThreadLocal
-  - 及时清理Worker任务
-
----
 
 ### 3.9 Flutter/Dart内存
 

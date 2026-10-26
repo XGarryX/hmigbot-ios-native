@@ -1,6 +1,6 @@
 ---
 name: dfr-fmea-general
-description: FMEA（故障模式与影响分析）是一种系统性的可靠性分析方法，用于识别功能实现过程中的潜在故障模式、分析其原因和影响，并制定改进措施。FMEA分析结果用于优化需求规格，转化为可追溯的非功能系统需求（NFSR）。
+description: "FMEA（故障模式与影响分析）是一种系统性的可靠性分析方法，用于识别功能实现过程中的潜在故障模式、分析其原因和影响，并制定改进措施。FMEA分析结果用于优化需求规格，转化为可追溯的非功能系统需求（NFSR）。"
 ---
 
 # FMEA (Failure Mode and Effects Analysis) skill

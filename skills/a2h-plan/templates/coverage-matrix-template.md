@@ -5,10 +5,15 @@
 
 §7 覆盖率校验通过后输出 `spec/baseline/plans/coverage-matrix.md`。各失败表（Placeholder / Complex Slice anchor / 对接点归属）只在对应校验不通过时填行，通过则留空表头。
 
+profile 2 追加 MD→typed JSON 对账及合同冲突明细。总数从当轮明细/机器报告计算，不能从旧报告复制；失败或过期时保留实际结论，不生成绿色固定百分比。
+
 ```markdown
 # Coverage Matrix
 
 ## Summary
+- spec_contract_version: 2
+- 检查证据: <命令、报告路径、输入摘要与时间>
+- MD→typed JSON: <PASS/FAIL；unmapped/stale/AC、写权、依赖、验证义务差异数>
 - Feature 覆盖率:
   - P0 (V1): X/Y (Z%) — 必须 100%
   - P1 (V1): X/Y (Z%) — 建议 >= 80%
@@ -86,3 +91,8 @@
 | 零复述 | Slice 6 | 条目超行数上限（疑似复制 spec 正文） |
 | 状态交叉 | F007 | feature-index status=implemented 但 owned 页 0034 仍 pending |
 ```
+
+## profile 2 追加提纲
+
+- `## MD→typed JSON`：表头 `item_id | task_ids | mapping_reason | AC | 写权 | 父依赖 | 验证义务 | 结论`，值来自实际 plan-ir 检查；正常一对一可省略长表只留证据与异常表。
+- `## 合同冲突`：表头 `finding | 左端路径#节/ID | 右端路径#节/ID | 源anchor | 受影响AC | owner_stage | 状态`。存在未解决源语义冲突则回 Spec，不能在 coverage-matrix 写临时解释后放行。

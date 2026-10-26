@@ -1,0 +1,4 @@
+interface:
+  display_name: grill-with-docs
+  short_description: Grilling session that challenges your plan against the existi…
+  default_prompt: 请使用 $grill-with-docs，按本技能的输入、执行步骤和验收条件完成当前任务。

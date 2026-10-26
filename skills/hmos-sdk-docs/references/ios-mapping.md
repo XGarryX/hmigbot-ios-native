@@ -6,7 +6,7 @@
 
 读取选定 Xcode target 的工程链接/嵌入信息、SwiftPM Package.resolved、实际 Podfile.lock/Cartfile.resolved、xcframework/framework/module 与初始化调用。不能把其他平台的包名、命名空间或锁文件名称改成 iOS 就作为来源；同厂不同平台也可能使用不同类型和 API。
 
-系统能力接缝先读 [原生框架映射](../../ios-api-inventory/references/framework-kit-mapping.md)，保持其证据与不确定项边界。
+系统能力接缝先读 [原生框架映射](../../ios-api-inventory/SKILL.md)，保持其证据与不确定项边界。
 
 | 实际源能力 | 鸿蒙查找方向 | 必须核对 |
 |---|---|---|

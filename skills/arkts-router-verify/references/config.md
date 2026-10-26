@@ -1,3 +1,9 @@
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
 # 换仓配置 — repo-specific 适配点
 
 本 skill 引擎通用,**差异在数据**。换到新的 iOS→HarmonyOS 迁移仓时,改以下几处。
@@ -64,7 +70,7 @@ action 回调按点击触发源)。路由名支持字面量 + **常量符号表*
 **业务弹窗/popup 裸构造**(`XxxDialog(…)`/`XxxPopup(Window|View)?(…)`/`XxxSheet(…)`,SMT 风格,
 仅第一方 dialog 类入账) / XPopup `asCustom` 与内置便捷弹窗(inline) / **框架锚定菜单**
 (`PopupMenu`/`ListPopupWindow` → inline 只记数,HMOS 等价物是 bindMenu/bindPopup) /
-**Jetpack Navigation**(`res/navigation/*.xml` 的 action→destination 自动解析,
+历史导航 wire 示例不用于当前 iOS 源提取（输入使用 git 原生导航事实，
 `navigate(R.id.action_x)` 直连,`navigate(变量)` 标 dynamic 交 LLM)/ `startActivity(ForResult)`。
 两端扫描均**先剥注释**(保行号),注释里的示例代码不会被当成路由点。
 

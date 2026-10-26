@@ -14,7 +14,18 @@ metadata:
   type: domain
 ---
 
-> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+
+
+> **统一源合同**：源码只经 hmigbot_ios.execution_source.Source 消费 git 已校验的 facts/官方词项；本技能处理图的输出/查询合同，不重跑另一套源解析或选择不同构建配置。源语义、范围与审批回 git 上游。先读 [执行交界](../a2h-run/references/execution-boundary.md)。禁止当前范围的屏幕/界面/远控操作。历史 Android/Compose 源扫描命令不可用于 iOS，未知值不能填成已观测或通过。
+
+
+
+> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../ios-source-analysis/SKILL.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 
 > **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`, `scenario-builder`, `visual-fixer`, `visual-fixer-reviewer`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)
 >
@@ -34,7 +45,7 @@ metadata:
 
 沿用原五个主 phase 及 1.5/1.6、2.3/2.5/2.6/2.7 子步骤，原地补全 spec/toolkit-fact-tree.json，不新增另一棵关系树。补 purpose、触发链、前置态、导航合同和 dependency_graph；正确的 source_anchor、结构边和已有字段不能随意改写。
 
-源输入统一遵守 [native-input](../a2h-spec/references/native-input.md) 的 A1 入口/导航口径：App/Scene、实际 SwiftUI NavigationStack/Link、Tab、sheet/fullScreenCover、UIKit push/present/segue、URL 和 IB 关系。用 Source 选定的 target/Release 源码、原四文件 UI 图、source-index 及 page/feature spec，不从类型后缀猜实际可达性。
+源输入统一遵守 [native-input](../ios-source-analysis/SKILL.md) 的 A1 入口/导航口径：App/Scene、实际 SwiftUI NavigationStack/Link、Tab、sheet/fullScreenCover、UIKit push/present/segue、URL 和 IB 关系。用 Source 选定的 target/当前配置源码、原四文件 UI 图、source-index 及 page/feature spec，不从类型后缀猜实际可达性。
 
 原 fact-tree 的 pages/fragments/dialogs/components 是规范化分组槽位：分别承载顶层页面、嵌入子页、模态和普通组件，不代表原生框架类。保留原 JSON 键和 schema_version=1；fq_class/ios_file/source_anchor 必须为实际模块类型和源文件。静态分析节点明确 analysis role，不伪造 framework class。
 

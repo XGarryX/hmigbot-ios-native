@@ -9,11 +9,18 @@ metadata:
   - migration
 ---
 
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
 
-> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 
-> **⚠️ 用户契约（最高优先级）**：本 skill 每个 CHECK 必须严格顺序执行；不允许以"省时 / 省 token / 上下文长 / 预估收效低"等理由跳过或合并任一项。**CHECK-6/7 各自委托给独立的 verifier skill**（router / visual）；router-verify 的修复闭环、ut 和 ui 的修复循环都在它们自身的 SKILL 内部完成，a2h-verify 不再持有循环。
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
+
+> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../ios-source-analysis/SKILL.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
+
+> **当前验证范围**：统一采用七项语义，先读 [编号与范围合同](references/check-keys-and-scope.md)。默认只做基础与实际适用的文件检查；显式 `verify-report --scope <scope.json>` 可选择子集。高级 UI/视觉/设备检查不是转换、构建或生成报告的通用前置。已有当前有效真实失败仍须呈报，不能靠缩小范围隐藏。
+
+> **当前发行 profile：设备/视觉后端延期。** `arkts-scenario-runner`、`arkts-visual-verify`、`arkts-ui-verifier`、`ios-screenshot-analyzer`（及历史 Android 截图别名）和 `scenario-builder` / `visual-fixer` / `visual-fixer-reviewer` 未作为本包可运行能力交付。不得调用、派发、要求安装或因其缺件阻断基本转换/构建/报告。相关本次实际调用记 deferred/not_run；可只读消费开发者提供的外部原始证据，核对源/目标版本、配置、范围和来源，保留外部实际结果，不能写成本工具已实测。没有证据不记 PASS，真实已归因产品失败继续保留。下文相关调用/目录仅为未来兼容标记。
+
 
 # a2h-verify
 
@@ -24,9 +31,9 @@ metadata:
 | 情况 | 行动 |
 |---|---|
 | 有 `owner_stage: verify` 的条目 | 先处理这些，再做本轮正常工作；处理完重跑 `scripts/lint_verify_coverage.py` 确认消失 |
-| 有 `owner_stage` 属**上游阶段**且 `severity: blocking` 的条目 | 🔴 **拒绝开工**，列出条目并提示用户回到该阶段（a2h-spec / a2h-plan / a2h-execute） |
-| 条目标记 `escalate: true`（同一问题连续 3 轮） | 🔴 停止自动重试，按 a2h-spec `templates/decision-card.md` §连续未收敛 出决策卡 |
-| 本阶段 section 标记 `halted`（进度停滞 3 轮 / 累计 10 轮） | 🔴 **停止修复尝试**，按 decision-card §连续未收敛 出决策卡；用户裁决后 `--clear-halt <决策ID>` 解除，再继续 |
+| 有上游当前有效的真实产品/源合同阻断 | 按 finding 的对象、消费者和任务依赖阻断受影响部分；独立诊断、构建和报告继续，不按整个队列拒绝开工 |
+| 条目标记 `escalate: true`（同一路径多次无进展） | 停止该技术重试路径，读取原错误与恢复条件；可执行替代方案继续，不因次数生成产品决策卡 |
+| 本阶段 section 标记 `halted` | 仅暂停该 section 的修复策略；修复真实缺陷或指定新的 `repair_strategy` 后重验。产品审批只用于真实的新产品取舍，预算/授权边界保留 |
 | 无条目 | ✅ 正常开工 |
 
 路由不靠猜：每个 linter 比对两份产物，**哪一侧缺条目就由哪一侧负责**。责任无法机械判定时
@@ -52,22 +59,16 @@ a2h-spec → a2h-plan → a2h-execute → a2h-verify（本 skill）
                                         ├─ CHECK-4  App 身份校验
                                         ├─ CHECK-5  页面状态审计
                                         ├─ CHECK-6  路由跳转验证    → $arkts-router-verify（纯静态，内置修复闭环）
-                                        ├─ CHECK-7  视觉对齐         → $arkts-visual-verify
+                                        ├─ CHECK-7  视觉/运行外部证据 → deferred/not_run（后端延期）
                                         └─ 生成验证报告 + Retrospect 引导
 ```
 
 
 ---
 
-## 1.1 执行铁律（无跳过原则）
+## 1.1 适用检查与证据复用
 
-主对话执行 a2h-verify 时**禁止以"省时 / 省 token / 上下文长 / 预估收效低"等任何理由**跳过任一 CHECK 项。
-
-核心禁止项：
-1. **CHECK-1~8 任一项标 SKIP**——CHECK-1~8 全部没有 SKIP 条件；不可执行只能标 DEFERRED 并写明原因
-2. **CHECK-6/7 委托后不读结果**——主线程必须读各 verifier 产出，把 PASS/FAIL 落到本 skill 报告
-3. **失败回环老路径提前 break**——"最多 3 轮"是硬上限不是建议
-
+按本次范围和实际依赖运行。没有设备、UI 权限或执行报告时，文件/SDK 诊断与报告继续；已选未执行项保留 DEFERRED，未选项标 not_selected，有当前证据和理由的适用性结论标 NOT_APPLICABLE。基础身份未确认时列待确认项，不猜测样例包名或图标并判失败。同签名完整证据跨阶段复用，修复后仅重验被变更破坏的检查。
 
 **详见 `references/execution-discipline.md`**。
 
@@ -87,49 +88,49 @@ a2h-spec → a2h-plan → a2h-execute → a2h-verify（本 skill）
 | `spec/placeholder-registry.md` | 占位符注册表（如果存在） |
 | `entry/src/main/ets/**/*.ets` | 迁移产出代码 |
 
-如果 `spec/migration-report.md` 不存在，提示用户先执行 `a2h-execute`。
+不要求 `spec/migration-report.md` 作为启动凭证；直接诊断当前产物并生成 partial/DEFERRED 报告。真实验收仍核对其正式合同。
 
 ---
 
 ## 3. 验证清单
 
-按顺序执行，每项产出独立的 PASS/FAIL/DEFERRED 状态（CHECK-1~8 均无 SKIP）。
+按所选检查的真实依赖执行，独立只读检查可并行；每项产出 PASS/FAIL/DEFERRED/NOT_APPLICABLE，并分别标记 selected/not_selected。
 
 ### 3.0 编译门禁（贯穿全流程，先于各 CHECK 的硬规则）
 
 编译能不能过，是设备验证与门控的地基，因此有两条强制规则：
 
 1. **编译短路**：CHECK-1 编译 FAIL 时，**本轮跳过设备段 CHECK-7**（它们要 build+install HAP，编译不过只会空转撞错），直接进 §5 老路径修编译后重跑。CHECK-6 路由是纯静态、读源码，**不受影响照常跑**。若 §5 回环耗尽仍编不过，设备段标 `DEFERRED（原因：编译未过）`。
-2. **终态编译复检**：CHECK-6 自带修复闭环会改源码，跑完后代码已不是 CHECK-1 当初校验的那份。**报告生成前必须重跑一次编译复检**，§6 门控的 "CHECK-1" 一律以**这次终态复检**为准，不沿用开头那次的旧结论（防"对账/测试闭环但最终语法不过"）。
+2. **终态编译复检**：CHECK-6 自带修复闭环会改源码，跑完后代码已不是 CHECK-1 当初校验的那份。**修改构建输入后，报告生成前必须重跑受影响的编译复检；输入签名未变时复用当前有效构建证据**，§6 门控的 "CHECK-1" 一律以**这次终态复检**为准，不沿用开头那次的旧结论（防"对账/测试闭环但最终语法不过"）。
 
 ### 3a. CHECK-1 ~ CHECK-5
 
 | 检查项 | 简介 | 关键判定 |
 |--------|------|---------|
 | CHECK-1 全量编译修复 | 委托 `hmos-fix-build-errors` 最多 20 轮 → 失败升级到 `arkts-knowledge-verifier` | 编译通过 → PASS |
-| CHECK-2 静态分析 | grep 检查：`any`、废弃导入、SQL 拼接、`as`、`eval()`、aboutToAppear 参数 | ERROR 0 → PASS（WARN 不阻塞，附清单）|
+| CHECK-2 静态分析 | 当前产品的目标 SDK 诊断与结构证据；grep 仅为候选 | 真实产品错误阻断对应对象；文字/风格候选只提示 |
 | CHECK-3 占位符扫描 | 结构化扫描 `placeholder-registry.md` + 兜底 grep TODO | pending=0 且无未注册项 → PASS |
 | CHECK-4 App 身份校验 | bundleName/vendor/versionName/app_name/图标/layered_image.json | 0 FAIL → PASS（WARN 不阻塞）|
 | CHECK-5 页面状态审计 | 按 P0/P1/P2 分组统计 status 字段 + .ets 文件存在性 | P0 100% converted/verified 且产物存在 → PASS（verified 由 §6.1 门控后回写）|
 
 详见 `references/checks-1-to-5.md`。
 
-### 3b. CHECK-6 ~ CHECK-6：两段委托验证（router 静态 + 设备段 visual）
+### 3b. CHECK-6 ~ CHECK-7：两段委托验证（router 静态 + 设备段 visual）
 
 > 暂停 ≠ 删除：仍以 DEFERRED 计入报告与门控标注（不阻塞），别把它写成 PASS/SKIPPED。
 
-两个 verifier 都委托独立 skill 自管循环。**CHECK-6 路由纯静态先跑**（修复会改源码，让设备验证跑在修过路由的代码上）；**CHECK-7 设备段严格串行**，每个跑完 sleep 5（设备静默）。
+CHECK-6 使用仍交付的纯静态路由能力。CHECK-7 内置设备/视觉后端延期，当前不委托、不运行设备段；只读消费开发者外部证据，否则 deferred/not_run。
 
 | 检查项 | 委托 | 内部循环 | 产物 | 关键判定 |
 |--------|------|---------|------|---------|
 | CHECK-6 路由跳转验证 | `$arkts-router-verify` | **自带修复闭环**（抽取→对账→agent 修复→复检收口） | `spec/verify/route/ROUTE_VERIFY_SUMMARY.md`、`fix_plan.json` | 无 reopened 且 `pushed_but_unregistered`=0 → PASS；拿不到 iOS 源码仓 → DEFERRED |
-| CHECK-7 视觉对齐 | `$arkts-visual-verify` | 无（一次性截图对比） | `spec/fix/round-N/ui/{ALIGN,URL,CRASH}_*.md` | CRASH/URL=0 且 ALIGN=0 → PASS；仅 ALIGN → FAIL-visual（不门控）；CRASH/URL>0 → FAIL-functional（阻塞门控，进 §5 回环）；adb/hdc 任一不可用 → DEFERRED |
+本项源设备自动操作不可用于 iOS；当前所需观察记 not_run，读取已有独立源证据。
 
 **执行约束**：
-- **CHECK-6 路由纯静态、不碰设备**：不依赖 hdc/adb，先于设备段跑；它与设备段之间无串行/sleep 约束
-- **设备段的前置是"编译能过"**：CHECK-7 要 build+install HAP，因此 CHECK-1 终态编译 FAIL 时本轮不跑它们（见 §3.0 编译短路）；回环耗尽仍编不过则标 `DEFERRED（编译未过）`
-- **CHECK-7 设备段**：visual 跑完 sleep 5（设备静默 + uitest daemon 排空）再进后续步骤
-- 拿不到 iOS 源码仓 → CHECK-6 标 DEFERRED；**源 iPhone/Simulator 观测工具或 hdc 任一不可用 → CHECK-7 标 DEFERRED**（visual 需双端模拟器截图）；**对应 verifier skill 未安装 → 该 CHECK 标 DEFERRED（原因：skill 未安装）**，没有任何"主线程 SKIP"（见 `references/orchestration.md` 处置表）
+本项源设备自动操作不可用于 iOS；当前所需观察记 not_run，读取已有独立源证据。
+- 当前不为 CHECK-7 触发 build/install；可用外部观察须核对其对应构建与当前输入。缺少外部观察不阻断基本转换或SDK报告。
+- CHECK-7 本工具实际调用记 deferred/not_run；未来设备段规则不能当作本发行版必经步骤。
+- 拿不到 iOS 源码仓时 CHECK-6 记 DEFERRED；延期设备/视觉包缺件不提示补装、不扩大为全流程阻断。外部真实失败保留，外部证据未覆盖本次改动时不能沿用通过。
 
 详见 `references/check6-to-7.md`。
 
@@ -154,7 +155,7 @@ a2h-spec → a2h-plan → a2h-execute → a2h-verify（本 skill）
 
 ## 4. 验证报告
 
-存储路径：`spec/verify-report.md`。完整模板见 `references/verify-report-template.md`（含 CHECK-1~8 总览表 + 门控判定 + 各 CHECK 详细结果表）。
+存储路径：`spec/verify-report.md`。完整模板见 `references/verify-report-template.md`（含 CHECK-1~7 总览表 + 门控判定 + 各 CHECK 详细结果表）。
 
 ---
 
@@ -175,17 +176,12 @@ a2h-spec → a2h-plan → a2h-execute → a2h-verify（本 skill）
 
 ```
 门控判定:
-  ├─ CHECK-1 全量编译: MUST PASS（取 §3.0 终态编译复检结果，非开头那次）
-  ├─ CHECK-2 静态分析: ERROR 级 0 MUST PASS（WARN 不阻塞）
-  ├─ CHECK-3 占位符扫描: MUST PASS（无可回填未回填项；deferred V2 占位符不算失败）
-  ├─ CHECK-4 App 身份校验: MUST PASS（0 FAIL；WARN 不阻塞）
-  ├─ CHECK-5 页面状态审计: P0 页面 100% converted/verified 且产物存在 MUST PASS
-  ├─ CHECK-6 路由跳转验证: MUST PASS（DEFERRED 时不阻塞；含运行时必崩项 pushed_but_unregistered=0）
-  ├─ CHECK-7 功能性子项: CRASH/URL_MISMATCH = 0 MUST PASS（仅 ALIGN 视觉差异不阻塞；DEFERRED 时不阻塞）
-  │
-  以上全部通过？
-  ├─ 是 → 门控通过 → 执行 §6.1 状态回写 → 可进入 a2h-retrospect
-  └─ 否 → 触发回环（§5），或提示用户手动介入
+  当前绑定的真实产品/源/产物 FAIL → FAIL，明确受影响对象与恢复条件
+  已选且适用的基础项缺当前证据 → PARTIAL，可继续独立诊断/构建/报告
+  已选项全部 PASS 或有证据 NOT_APPLICABLE → PASS_SELECTED_SCOPE
+  七项真实 PASS → 当前检查范围 PASS；完整迁移等价仍按独立 AC/行为证据判定
+  未选高级项 → not_selected，不因未执行阻断基础转换
+
 ```
 
 CHECK-7 的 ALIGN 纯视觉差异不阻塞门控，记录在报告中作为后续优化方向。**CHECK-7 的 CRASH/URL 是功能性失败**（页面打不开/崩溃不是"视觉问题"），阻塞门控并进 §5 回环。
@@ -218,7 +214,7 @@ P1/P2 页面不在门控与实测保证范围内，不回写。下次运行 CHEC
 | `$arkts-knowledge-verifier` | 编译升级诊断 + 静态分析辅助（CHECK-1/2） | 主对话内联 |
 | `$arkts-app-identity` | App 身份校验（CHECK-4） | 主对话内联 |
 | `$arkts-router-verify` | 路由跳转验证 + 内置修复闭环（CHECK-6，纯静态） | 主对话内联 |
-| `$arkts-visual-verify` | 视觉对齐（CHECK-7） | 主对话内联 |
+| `arkts-visual-verify`（延期） | CHECK-7 外部视觉证据范围 | 不内联/派发；读取开发者外部原始证据，否则 deferred/not_run |
 
 
 详见 `references/orchestration.md`。
@@ -237,7 +233,7 @@ P1/P2 页面不在门控与实测保证范围内，不回写。下次运行 CHEC
 P0 页面都验证了吗
 ```
 
-自然语言触发时，a2h-verify 先检查 `spec/migration-report.md` 是否存在。如果不存在，提示用户先执行 a2h-execute。
+自然语言触发时先核本次范围与当前输入；缺少执行报告时仍生成带准确缺口的诊断报告。
 
 ---
 
@@ -247,7 +243,7 @@ P0 页面都验证了吗
 |------|---------|
 | `references/execution-discipline.md` | 执行铁律全文（自检清单、违规处置）|
 | `references/checks-1-to-5.md` | CHECK-1 ~ CHECK-5 的完整执行步骤 |
-| `references/check6-to-7.md` | CHECK-6（路由，静态）/ 8（设备段 visual）两段委托细则（前置检测、串行约束、产物读取、状态映射）|
+| `references/check6-to-7.md` | CHECK-6（路由，静态）/ 7（设备段 visual）两段委托细则（前置检测、串行约束、产物读取、状态映射）|
 | `references/verify-report-template.md` | `spec/verify-report.md` 的完整模板 |
 | `references/failure-loop.md` | 失败回环算法（CHECK-1~5 + CHECK-7 CRASH/URL；含编译短路 Step 0、回环轮重验范围表）|
 | `references/orchestration.md` | 编排关系完整图、调用模型规则 |
@@ -304,11 +300,21 @@ verify 成功产出 `spec/verify-report.md` 后，作为本 skill 的最后一�
 ---
 
 
-## 冷启冒烟与粘性债（能力交付契约配套，2026-08-24 起）
+## 冷启证据范围
 
-设备在线时，CHECK-7 前先跑 60 秒冷启冒烟（`a2h-execute/scripts/cold_start_probe.sh`）：
-**主判据 = 首个网络请求出网 + 冷启不 crash**（二值、机械、不可被文案措辞游戏）；
-dump 中「未配置/尚未就绪/unavailable」类文案仅作附加证据。
-设备不在线 → **不是 DEFERRED 后消失**：verify 报告固定记 `unverified-cold-start`
-粘性债，**该状态令整体验收门控保持 FAIL/BLOCKED**（与 CHECK-4 bundleName 模板值同级），
-直到设备段真跑过冒烟为止。禁止以任何汇总口径把此债从报告首屏挪走。
+`a2h-execute/scripts/cold_start_probe.sh` 只读取已有 CLI 文件证据，不自动操作设备或读取界面。提供明确应用、PID、启动窗口、进程观察文件和日志；命令缺少输入时输出 not_run 与恢复条件，不主动采集。
+
+普通 `AppRecovery` 文字、其他进程崩溃或旧时间窗日志不是本应用失败。启动观察与首启网络分轴报告；仅已确认的联网场景检查对应请求，离线应用不要求网络。没有请求日志保留 unverified，不能把全局网络日志冒充本应用联网成功。
+
+缺少授权、设备或运行证据时允许继续静态/构建和 partial 报告；实际归因崩溃、错误路由或请求失败保留为对应业务缺陷。未观察不等于通过，也不等于产品已失败。
+
+## 统一报告消费合同
+
+本执行模型使用七项 CHECK 编号，不复用旧四项编号的语义。将实际检查结果写入
+`spec/verification/verify-results.json`：schema_version=2、execution_model=indexed-stages-v1、
+source_sha256、execution_contract_sha256、当前 spec_input_hashes/target_input_hashes，
+checks 每项含 id/status(PASS|FAIL|DEFERRED)/detail/exit_code/evidence(path,sha256)。
+输入摘要从 quality_views 的同名只读函数取得，不能手编通过值。CHECK-1 还需当前终态真实构建证据。
+随后运行 `python3 <runtime>/scripts/a2h_ios.py verify-report --project <target> [--build-evidence <实际报告>]`，
+由命令单写七项 `spec/verify-report.md`；旧 schema 1 四项结果不能误作本轮七项通过。
+DEFERRED 逐项保留；允许继续的阶段门记 PASS_WITH_DEFERRED，不能称完整迁移验收已通过。

@@ -1,4 +1,4 @@
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
 
 # Phase 0-6 排查流程
 
@@ -86,7 +86,7 @@ URL / body 字段结构这类静态信息不必抓包，读源码或 `spec/basel
 - `headers`：请求头真实拼写大小写、签名头字节（方法 C 抓到才有）
 - `source` / `captured_at`：抓取方法与时间
 
-`runtime` 段 schema 见 [ios-api-inventory output_schema](../../ios-api-inventory/references/output_schema.md)。抓不到的 endpoint（需人工触发 / 设备未就绪）其 `runtime` 留 `null` —— 这是允许的部分闭合，不是缺陷。`sample-requests.md` 仍照常产出，作为人类可读的抓包原文留存，与 contract 互为印证。
+`runtime` 段 schema 见 [ios-api-inventory output_schema](../../ios-api-inventory/SKILL.md)。抓不到的 endpoint（需人工触发 / 设备未就绪）其 `runtime` 留 `null` —— 这是允许的部分闭合，不是缺陷。`sample-requests.md` 仍照常产出，作为人类可读的抓包原文留存，与 contract 互为印证。
 
 **销账（v1.3）**：抓到的证据能回答某条 `uncertainties[]` 时，就地更新该条：`status → resolved`、`resolution` 填实测值、`resolved_by` 填 `runtime <endpoint> @<日期>`；工程有 `spec/decision-ledger.md` 时同步把 ledger 对应条目（grill #2 C17 标 `needs_capture` 的 D/事实条目）标注已实证。抓不到的保持 `needs_capture` —— 与 `static-only` 一样是允许的部分闭合。
 
@@ -214,7 +214,7 @@ grep -rn 'PlatformService\.\|XxxService\.' hmos_src --include='*.ets'
 
 **`api-contract-diff.md` 结构**：① 汇总计数（verified / mismatch / static-only 各几个）；② mismatch 清单（每条：endpoint、维度、static 值、runtime 值、对 HMOS 实现的影响）；③ static-only 清单（待补抓的 endpoint）。
 
-mismatch 项在 Phase 2-5 实现 HMOS 网络层时**按 `runtime` 实况为准**（而非 `static`）。`reconciled` 段 schema 见 [ios-api-inventory output_schema](../../ios-api-inventory/references/output_schema.md)。
+mismatch 项在 Phase 2-5 实现 HMOS 网络层时**按 `runtime` 实况为准**（而非 `static`）。`reconciled` 段 schema 见 [ios-api-inventory output_schema](../../ios-api-inventory/SKILL.md)。
 
 **DIFF 后销账（v1.3）**：`reconciled` 判定给出的实证同样用于 `uncertainties[]` 销账（`needs_capture` → `resolved`），规则同 Phase 0.3。
 

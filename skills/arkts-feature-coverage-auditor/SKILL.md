@@ -11,6 +11,10 @@ metadata:
   - feature
   - coverage
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # arkts-feature-coverage-auditor
 
 ## 1. 定位
@@ -180,7 +184,7 @@ a2h-execute → a2h-verify → arkts-feature-coverage-auditor（回归）→ a2h
 
 ### 4.1 L1 源码 domain 扫描
 
-复用随包 Source 输入器读取真实 Swift/Objective-C 文件、选定 Xcode target/模块和已配置的 Release 源视图。实现文件按直接父目录分领域，头文件不重复计数；extension 不产生新的类型。未选产品、测试目录、生成目录与已滤除的条件分支不加入当前源索引。条件上下文缺失或过期按技术错误返回，不伪称零扫描通过。
+复用随包 Source 输入器读取真实 Swift/Objective-C 文件、选定 Xcode target/模块和已配置的当前源视图。实现文件按直接父目录分领域，头文件不重复计数；extension 不产生新的类型。未选产品、测试目录、生成目录与已滤除的条件分支不加入当前源索引。条件上下文缺失或过期按技术错误返回，不伪称零扫描通过。
 
 领域≥3实现文件才是候选。排除名单、白名单与强弱信号沿用原规则：Presenter/ViewModel/Manager/Repository/UseCase/Service/Controller 为强信号，ViewDelegate/ItemTouchCallback/DragHelper 为中信号；真实 UIViewController 子类、UI 清单或导航声明中的 SwiftUI 页面提供对应的页面中信号。普通可复用 View 为弱信号，不按所有 View 扩大页面数。
 
@@ -228,10 +232,10 @@ a2h-execute → a2h-verify → arkts-feature-coverage-auditor（回归）→ a2h
 
 - 引用少于5个业务类型时，ratio 分支为 not_assessed；否则规格总行数/引用类型数<3为 under_depth。
 - 规格提及真实模块，模块≥20个类型且引用少于10%时，sparse 分支也为 under_depth。
-- strict 允许 under_depth 占比≤20%，lenient≤30%；auto 在≤30个主规格用 strict，超过30用 lenient。
+- strict/lenient 仅调整提示阈值；行数、类名和稀疏比率不参与迁移硬门。
 - LLM 的行为语义抽样仍按原规程做，不把机械行数比率当作已验证业务语义。
 
-实现为原生输入的接口移植，原编译程序只用作回归对照，不宣称获得原算法源码或证明完全等价。正常命令执行完整 L1–L4 及上述机械 L5；不会在 FAIL 后自动切换兜底。
+实现为原生输入的接口移植，原编译程序只用作回归对照，不宣称获得原算法源码或证明完全等价。正常命令输出 L1–L5 候选及解释；候选比例不作为 PASS/FAIL 产品验收，真实义务、页面、API或资源缺失由独立证据核验。
 
 ---
 
@@ -241,8 +245,8 @@ a2h-execute → a2h-verify → arkts-feature-coverage-auditor（回归）→ a2h
 
 | 时机 | 行为 |
 |---|---|
-| `a2h-spec Phase C` 完成后 | 必跑；不通过则阻断 `a2h-plan` |
-| `a2h-execute` 完成后 | 必跑；不通过则阻断 `a2h-verify` |
+| `a2h-spec Phase C` 完成后 | 按需生成候选审查提示；实际遗漏由源义务/AC覆盖核验 |
+| `a2h-execute` 完成后 | 复用同签名审查提示；不以机械比例阻断验证 |
 | 用户主动说「漏 feature/feature 覆盖率/feature 全不全」 | 立即跑增量审计 |
 | `a2h-retrospect` 阶段 | 跑最终回归，作为本轮迁移的 KPI 写入回顾报告 |
 | `spec-evolver` 增量演进 | **v1.0：跑全量**（`--incremental` 仍是 stub，传入会报错退出）。v1.1 计划实现"只审 git diff 新增 source dir + 新增 features/F*.md"。 |

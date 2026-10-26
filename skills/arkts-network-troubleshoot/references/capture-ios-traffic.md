@@ -48,7 +48,7 @@
 
 有 `api-inventory.json` 时，按原 endpoint key（HTTP 方法 + path）仅回填真正捕获的 `runtime` 字段：响应包装、成功码、字段类型/默认值、headers、签名字节、source/captured_at。未抓到的 runtime 留 null，reconciled 维持 static-only。能回答 uncertainties 的才用证据销账；同步 decision-ledger 和原分层 apis/*.md 投影，不改 static 的出处或冒充后端接受了新通道。
 
-之后走原 Phase 1.7 的 static/runtime DIFF。JSON 字段所有权、状态及 [schema](../../ios-api-inventory/references/output_schema.md) 保持；对账表见 [模板](templates/spec-baseline.md)。
+之后走原 Phase 1.7 的 static/runtime DIFF。JSON 字段所有权、状态及 [schema](../../ios-api-inventory/SKILL.md) 保持；对账表见 [模板](templates/spec-baseline.md)。
 
 ## 与 HMOS 侧冷启动对比（Phase 6 用，不是 Phase 0.3）
 

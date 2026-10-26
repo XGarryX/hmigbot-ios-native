@@ -1,3 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -eu
-python3 "$(dirname "$0")/scripts/manage_install.py" uninstall --workspace "${1:-.}"
+if [ "$#" -ne 1 ]; then printf '%s\n' 'Usage: sh uninstall.sh /absolute/workspace' >&2; exit 2; fi
+plugin_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec "${PYTHON:-python3}" "$plugin_dir/scripts/manage_install.py" uninstall --workspace "$1"

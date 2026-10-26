@@ -1,0 +1,8 @@
+{
+  "schema_version": 2,
+  "providers": [
+    {"operation": "interface-builder"},
+    {"operation": "asset-inventory"},
+    {"operation": "localization-inventory"}
+  ]
+}

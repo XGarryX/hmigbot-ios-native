@@ -6,9 +6,20 @@ metadata:
   domain: migration
 ---
 
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+
+
+> **统一源合同**：源码只经 hmigbot_ios.execution_source.Source 消费 git 已校验的 facts/官方词项；本技能处理图的输出/查询合同，不重跑另一套源解析或选择不同构建配置。源语义、范围与审批回 git 上游。先读 [执行交界](../a2h-run/references/execution-boundary.md)。禁止当前范围的屏幕/界面/远控操作。历史 Android/Compose 源扫描命令不可用于 iOS，未知值不能填成已观测或通过。
+
+
+
 # Native UI Graph Builder
 
-沿用 1.5.2 的七步分工：源码识别与导航语义由分析者完成，ID/关联校验由原脚本完成。先读 [原生输入协议](../a2h-spec/references/native-input.md) 和 `references/schema_v2.md`。通用 wire 槽位保留，正式组件身份使用 ios_id。值必须是真实 iOS 类型/语言；静态分析分组使用 analysis:semantic_region，不能冒充 SDK 类型或运行时坐标。
+沿用 1.5.2 的七步分工：源码识别与导航语义由分析者完成，ID/关联校验由原脚本完成。先读 [原生输入协议](../ios-source-analysis/SKILL.md) 和 `references/schema_v2.md`。通用 wire 槽位保留，正式组件身份使用 ios_id。值必须是真实 iOS 类型/语言；静态分析分组使用 analysis:semantic_region，不能冒充 SDK 类型或运行时坐标。
 
 1. **READ schema**：读取四文件字段、ID、空值和边约束。iOS Screen.type 可为 App/Scene/UIViewController/SwiftUIView/Dialog/Sheet；language=Swift/Objective-C。`activity`/`parent_activity` 是历史关联字段，不代表 iOS 运行环境。
 2. **SCAN**：用共享 Source 上下文枚举选中 Release target 的源文件、Storyboard/XIB、Asset Catalog、生命周期与真实导航定义。先辨 SwiftUI / UIKit / 混合，不按文件名数量猜页面。

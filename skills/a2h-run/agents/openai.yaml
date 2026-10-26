@@ -1,10 +1,4 @@
-# openai.yaml — Codex skill interface for the converted `a2h-run` command.
-# When the user selects this skill in /skills, `interface.default_prompt` is
-# auto-attached — the Codex equivalent of running the slash command.
 interface:
-  display_name: "a2h-run"
-  default_prompt: |
-    Run the $a2h-run pipeline now: sequence spec -> plan -> execute -> verify -> retrospect, pausing for confirmation between stages and auto-resuming where a prior run left off. Treat any user input as ignored.
-
-policy:
-  allow_implicit_invocation: true
+  display_name: a2h-run
+  short_description: 运行原生 iOS→HarmonyOS 的 a2h-spec → a2h-plan → a2h-execute → a2h-…
+  default_prompt: 请使用 $a2h-run，按本技能的输入、执行步骤和验收条件完成当前任务。

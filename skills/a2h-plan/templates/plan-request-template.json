@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "wave": "understand",
+  "graph_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "max_parallel": 2,
+  "tasks": [
+    {
+      "id": "account",
+      "role": "a2h-ios-analyzer",
+      "goal": "Replace this example with the actual account source analysis and its precise output contract",
+      "ownership": ["spec/ref/account-analysis.md"],
+      "fact_ids": ["fact-account", "fact-shared"],
+      "ac_ids": ["F001-AC01"],
+      "parents": []
+    },
+    {
+      "id": "widget",
+      "role": "a2h-ios-analyzer",
+      "goal": "Replace this example with the actual extension source analysis and its precise output contract",
+      "ownership": ["spec/ref/widget-analysis.md"],
+      "fact_ids": ["fact-widget", "fact-shared"],
+      "ac_ids": ["F002-AC01"],
+      "parents": []
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-GLOBAL",
+      "reason": "Retain this actual global/cross-module constraint for every task even without a fact reference"
+    },
+    {
+      "id": "D-ACCOUNT",
+      "reason": "An author has explicitly reviewed this decision as account-only",
+      "prompt_scope": {"ac_ids": ["F001-AC01"]}
+    },
+    {
+      "id": "D-SHARED",
+      "reason": "An author has explicitly reviewed all consumers of the shared source fact",
+      "prompt_scope": {"fact_ids": ["fact-shared"]}
+    }
+  ]
+}

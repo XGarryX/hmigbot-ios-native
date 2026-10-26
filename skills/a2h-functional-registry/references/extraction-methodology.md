@@ -1,3 +1,9 @@
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
 # 功能点深度提取方法论（我们自有，源自并改进 A2H 开放方法论）
 
 > 本文件是 S3「生成 functional_points.json」的**权威规则**。它是 LLM 主提取器的工作手册。
@@ -33,7 +39,7 @@
 | onCreateContextMenu / setOnLongClickListener | context_menu | 长按操作，**直接挂宿主页面**（禁止"列表项"伪容器）|
 | AlertDialog/MaterialAlertDialogBuilder | dialog | 按钮组(确定/取消/重置) + `setSingleChoiceItems`/`setItems` **每个选项**都提取 |
 | BottomSheet(Dialog/Behavior) | bottom_sheet | 容器 + **内部每个按钮/菜单项**逐项提取 |
-| FloatingActionButton | fab | 强制扫描（layout + 代码 findViewById/ViewBinding）|
+| SwiftUI Button / UIKit UIButton | 按键入口 | 读取 git event 事实和已审定源锚点 |
 | Switch/ToggleButton/setOnCheckedChangeListener | toggle | 二态切换单节点 |
 | Spinner | spinner | 控件 + adapter/entries **每个选项**子节点 |
 | SeekBar(非 Preference) | seekbar | 数值调节节点（max/min/progress）|

@@ -15,7 +15,7 @@ mkdir -p arkts-skills/skills/<skill-name>/references
 命名规范：
 - Domain Skill 以 `arkts-` 前缀命名，例如 `arkts-xxx-manager`
 - Pipeline Skill 以 `a2h-` 前缀命名
-- 分析工具以 `ios-` 前缀命名
+- 分析工具以 `iOS-` 前缀命名
 - 全小写，单词间用 `-` 连接
 
 ### 1.2 编写 SKILL.md

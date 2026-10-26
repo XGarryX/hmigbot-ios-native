@@ -1,3 +1,9 @@
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
 # UI Migration Pitfalls — 静默映射陷阱
 
 编译通过但运行时异常的 iOS → ArkUI 映射陷阱。
@@ -122,7 +128,7 @@ a2h-ios-converter 在 Phase 2 加载此文件，转换时必须逐条检查。
 - **区别 P-25**: P-25 是滚动**手势**被父吞（交互层）；P-26 是动画**播放生命周期**没有回收语义（渲染/性能层）。可同页并存
 
 ### P-27: iOS 页面级 Dialog 直译成全局弹窗——路由跳转后弹窗盖住新页
-- **iOS**: `Dialog` / `DialogFragment` 是页面级——弹窗开着 `startActivity`，新页天然盖住弹窗、弹窗随宿主销毁，返回后仍在
+- **iOS**: 按已审定 UIKit presentation 或 SwiftUI sheet/fullScreenCover 的生命周期和返回语义核对，不能套用其他平台的默认弹窗假设。
 - **ArkUI**: `@CustomDialog` / `openCustomDialog` / `showDialog` 默认**全局级**（弹窗节点挂页面根节点下，层级高于所有路由/导航页）：路由跳转不自动关闭，弹窗**恒盖在新页之上**。编译不报错、纯运行时
 - **错误表现**: 弹窗里点「查看详情/规则」push 新页后，弹窗仍浮在最上层挡住新页；被迫把弹窗改写成页面级组件
 - **修复方向**: `openCustomDialog` options 设 `levelMode: LevelMode.EMBEDDED`（API 15+、仅非子窗模式）；或透明弹窗页 `NavDestinationMode.DIALOG`。**规则正文见 arkts-component-builder/references/v2-dialogs-and-sheets.md §2c（以它为准，此处不复写）**

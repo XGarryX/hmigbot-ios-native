@@ -1,0 +1,10 @@
+# openai.yaml — Codex skill interface for the converted `migbot-increment-archive` command.
+# When the user selects this skill in /skills, `interface.default_prompt` is
+# auto-attached — the Codex equivalent of running the slash command.
+interface:
+  display_name: "migbot-increment-archive"
+  default_prompt: |
+    Run the migbot-increment-archive now: archive the specified completed change into specs/archives.
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+{
+  "module": {
+    "name": "business_<NAME>",
+    "type": "har",
+    "deviceTypes": ["phone", "tablet"]
+  }
+}

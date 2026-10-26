@@ -1,0 +1,72 @@
+{
+  "catalog_version": 2,
+  "profile_config": "ios_harness.spec_contract_version",
+  "default_legacy_version": 1,
+  "authority": "Business Markdown is authoritative; JSON views and checks do not prove semantic or runtime equivalence.",
+  "spec": [
+    {"path": "spec/baseline/feature-base.md", "required": true, "sections": [
+      {"title": "数据模型", "headers": ["模型/字段", "目标类型", "初值/可空性", "单位/身份/值域", "源证据"]},
+      {"title": "数据库与文件恢复"}, {"title": "网络与外部合同"}, {"title": "事件系统"},
+      {"title": "偏好设置"}, {"title": "权限声明"},
+      {"title": "公共服务与状态", "headers": ["目标接口", "输入/输出/错误", "所有者/线程", "初始化/释放", "定义方/消费方"]},
+      {"title": "公共组件与资源"},
+      {"title": "跨栈映射基线", "headers": ["源机制", "目标实现", "行为/值域/生命周期", "核验依据", "决策"]}
+    ]},
+    {"path": "spec/baseline/feature-index.md", "required": true, "sections": [
+      {"title": "领域模型概览"},
+      {"title": "功能清单", "headers": ["ID", "功能", "优先级", "排序依赖", "契约依赖", "关联页面", "创建页面", "complexity", "tier", "depth", "状态", "spec"], "progress": {"id_column": "ID", "id_pattern": "F[0-9]+", "columns": ["状态"]}},
+      {"title": "依赖图"}, {"title": "执行顺序（拓扑排序）"}
+    ]},
+    {"path": "spec/baseline/ui-manifest.md", "required": true, "sections": [
+      {"title": "全局约定"},
+      {"title": "页面与覆盖层", "headers": ["page_id", "源文件/入口/框架", "类型", "ArkTS 目标文件/组件", "功能归属", "优先级", "confidence", "状态", "spec"], "header_aliases": {"page_id": ["序号"]}, "progress": {"id_column": "page_id", "id_pattern": "page_[0-9]{4}", "columns": ["状态"]}},
+      {"title": "页面内部显示态", "headers": ["页面", "前态/条件", "显示结果", "事件/转移", "源依据"]},
+      {"title": "共享组件与嵌入（子组件表）", "headers": ["定义方", "组件/目标接口", "父页面/slot", "输入/事件", "feature"]},
+      {"title": "范围与证据"}
+    ]},
+    {"path": "spec/baseline/skip-list.md", "required": true, "sections": [
+      {"title": "排除项", "headers": ["ID", "源路径/入口", "排除原因", "源证据", "决策引用"]}
+    ]},
+    {"path": "spec/baseline/source-coverage-report.md", "required": true, "sections": [
+      {"title": "源归属", "headers": ["源路径", "feature", "page_id", "范围处置", "源证据"]}, {"title": "覆盖口径与限制"}
+    ]},
+    {"glob": "spec/baseline/features/F*.md", "required": true, "primary_features": true, "sections": [
+      {"title": "范围"}, {"title": "iOS 源语义"}, {"title": "数据流"},
+      {"title": "源行为表", "headers": ["前态/输入", "事件", "条件/运算", "后态/结果", "错误/取消", "源文件:行"]},
+      {"title": "动作合同"},
+      {"title": "服务层（ArkTS 目标接口）", "headers": ["目标接口", "输入/输出/值域", "错误/取消", "状态/线程/生命周期"]},
+      {"title": "API 接口"},
+      {"title": "实现映射（Source→ArkTS）", "headers": ["源机制", "目标实现", "数据/生命周期契约及依据", "迁移分类", "决策"]},
+      {"title": "状态管理"}, {"title": "对接点（与 UI 页面的接口）"}, {"title": "验收标准"}
+    ]},
+    {"glob": "spec/baseline/ui/page_*.md", "required": true, "sections": [
+      {"title": "页面与范围"}, {"title": "iOS 原生语义"}, {"title": "页面结构与视觉"},
+      {"title": "组件层级", "headers": ["节点ID", "父节点", "源控件/条件", "ArkUI组件", "内容/事件", "源证据"], "allow_na": false},
+      {"title": "布局约束", "headers": ["节点ID", "尺寸/布局/安全区", "条件/优先级", "资源引用", "源证据"], "allow_na": false},
+      {"title": "状态接口", "headers": ["源状态与类型", "初值/所有者/生命周期", "读写者", "UI 影响", "目标 Owner.state 与类型"]},
+      {"title": "交互与导航", "headers": ["前置态", "事件/入口", "状态与副作用", "导航值/返回行为", "源证据", "owning_feature"]},
+      {"title": "ArkUI 映射决策", "headers": ["源机制", "目标实现", "约束/差异", "源证据"], "allow_na": false},
+      {"title": "资源引用", "headers": ["资源ID", "类型", "目标引用", "源证据"]},
+      {"title": "资源与运行证据"}, {"title": "验收与接线"}
+    ], "page_meta": true},
+    {"path": "spec/baseline/api-inventory.json", "required": false, "schema": "api_inventory"},
+    {"path": "spec/baseline/ios-source-disposition.json", "required": false, "schema": "source_disposition"},
+    {"path": "spec/baseline/api-contract-links.json", "required": false, "schema": "api_contract_links"},
+    {"glob": "spec/baseline/features/*.state-machine.json", "required": false, "schema": "state_machine"}
+  ],
+  "plan": {
+    "authority": "Markdown plans assign the tasks; the plan IR must map all assigned features, pages, ACs, contracts, dependencies and writes before execution.",
+    "contract_ref": "skills/a2h-plan/references/plan-delivery-contract.md",
+    "schema_ref": "schemas/ios-harness-v2.schema.json#/$defs/planItems",
+    "artifacts": [
+      {"path": "spec/baseline/plans/ui-plan.md", "required": true, "phase": "plan", "check": "correspondence", "projection": "UI"},
+      {"path": "spec/baseline/plans/feature-plan.md", "required": true, "phase": "plan", "check": "correspondence", "projection": "FV"},
+      {"path": "spec/baseline/plans/base-plan.md", "required": true, "phase": "plan", "check": "correspondence", "projection": "BASE"},
+      {"glob": "spec/baseline/plans/slices/slice-*.md", "required": true, "phase": "plan", "check": "correspondence", "projection": "SLICE"},
+      {"path": "spec/baseline/plans/coverage-matrix.md", "required": false, "phase": "plan", "check": "upstream", "condition": "Generated for Gate B from actual coverage checks; does not define executable items"},
+      {"path": "spec/placeholder-registry.md", "required": false, "phase": "plan-execute", "check": "upstream", "condition": "Existing placeholder debt applies; original six-field protocol and writer remain authoritative"},
+      {"path": "spec/gate-b-summary.md", "required": false, "phase": "plan", "check": "independent-review", "condition": "Stage handoff summary references current evidence; not a control ledger"},
+      {"path": "spec/baseline/plans/resource-mapping.md", "required": false, "phase": "execute-stage0", "check": "upstream", "condition": "Execution output; never a required pre-Plan source contract"}
+    ]
+  }
+}

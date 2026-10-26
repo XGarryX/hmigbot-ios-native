@@ -1,9 +1,6 @@
 ---
 name: migbot-increment-planning
-description: |
-  Migbot-Increment PLANNING 阶段 skill，用于需求分析与系统设计规划。
-  当用户说"执行 migbot-increment-planning"、"开始规划xxx"、"需求分析与设计"或类似表述时触发。
-  本 skill 负责 PLANNING 阶段的所有工作：step1（用户意图理解）→ step2（需求理解）→ step3（需求澄清）→ step4（需求spec设计）→ step5（针对需求的代码仓理解）→ step6（需求复杂度评估）→ step7（架构设计）→ step8（组件设计）→ step9（设计审视）
+description: "Migbot-Increment PLANNING 阶段 skill，用于需求分析与系统设计规划。 当用户说\"执行 migbot-increment-planning\"、\"开始规划xxx\"、\"需求分析与设计\"或类似表述时触发。 本 skill 负责 PLANNING 阶段的所有工作：step1（用户意图理解）→ step2（需求理解）→ step3（需求澄清）→ step4（需求spec设计）→ step5（针对需求的代码仓理解）→ step6（需求复杂度评估）→ step7（架构设计）→ step8（组件设计）→ step9（设计审视）"
 ---
 
 # migbot-increment-planning Skill

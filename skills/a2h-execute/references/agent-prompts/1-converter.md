@@ -90,7 +90,7 @@
 | `activity_name` | 源 iOS 页面真实类型（保留参数名） | ui-plan.md 的 iOS 来源列 |
 | `ui_info` | 原生页面规格快照目录路径（含规范化 view.xml + meta.json，保留观测或合成来源） | 项目中的 ui-snapshots 目录 |
 | `harmony_project_dir` | HarmonyOS 工程根目录 | 当前项目路径 |
-| `references_dir` | 领域知识和映射参考文件目录 | `$SKILLS_ROOT/ios-ui-graph-query/references/`（skill 安装根常见为 `.agents/skills/`） |
+| `references_dir` | 领域知识和映射参考文件目录 | `$SKILLS_ROOT/ios-ui-to-arkui/references/`（skill 安装根常见为 `.agents/skills/`） |
 | `ios_source_dir` | iOS 源码根目录 | 用户提供的 $IOS_SRC |
 
 **三源数据**：converter agent 消费三种数据源：

@@ -1,6 +1,6 @@
 ---
 name: mod-design
-description: 根据需求分析阶段的产出物（proposal.md、delta-spec.md、info.md、task-lessons.md 等），生成 design.md 或 delta-design.md，用于指导后续任务分解和代码实现。当用户说"生成设计文档"、"输出 design"、"完成设计"、"生成 delta-design"时触发。注意：本 skill 是正向设计（根据需求生成设计），而非逆向分析（从代码反推设计）。
+description: "根据需求分析阶段的产出物（proposal.md、delta-spec.md、info.md、task-lessons.md 等），生成 design.md 或 delta-design.md，用于指导后续任务分解和代码实现。当用户说\"生成设计文档\"、\"输出 design\"、\"完成设计\"、\"生成 delta-design\"时触发。注意：本 skill 是正向设计（根据需求生成设计），而非逆向分析（从代码反推设计）。"
 ---
 
 # MOD Design Skill

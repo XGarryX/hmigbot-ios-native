@@ -1,68 +1,55 @@
 ---
 name: a2h-run
-description: Trigger: `$a2h-run` or natural language. Run the full a2h migration pipeline (spec → plan → execute → verify → retrospect) with per-stage confirmation and auto-resume.
+description: "运行原生 iOS→HarmonyOS 的 a2h-spec → a2h-plan → a2h-execute → a2h-verify → a2h-retrospect 全流水线；按已有授权推进，真实记录生成、编译和行为验证状态。"
 ---
 
-> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
-
-> Codex skill (converted from the `a2h-run` slash command). Invoke with `$a2h-run`, or pick it in `/skills` (the default_prompt below auto-runs). Codex has no custom slash commands, so the `$` prefix replaces `/`.
+本统一版本先读 [单一流程、环境前置与兼容范围](references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
 
 
-the user's input (the command argument) is ignored. `$a2h-run` does not forward arguments. For feature-scoped specs, invoke the `a2h-spec` skill directly with a feature name.
 
-## Goal
+# a2h 原生 iOS 迁移主控
 
-Sequence the five pipeline-stage skills end-to-end, pausing for user confirmation between stages and auto-resuming where a previous run left off. Stop on any failure.
+## 启动
 
-## 1. Detect mode
+先读 [工具与项目结果分离规则](references/tool-project-status-separation.md)。工具审计与项目转换各自报告范围、owner 和实际证据，候选/回归/发布/安装不得折算为转换进度。
 
-Read `.migbot/config.json` from the current working directory.
+读取用户目标、范围、路径和已经授权的步骤；先检查 a2h-init 配置。
+未选具体应用时只执行工具开发/安装请求，不把工具仓自身当作 iOS 项目。
+所有技能、模板、目标 helper 和 roles 从本包读取，不查找外部插件目录。
 
-- If the file does not exist, stop and tell the user: `"migbot is not installed in this project. Run install.sh first."`
-- Read the `confirmed` key.
-  - `confirmed != true` (false, missing, or any other value) → stop and tell the user: `"Config not confirmed yet. Run $a2h-init first to confirm the ios / harmonyos / hvigorw paths, then re-run $a2h-run."`. Do not proceed.
-## 2. Probe completion markers
+## 流水线与阶段门
 
-Check each stage's marker files in order to determine the resume point. A stage counts as complete only when **all** of its markers exist.
+| 阶段 | 输入 | 交付与必须检查 |
+|---|---|---|
+| a2h-spec | 真实 iOS 源码与范围 | 工程/UI/功能/API 事实、native semantics、baseline、稳定 AC、source-check 与 trace index |
+| a2h-plan | 审阅后的 baseline/decisions | ui-plan、indexed feature-plan、base-plan、slice 归属与 plan coverage |
+| a2h-execute | 只读计划与源行为 | 资源、UI、Base、Slice、唯一 closer、真实目标代码与结构/编译闭环 |
+| a2h-verify | 当前实现与独立源证据 | 静态/编译/单测/交互/视觉/设备的真实结果和未执行项 |
+| a2h-retrospect | 计划、brief、验证记录 | 可复用经验、未关闭项、源版本与变更记录 |
 
-| # | Stage              | Markers                                                                                |
-|---|--------------------|----------------------------------------------------------------------------------------|
-| 1 | `a2h-spec`         | `spec/baseline/ui-manifest.md` AND `spec/baseline/feature-index.md`                    |
-| 2 | `a2h-plan`         | `spec/baseline/plans/ui-plan.md` AND `spec/baseline/plans/feature-plan.md`             |
-| 3 | `a2h-execute`      | `spec/migration-report.md`                                                             |
-| 4 | `a2h-verify`       | `spec/verify-report.md`                                                                |
-| 5 | `a2h-retrospect`   | At least one file matching `docs/retrospect-report-*.md` **AND** at least one file matching `.migbot/metrics/*/retrospect.done` |
+阶段开始前加载该 SKILL.md 及本轮必需 references，不能只读取目录摘要。
+0.7.0 的 spec 阶段先按 ios-source-analysis 的 external-expertise 规程生成专业资料清单，
+由分析 owner 读取上游原文并提交源观察。MCP 仅在配置且真实可用时采集；所有证据进入
+原语义/AC/覆盖门禁。0.6.0 baseline 首次续跑也须采用 expertise-plan，不能继承旧门禁通过。
+使用已有授权自动推进；新的不可推断产品决策才请求用户选择，先完成可审阅材料。
+失败按原 `spec/.a2h/open-findings.json` 回流责任阶段，不能将失败步骤记为成功后继续验收。
+独立工作可继续，依赖失败输入的部分保持 blocked。不要将“部分可用”写成整轮完成。
+初始化区分源分析配置门（init/harness-init）与目标构建准入（validate）；目标SDK/hvigor未就绪时可继续真实源分析，构建与设备阶段保留blocked/未执行。仅发现Xcode可用不证明原生provider、符号绑定或运行观察已经执行。
 
-> **Important: both marker files must be produced by the a2h-retrospect skill's closing step.** In particular, `retrospect.done` must be a side effect of running `.migbot/bin/a2h mark-stage a2h-retrospect`; that call writes the stage-marks fact and drops the sentinel (it strips the `a2h-` prefix, so the file is `retrospect.done`) — consent `granted` uploads the fact, otherwise it silently no-ops, **both satisfy the marker**. Per-stage token usage is not collected here: the lifecycle hooks upload the session transcript and the server parses usage out of it. **Never use Write/Edit to create files under `.migbot/metrics/` (including `retrospect.done`) just to "satisfy" the marker** — that bypasses the real collection and writes fake data. If a marker is missing, go back to the a2h-retrospect skill and re-run `mark-stage`; do not fabricate the file by hand.
+主控要求完整迁移目标时，提前固定源分母、必验页面/状态/条件与业务AC、墙钟起止和全部调用计量范围。局部verify PASS不能升级为UI/功能100%；缺调用计量或真实证据留UNKNOWN，缓存input仍计总量。完整必验构建/视觉/业务验证须计入同一2小时挑战；本规程不把尚未接通的完整验收profile写成已实现能力。
 
-The resume target is the first stage whose markers are missing.
+## 角色、断点与收口
 
-- **All markers missing** → start at stage 1; no prompt.
-- **Some markers present** → list completed stages and prompt: `"Detected completed stages: <list>. Resume from <next stage>? (yes / restart from spec / stop)"`. On bare `yes` proceed from the resume target; on `restart from spec` start at stage 1; on anything else halt with `"Stopped before any stage ran."`.
-- **All five stages have markers** → prompt: `"All five stages have completion markers. Re-run from spec, or stop? (restart / stop)"`. On `restart` start at stage 1; otherwise halt.
+按任务粒度分配唯一文件 owner，保留原 worker/closer/构建角色职责。
+宿主支持且本次工作适合分工时用实际可用的代理接口；不要臆造 agent_type 参数。
+不支持具名角色时读取随包角色规程顺序执行。每次完成都回读预期产物，
+共享文件由指定 closer 统一落盘，未结束的并发任务不能遗弃。
 
-## 3. Run each stage
+恢复前检查源 hash、spec/plan 版本、brief 和实际 .ets；不能仅凭 done 文件跳过检查。
+重试已成功的纯校验可以复用相同输入证据；源码/构建输入变化必须重新验证。
 
-For each stage from the resume target through stage 5, in this fixed order: `a2h-spec`, `a2h-plan`, `a2h-execute`, `a2h-verify`, `a2h-retrospect`.
+## 交付
 
-1. Announce: `"Starting stage <N>/5: <id>."`
-3. After the stage's own steps finish, summarize in 2-3 lines: list new/changed files under that stage's expected output paths and a one-line outcome.
-4. **Join outstanding subagents (HARD-GATE — issue #23).** If the stage skill dispatched any background subagents (`spawn_agent`) whose results have not been collected yet, collect every outstanding handle NOW by calling `wait_agent` in a loop — a timeout means "still running", call it again. Never end the turn while a handle is outstanding: in Codex nothing re-invokes this session when a subagent finishes, so an ended turn stalls the whole pipeline silently with no prompt (the multi-module hang in issue #23). Only after every handle is joined, proceed to the marker check.
-5. Verify the stage's completion markers (from §2) now exist. If any required marker is missing, treat the stage as failed and apply the failure handling below.
-   > Token-usage reporting is no longer done here — each pipeline skill reports its own stage as its final step (`a2h mark-stage <id>`). So a skill run standalone (not via `$a2h-run`) still reports. Nothing to do at this step beyond the marker check.
-6. Prompt: `"Continue to next stage? (yes / stop)"`
-   - `yes` → next stage.
-   - anything else → halt with: `"Stopped at <id>. Resume with $a2h-run."`
-7. **Failure handling.** If the stage skill raises an error, prints `STOP`, or fails to produce its required completion markers, halt with: `"Stopped at <id> due to error: <one-line summary>. Resume with $a2h-run after addressing the issue."`. No auto-retry.
-
-## 4. After stage 5
-
-Print a final summary listing the five stages and their outputs (paths only, one per line).
-
-Then check telemetry delivery: run `Bash: .migbot/bin/a2h status --json` (ignore a non-zero exit or unknown subcommand — older runtimes don't have it). If the output reports pending or dead outbox entries, append this advisory note (informational only — uploads are hook-driven and retry automatically; never block or retry here):
-
-> Note: <N> telemetry upload(s) are still queued locally and will be retried automatically. You can flush them now with `.migbot/bin/a2h flush`.
-
-Then remind the user:
-
-> All five stages complete. Run `$a2h-build` to compile the migrated code.
+给目标项目路径、实现范围、构建产物、已验证行为和待验证清单。
+无 Mac 可完成静态源理解；无设备不能给设备/视觉通过结论。
+工具辅助脚本不调用 LLM，不会独立完成任意应用的语义迁移；宿主按技能执行分析与实现。

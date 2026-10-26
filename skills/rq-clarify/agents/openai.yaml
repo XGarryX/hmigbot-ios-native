@@ -1,0 +1,4 @@
+interface:
+  display_name: rq-clarify
+  short_description: 对模糊需求进行交互式澄清，通过结构化提问消除歧义、补齐缺失信息，同时配合完善特性清单和需求规格的细节。当用户说"帮我完善需…
+  default_prompt: 请使用 $rq-clarify，按本技能的输入、执行步骤和验收条件完成当前任务。

@@ -1,4 +1,10 @@
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
 
 # spec-evolver 完整工作流程（Step 1-12 + 强制执行检查清单 + Verify 门控）
 
@@ -471,7 +477,7 @@ hdc list targets
       hmos_entry: entry/src/main/ets/pages/MainPage.ets
       sub_component: ItemsView                 # 可选，子 struct 精确定位
       entry_path: 冷启 → 底 Tab "我的作品" → 切 "我创建的"
-      ios_reference: {ios_dir}/app/src/main/res/layout/fragment_work.xml
+      ios_reference: {ios_dir}/实际页面源文件.swift
       acceptance_visual:                       # 从 spec "验收标准" 中挑视觉可判项
         - "右下 FAB 可见，圆角 + 渐变"
         - "管理模式下 FAB 消失"

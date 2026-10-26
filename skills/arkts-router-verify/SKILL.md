@@ -1,9 +1,20 @@
 ---
 name: arkts-router-verify
-description: 静态验证并自动修复 iOS→HarmonyOS 迁移的"页面路由跳转"。脚本各抽一张控件级导航图 (iOS 的 startActivity/companion/Jetpack-Navigation/XPopup 弹窗，HMOS 的 router/ Navigation pushPathByName/CustomDialog)， 以 spec 的 ui-manifest 做权威页面映射，逐页对账，检出四维度路由问题并改 HMOS 源码： ① 目标页面是否存在 ② 目标弹窗是否存在（弹窗是一等路由目的地，按 dialog_specs 抽取规格重建） ③ 跳转按钮/文字/菜单项是否存在 ④ 触发点是否绑定了路由跳转/弹窗打开。修完再复检出报告。 只要用户想"验证路由跳转/导航迁移对不对"、"检查跳转按钮有没有/绑没绑路由"、"页面跳转漏没漏"、 "route verify"、"迁移后导航验证"，即使只说"检查跳转"、"验证导航"、"路由对账"，都应触发本 skill。 纯 UI 视觉/控件属性验证不归本 skill（那是 arkts-visual-verify）。
+description: "对照 iOS 源导航与页面 spec 静态核验鸿蒙入口、目的页、触发控件、参数和返回/模态状态；复用目标导航技能，运行可达性由真实场景验证。"
 ---
 
-> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+
+> **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../ios-source-analysis/SKILL.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 
 > **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`, `scenario-builder`, `visual-fixer`, `visual-fixer-reviewer`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)
 >
@@ -60,7 +71,7 @@ description: 静态验证并自动修复 iOS→HarmonyOS 迁移的"页面路由�
 cd scripts          # 仅为简写脚本调用；产物落点自推导到 <工程根>/spec/verify/route，不在 scripts 下
 # （skill 未装在工程的 .agents/ 下、或要改落点时：export ROUTE_VERIFY_ROOT=<工程根>）
 # ① iOS：穷举 nav 点 + 触发归属到点击点 + tab 组
-#    覆盖: Intent::class / companion / dialog.show / XPopup asCustom / Jetpack Navigation
+# 源导航输入由 git 审定的 SwiftUI/UIKit facts、page spec 和原生图提供；不调用旧语言源扫描。
 #    (res/navigation/*.xml 的 action→destination 自动解析) / startActivity(ForResult)
 #    注释内的示例代码已剥离不计
 python3 extract_nav_graph.py --platform ios        # → expected_nav.json
@@ -203,7 +214,7 @@ python3 ios_dialog_probe.py            # → dialog_specs.json
 
 对每个第一方弹窗产出：构造参数(→ HMOS props)、回调签名(→ onConfirm 形状)、布局文件、控件清单
 (单选/勾选/输入框/按钮，文案经 strings.xml 解析)。修弹窗时 props/回调/内容控件**以此为准**；
-注意 RadioGroup 的选项可能在 Kotlin 类体里动态 add(布局里只有空组)——specs 里控件数明显偏少时，
+注意源控件的选项可能由运行状态动态构造——specs 里控件数明显偏少时，
 回读 `file` 字段指向的类体核对选项清单。
 
 **④ 产修复清单**(脚本机械聚合，零判断)：

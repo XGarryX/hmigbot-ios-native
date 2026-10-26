@@ -1,0 +1,4 @@
+interface:
+  display_name: dfr-fmea-general
+  short_description: FMEA（故障模式与影响分析）是一种系统性的可靠性分析方法，用于识别功能实现过程中的潜在故障模式、分析其原因和影响，并制定…
+  default_prompt: 请使用 $dfr-fmea-general，按本技能的输入、执行步骤和验收条件完成当前任务。

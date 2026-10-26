@@ -1,6 +1,6 @@
 > 原生输入边界：下列历史关键字只辅助路由，不是 iOS 包坐标或原生 API 的证据。实际依赖与调用由 detect-commands.md 确认；目标可用性/版本必须按对应官方资料复核。
 
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
 
 # 广告 SDK 鸿蒙端可用性目录
 

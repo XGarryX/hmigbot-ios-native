@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyfix.local/schemas/feature_tree.v1.schema.json",
+  "title": "feature_tree_v1",
+  "type": "object",
+  "required": ["schema_version", "platform", "android_root", "taxonomy_version", "nodes", "edges"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "platform": { "type": "string", "enum": ["android", "harmony"] },
+    "android_root": { "type": "string" },
+    "ui_fidelity": {
+      "type": "string",
+      "enum": ["high_xml", "mixed", "low_for_compose"]
+    },
+    "taxonomy_version": { "type": "string" },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "node": {
+      "type": "object",
+      "required": ["node_id", "kind", "label"],
+      "properties": {
+        "node_id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "product_root",
+            "feature",
+            "screen",
+            "ui_surface",
+            "ui_control",
+            "behavior",
+            "function_symbol",
+            "implementation"
+          ]
+        },
+        "label": { "type": "string" },
+        "logical_feature_id": { "type": "string" },
+        "evidence": { "type": "object", "additionalProperties": true },
+        "projection": {
+          "type": "object",
+          "properties": {
+            "harmony": { "$ref": "#/$defs/harmony_projection" }
+          },
+          "additionalProperties": true
+        },
+        "screen_class": { "type": "string" },
+        "layout": { "type": "string" },
+        "screen_kind": { "type": "string", "enum": ["activity", "dialog", "other"] },
+        "symbol_id": { "type": "string" },
+        "function_name": { "type": "string" },
+        "signature": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "harmony_projection": {
+      "type": "object",
+      "properties": {
+        "ability_name": { "type": "string" },
+        "route_placeholder": { "type": "string" },
+        "module": { "type": "string" },
+        "gap_ref": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "edge": {
+      "type": "object",
+      "required": ["from", "to", "rel", "determinism"],
+      "properties": {
+        "edge_id": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "rel": {
+          "type": "string",
+          "enum": [
+            "navigates_to",
+            "presents_modal",
+            "embeds_fragment",
+            "returns_to",
+            "deep_links_to",
+            "parent_of",
+            "owns_ui",
+            "implements",
+            "evidence_in_file",
+            "triggers",
+            "enters",
+            "calls"
+          ]
+        },
+        "determinism": { "type": "string", "enum": ["rule", "static_analysis"] },
+        "via": { "type": "string" },
+        "trigger": { "type": "string" },
+        "source": { "type": "string" },
+        "via_behavior_id": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

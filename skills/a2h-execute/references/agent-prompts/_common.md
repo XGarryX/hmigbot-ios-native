@@ -66,7 +66,7 @@ static setDebug(value: boolean): void { ... }
 <HARD-GATE>
 
 1. 前缀 = slice 命名空间：`P-S{N}-{seq}`（converter 用页面 `owning_slice` 的 Slice 编号；Base 任务 `P-B{N}-{seq}`）；禁止自造前缀。
-2. registry 唯一发号处，**登记即占号**：写 marker 前先向 `spec/placeholder-registry.md` append 该行（6 字段齐全）。每次追加使用一个独立 Markdown 表段：空行 + 与现有正式表相同的六列表头 + 分隔行 + 连续数据行；整个段一次 append，禁止追加无表头裸行或在数据行间插空行。既有行不重排、不改写，登记即占号的时机不变。
+2. registry 唯一发号处，**登记即占号**：写 marker 前先向 `spec/placeholder-registry.md` append 该行（6 字段齐全）。
 3. 发号前 `grep "P-S{N}-"` 取本前缀 max seq，新号 = max+1。
 
 </HARD-GATE>
@@ -157,15 +157,14 @@ iOS 的条件显隐（SwiftUI 条件分支/hidden/opacity，UIKit isHidden/alpha
 
 ## ArkUI 布局语义铁律（.align 误用事故后 HARD，60 处实锤）
 
-把 `.align()` 挂在 Stack 子项上，不能据此认定该子项已在父容器中定位；
-必须区分组件内容对齐与父 Stack 的子项定位（实录：搜索图标叠在标题正中、
-「立即生成」按钮浮到卡片顶部遮内容，aippt_codex_v2 全 app 60 处）。层叠子项定位的合法映射仍只有以下三种：
+`.align()` 只对齐**组件自身内容**，**不定位 Stack 子项**——iOS FrameLayout gravity
+直觉直接迁移是错的（实录：搜索图标叠在标题正中、「立即生成」按钮浮到卡片顶部遮内容，
+aippt_codex_v2 全 app 60 处）。FrameLayout gravity 的合法映射只有三种：
 
-1. 全部子项同向 → `Stack({ alignContent: Alignment.X })`；可等价在 Stack 本体设置 `.align()`（同效，同时设置时以后设置者为准）
+1. 全部子项同向 → `Stack({ alignContent: Alignment.X })`
 2. 逐子项异向 → `RelativeContainer` + `alignRules`
 3. 标题栏左中右 → `Row` + 两端对称占位块（保持中间真居中）
 
-上述警示针对子项定位误用，不是对 `.align()` 所有用法的限制：组件自身内容对齐按其 API 核验。
-官方 `CommonMethod.align` 在 Stack 本体上与 `alignContent` 同效，设置子项对齐，
-同时设置时以后设置者为准。转换含层叠布局的页面前 **MUST `$arkts-ui-alignment`**
+`.align()` 的唯一合法场景：子项已撑满（`layoutWeight(1)` / `height('100%')`）后
+钉自身内容。转换含 FrameLayout/层叠布局的页面前 **MUST `$arkts-ui-alignment`**
 读 references/layout-mapping.md（binding_gate 的 stack-align-misuse 会机械拦截误用）。

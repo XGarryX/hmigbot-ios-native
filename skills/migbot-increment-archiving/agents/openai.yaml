@@ -1,0 +1,4 @@
+interface:
+  display_name: migbot-increment-archiving
+  short_description: Migbot-Increment ARCHIVING 阶段 skill，用于变更归档管理。 当用户说"执行 migbot-…
+  default_prompt: 请使用 $migbot-increment-archiving，按本技能的输入、执行步骤和验收条件完成当前任务。

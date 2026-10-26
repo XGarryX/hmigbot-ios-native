@@ -1,10 +1,4 @@
-# openai.yaml — Codex skill interface for the converted `migbot-increment-workflow` command.
-# When the user selects this skill in /skills, `interface.default_prompt` is
-# auto-attached — the Codex equivalent of running the slash command.
 interface:
-  display_name: "migbot-increment-workflow"
-  default_prompt: |
-    Run the migbot-increment-workflow now. Treat the user's input as the action + change name (or a free-form build description) and drive PLANNING -> IMPLEMENTING -> APPLYING, then surface archiving.
-
-policy:
-  allow_implicit_invocation: true
+  display_name: migbot-increment-workflow
+  short_description: 'Trigger: `$migbot-increment-workflow` or natural language. 管理…'
+  default_prompt: 请使用 $migbot-increment-workflow，按本技能的输入、执行步骤和验收条件完成当前任务。

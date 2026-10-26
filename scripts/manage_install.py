@@ -7,8 +7,6 @@ import os
 from pathlib import Path
 import platform
 import shutil
-import stat
-import subprocess
 import sys
 import tempfile
 from functools import lru_cache
@@ -24,21 +22,37 @@ def filesystem_path(path):
 
 
 ROOT = filesystem_path(Path(__file__).resolve().parents[1])
+sys.path.insert(0, str(ROOT / 'src'))
+from hmigbot_ios.payload_layout import (DEFERRED_SKILLS, ROOT_DIRECTORIES, ROOT_FILES, exclusion,
+                                       release_profile)
 BEGIN = '<!-- hmigbot-ios:begin -->'
 END = '<!-- hmigbot-ios:end -->'
 BLOCK = f'''{BEGIN}
-## Native iOS port of HMigBot 1.5.2
+## Native iOS to HarmonyOS migration
 
-Use the bundled a2h-spec -> a2h-plan -> a2h-execute -> a2h-verify -> a2h-retrospect.
-Read .migbot/config.json source_platform=ios and ios.source_root. Read
-.agents/skills/a2h-spec/references/native-input.md for native source adapters.
-Keep the original 1.5.2 baseline templates, file-level source_anchors,
-stable F/AC IDs, group/skip accounting, stage gates and findings queue.
-Do not require the previous iOS harness, obligation review or typed-v2 mode.
-INIT confirms environment/paths/Release context; SPEC confirms product/capability scope.
-Preserve existing user scope and authorization. Default to local operation;
-telemetry hooks are not installed and uploading is not a prerequisite.
-Distinguish generated, compiled and behavior-verified results. Do not fabricate markers.
+Use the bundled $a2h-run: a2h-spec -> a2h-plan -> a2h-execute -> a2h-verify
+-> a2h-retrospect. For iOS, read source_platform and ios in .migbot/config.json
+and read the native source skills. Keep the shared spec/baseline contracts,
+indexed plans, execution briefs, AC traceability and spec/.a2h/open-findings.json.
+Use source_anchors and ios-semantics.json to retain SwiftUI/UIKit and language facts.
+Load ios-source-analysis/references/harness-v2.md for the control contract.
+Read rules/tool-project-status-separation.md in the bundled runtime. Record tool
+fix/release/install evidence separately from project gates and conversion progress.
+Load references/external-expertise.md in that skill for pinned iOS expertise.
+Run expertise-plan/review before the source gate; MCP responses stay tool evidence.
+Generate machine facts/obligations and run source-check --harness before plan-ir.
+Read a2h-run/references/execution-boundary.md. Run execution-contract --apply,
+then the indexed resources/UI/Base/Slices/FV stages and closer/writeback protocol.
+Legacy v2 attempts keep their original receipt/recovery API; never run both schedulers.
+Only original tools write state ledgers. No screen capture/read/recording or device
+remote control is authorized by this installation.
+All skills, references, templates, binaries and agent roles are local. No external
+HMigBot path or binding packet is needed. Helper runtime: .hmigbot-ios/plugin.
+Use the original ArkTS implementation and validation steps. Respect current user
+scope and prior authorization; don't repeat already authorized stage approvals.
+Dispatch only supported roles, otherwise follow their protocols sequentially.
+Distinguish generated, compiled and behavior-verified results. Never fabricate
+done markers. Telemetry hooks are not installed and upload is not a prerequisite.
 {END}'''
 
 
@@ -49,40 +63,23 @@ def checksum(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def put(path, data, mode=None):
+def put(path, data):
     path = filesystem_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     if isinstance(data, Path):
         shutil.copy2(filesystem_path(data), path)
     else:
         path.write_bytes(data)
-    if mode is not None:
-        path.chmod(mode)
-
-
-@lru_cache(maxsize=1)
-def runtime_modes():
-    return json.loads((ROOT / 'docs/macos-runtime-modes.json').read_text(encoding='utf-8'))['files']
-
-
-def payload_mode(data, name):
-    mode = stat.S_IMODE(data.stat().st_mode) if isinstance(data, Path) else 0o644
-    if isinstance(data, Path) and data.is_relative_to(ROOT):
-        relative = data.relative_to(ROOT).as_posix()
-        record = runtime_modes().get(relative)
-        if record is not None:
-            if checksum(data) != record['sha256']:
-                raise ValueError('Bundled runtime hash differs from permission manifest: ' + relative)
-            return 0o755 if record['executable'] else 0o644
-    path = Path(name)
-    if path.suffix in {'.sh', '.bin'} or path.name in {'a2h', 'a2h-tool', 'a2h-bootstrap', 'a2h-agreement'}:
-        mode |= 0o111
-    return mode
+    if os.name != 'nt' and (path.suffix in {'.sh', '.bin'} or path.name in {'a2h', 'a2h-tool', 'a2h-bootstrap', 'a2h-agreement'}):
+        path.chmod(path.stat().st_mode | 0o111)
 
 
 @lru_cache(maxsize=8)
 def skill_names(root):
     names = {s.name for s in (root / 'skills').iterdir() if s.is_dir()}
+    # Old owned installations must remain removable after optional source
+    # directories have been moved out of this release tree.
+    names.update(DEFERRED_SKILLS)
     names.update('a2h-ios-' + s for s in ('run', 'analyze', 'map', 'implement', 'verify', 'evidence'))
     retired = root / 'docs/upstream/retired-skills.json'
     if retired.is_file():
@@ -97,7 +94,7 @@ def child(workspace, relative):
     path = (workspace / p).resolve()
     if path == workspace or not path.is_relative_to(workspace):
         raise ValueError('Managed path escapes workspace')
-    if not relative.startswith(('.hmigbot-ios/', '.agents/hmigbot-runtime/', '.agents/skills/', '.codex/agents/', '.migbot/bin/', '.migbot/policies/')) and relative != '.codex/config.toml':
+    if not relative.startswith(('.hmigbot-ios/', '.agents/skills/', '.codex/agents/', '.migbot/bin/', '.migbot/policies/')) and relative != '.codex/config.toml':
         raise ValueError('Path is outside managed install directories')
     if relative.startswith('.agents/skills/'):
         known = skill_names(ROOT)
@@ -112,79 +109,52 @@ def child(workspace, relative):
     return path
 
 
-def native_runtime_member(relative, data):
-    """Select only current-architecture Mach-O code in this package's payload."""
-    if platform.system() != 'Darwin': return False
-    architecture=platform.machine().lower()
-    if architecture not in {'arm64','aarch64'}:
-        raise ValueError('This Mac distribution requires its bundled arm64 stage engines')
-    allowed=('/bin/macos-arm64/' in '/'+relative or
-             relative in {'.migbot/bin/a2h','.migbot/bin/a2h-darwin-arm64',
-                          '.agents/hmigbot-runtime/bin/a2h-darwin-arm64'})
-    if not allowed:return False
-    if not isinstance(data,Path):return False
-    with data.open('rb') as stream: magic=stream.read(4)
-    return magic in {b'\xcf\xfa\xed\xfe',b'\xfe\xed\xfa\xcf',b'\xca\xfe\xba\xbe',b'\xbe\xba\xfe\xca'}
+def require_release_host():
+    profile = release_profile()
+    if (platform.system() != profile['host']['system'] or
+            platform.machine().lower() not in profile['host']['architectures']):
+        raise ValueError('This release profile supports macOS Apple Silicon only: ' + profile['id'])
 
 
-def quarantine_present(path):
-    result=subprocess.run(['/usr/bin/xattr',str(path)],capture_output=True,timeout=30)
-    if result.returncode:raise ValueError('Cannot inspect installed runtime metadata: '+str(path))
-    return 'com.apple.quarantine' in result.stdout.decode('utf-8').splitlines()
-
-
-def prepare_native_execution(workspace, relative, expected):
-    path=child(workspace,relative)
-    if not native_runtime_member(relative,path):raise ValueError('Outside native runtime allowlist: '+relative)
-    if checksum(path)!=expected:raise ValueError('Native runtime hash differs before metadata preparation: '+relative)
-    action='not_present'
-    if quarantine_present(path):
-        # Recheck immediately before the narrowly scoped Apple xattr operation.
-        path=child(workspace,relative)
-        if checksum(path)!=expected:raise ValueError('Native runtime changed before metadata preparation: '+relative)
-        result=subprocess.run(['/usr/bin/xattr','-d','com.apple.quarantine',str(path)],capture_output=True,timeout=30)
-        if result.returncode:raise ValueError('Native runtime metadata preparation failed: '+relative)
-        action='removed_download_quarantine'
-    after=checksum(path)
-    if after!=expected:raise ValueError('Native runtime bytes changed during metadata preparation: '+relative)
-    return {'path':relative,'action':action,'before_sha256':expected,'after_sha256':after}
-
-
-def payload():
+def payload(*, check_host=True):
+    if check_host:
+        require_release_host()
     files = {}
-    for folder in ('.codex-plugin', 'skills', 'scripts', 'src', 'rules', 'schemas', 'providers', 'docs', 'evaluations', 'agents-codex', 'bin', 'policies', 'vendor'):
+    for folder in sorted(ROOT_DIRECTORIES):
         for path in (ROOT / folder).rglob('*'):
+            if exclusion(path.relative_to(ROOT).as_posix(), directory=path.is_dir()):
+                continue
             if path.is_file() and not {'__pycache__', '.build', '.swiftpm'}.intersection(path.parts) and path.suffix != '.pyc':
                 if path.is_symlink():
                     raise ValueError('Install source contains links')
-                files['.agents/hmigbot-runtime/' + path.relative_to(ROOT).as_posix()] = path
-    for name in ('.gitattributes', '.gitignore', 'README.md', 'CHANGELOG.md', 'pyproject.toml', 'install.ps1', 'install.sh', 'uninstall.ps1', 'uninstall.sh', 'validate.sh'):
-        files['.agents/hmigbot-runtime/' + name] = ROOT / name
+                files['.hmigbot-ios/plugin/' + path.relative_to(ROOT).as_posix()] = path
+    for name in sorted(ROOT_FILES):
+        if (ROOT / name).is_file() and not exclusion(name):
+            files['.hmigbot-ios/plugin/' + name] = ROOT / name
     for skill in (ROOT / 'skills').iterdir():
-        if not skill.is_dir() or not (skill / 'SKILL.md').is_file():
+        if (not skill.is_dir() or not (skill / 'SKILL.md').is_file() or
+                exclusion(skill.relative_to(ROOT).as_posix(), directory=True)):
             continue
         for file in skill.rglob('*'):
-            if file.is_file() and '__pycache__' not in file.parts:
+            if file.is_file() and not exclusion(file.relative_to(ROOT).as_posix()):
                 files['.agents/skills/' + skill.name + '/' + file.relative_to(skill).as_posix()] = file
-        files[f'.agents/skills/{skill.name}/runtime.json'] = b'{"runtime_relative":"../../hmigbot-runtime"}\n'
+        files[f'.agents/skills/{skill.name}/runtime.json'] = b'{"runtime_relative":"../../../.hmigbot-ios/plugin"}\n'
     for role in (ROOT / 'agents-codex').glob('*.toml'):
-        files['.codex/agents/' + role.name] = role
+        if not exclusion(role.relative_to(ROOT).as_posix()):
+            files['.codex/agents/' + role.name] = role
     for path in (ROOT / 'bin').iterdir():
-        if path.is_file(): files['.migbot/bin/' + path.name] = path
-    os_name = {'Windows': 'windows', 'Darwin': 'darwin', 'Linux': 'linux'}.get(platform.system())
-    arch = 'arm64' if platform.machine().lower() in {'arm64', 'aarch64'} else 'amd64'
-    suffix = '.exe' if os_name == 'windows' else ''
-    asset = ROOT / 'bin' / f'a2h-{os_name}-{arch}{suffix}'
+        if path.is_file() and not exclusion(path.relative_to(ROOT).as_posix()):
+            files['.migbot/bin/' + path.name] = path
+    asset = ROOT / 'bin/a2h-darwin-arm64'
     if not asset.is_file(): raise ValueError('Bundled runtime unavailable: ' + asset.name)
-    files['.migbot/bin/a2h' + suffix] = asset
+    files['.migbot/bin/a2h'] = asset
     for path in (ROOT / 'policies').glob('*'):
-        if path.is_file(): files['.migbot/policies/' + path.name] = path
+        if path.is_file() and not exclusion(path.relative_to(ROOT).as_posix()):
+            files['.migbot/policies/' + path.name] = path
     return files
 
 
 def manage(workspace, mode, hmigbot_root=None):
-    if mode != "uninstall" and platform.system() != "Darwin":
-        raise ValueError("This distribution targets macOS with full Xcode")
     if hmigbot_root is not None:
         raise ValueError('External binding retired; this release bundles HMigBot resources')
     if sys.version_info < (3, 11):
@@ -192,12 +162,6 @@ def manage(workspace, mode, hmigbot_root=None):
     workspace = filesystem_path(workspace)
     if not workspace.is_dir():
         raise ValueError('Workspace must already exist')
-    config_path = workspace / '.migbot/config.json'
-    if mode != 'uninstall' and config_path.is_file():
-        cfg = json.loads(config_path.read_text(encoding='utf-8-sig'))
-        if (cfg.get('source_platform') not in (None, 'ios') or cfg.get('tool_package') not in (None, 'hmigbot-ios152')
-            or (not cfg.get('source_platform') and not cfg.get('ios'))):
-            raise ValueError('Project belongs to another migration package; install in a separate workspace')
     metadata = child(workspace, '.hmigbot-ios/install.json')
     old = json.loads(metadata.read_text(encoding='utf-8')) if metadata.exists() else None
     if old and (old.get('owner') != 'hmigbot-ios' or old.get('schema_version') != 1):
@@ -276,19 +240,7 @@ def manage(workspace, mode, hmigbot_root=None):
     else:
         updated_agents = agent_text + ('\n\n' if agent_text else '') + BLOCK + '\n'
     hashes = {name: checksum(data) for name, data in new.items()}
-    modes = {name: payload_mode(data, name) for name, data in new.items()}
-    runtime_names = {name for name, data in new.items()
-                     if isinstance(data, Path) and data.is_relative_to(ROOT)
-                     and data.relative_to(ROOT).as_posix() in runtime_modes()}
-    changes = {name for name in new if not child(workspace, name).is_file() or checksum(child(workspace, name)) != hashes[name]
-               or (name in runtime_names and bool(child(workspace, name).stat().st_mode & 0o111) != bool(modes[name] & 0o111))}
-    native={name:hashes[name] for name,data in new.items() if native_runtime_member(name,data)}
-    if '.migbot/bin/a2h' not in native or '.agents/skills/a2h-spec/scripts/bin/macos-arm64/_entry.dist/_entry.bin' not in native:
-        raise ValueError('Current-architecture native runtime is missing from package manifest')
-    for name in native:
-        path=child(workspace,name)
-        if path.is_file() and name not in changes and quarantine_present(path):
-            changes.add(name)  # Back up and restage this owned, verified file transactionally.
+    changes = {name for name in new if not child(workspace, name).is_file() or checksum(child(workspace, name)) != hashes[name]}
     rollback = tempfile.TemporaryDirectory(prefix='hmigbot-rollback-')
     backup = {}
     for name in changes | (set(owned) - set(new)):
@@ -301,43 +253,52 @@ def manage(workspace, mode, hmigbot_root=None):
         else:
             backup[name] = None
     prior_metadata = metadata.read_bytes() if metadata.exists() else None
+    new_version = json.loads((ROOT / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))['version']
+    from hmigbot_ios.upgrade_cleanup import prepare_upgrade_cleanup
+    cleanup = prepare_upgrade_cleanup(workspace, old.get('version') if old else None, new_version,
+                                      tool_changed=bool(old and (changes or set(owned) - set(new) or old.get('version') != new_version)))
+    permission_receipts = []
     try:
+        cleanup.apply()
         for name in changes:
-            put(child(workspace, name), new[name], modes[name])
-            if checksum(child(workspace,name))!=hashes[name]:
-                raise ValueError('Installed payload hash mismatch: '+name)
-            if stat.S_IMODE(child(workspace,name).stat().st_mode)!=modes[name]:
-                raise ValueError('Installed payload mode mismatch: '+name)
-        native_preparation=[prepare_native_execution(workspace,name,expected) for name,expected in sorted(native.items())]
+            put(child(workspace, name), new[name])
         for name in set(owned) - set(new):
             child(workspace, name).unlink(missing_ok=True)
         agent_path.write_bytes(updated_agents.encode('utf-8'))
-        manifest = {'schema_version': 1, 'owner': 'hmigbot-ios', 'version': json.loads((ROOT / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))['version'],
+        from hmigbot_ios.macos_permissions import ensure_runtime_permissions
+        for relative in ['.hmigbot-ios/plugin', *sorted(n for n in new if n.startswith('.migbot/bin/'))]:
+            target = child(workspace, relative)
+            if target.exists():
+                permission_receipts.append(ensure_runtime_permissions(workspace, target))
+        manifest = {'schema_version': 1, 'owner': 'hmigbot-ios', 'version': new_version,
+                    'release_profile': release_profile(),
                     'files': hashes, 'agent_block': BLOCK,
                     'agent_original_base64': old.get('agent_original_base64') if old else (base64.b64encode(agent_bytes).decode() if agent_bytes is not None else None),
                     'agent_installed_sha256': checksum(agent_path.read_bytes())}
-        manifest['native_runtime_allowlist_sha256']=checksum(json.dumps(native,sort_keys=True).encode('utf-8'))
-        manifest['file_modes'] = {name: modes[name] for name in runtime_names}
-        manifest['native_runtime_architecture']=platform.machine()
-        manifest['native_execution_preparation']=native_preparation
+        cleanup.commit()
+        manifest['last_upgrade_cleanup'] = cleanup.receipt
+        manifest['permission_repairs'] = permission_receipts
         metadata.parent.mkdir(parents=True, exist_ok=True)
         metadata.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     except Exception:
-        for name, original in backup.items():
-            path = child(workspace, name)
-            if original is None:
-                path.unlink(missing_ok=True)
+        try:
+            cleanup.rollback()
+        finally:
+            for name, original in backup.items():
+                path = child(workspace, name)
+                if original is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    put(path, original)
+            if agent_bytes is None:
+                agent_path.unlink(missing_ok=True)
             else:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                put(path, original)
-        if agent_bytes is None:
-            agent_path.unlink(missing_ok=True)
-        else:
-            agent_path.write_bytes(agent_bytes)
-        if prior_metadata is None:
-            metadata.unlink(missing_ok=True)
-        else:
-            metadata.write_bytes(prior_metadata)
+                agent_path.write_bytes(agent_bytes)
+            if prior_metadata is None:
+                metadata.unlink(missing_ok=True)
+            else:
+                metadata.write_bytes(prior_metadata)
         raise
     finally:
         # Files inside rollback can exceed MAX_PATH even when the workspace
@@ -363,7 +324,9 @@ def manage(workspace, mode, hmigbot_root=None):
     return {'status': 'upgraded' if old else 'installed', 'workspace': display_workspace,
             'skills': sum(1 for key in new if key.startswith('.agents/skills/') and key.endswith('/SKILL.md')),
             'hmigbot': 'bundled', 'agents': sum(key.startswith('.codex/agents/') for key in new),
-            'version': manifest['version']}
+            'version': manifest['version'], 'upgrade_cleanup': cleanup.receipt,
+            'release_profile': manifest['release_profile'],
+            'permission_repairs': permission_receipts}
 
 
 def main():
@@ -378,7 +341,10 @@ def main():
         print(json.dumps(manage(args.workspace, args.mode), ensure_ascii=False, indent=2))
         return 0
     except (ValueError, OSError) as exc:
-        print(json.dumps({'status': 'error', 'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
+        error = {'status': 'error', 'error': str(exc)}
+        if isinstance(getattr(exc, 'receipt', None), dict):
+            error['permission_repair'] = exc.receipt
+        print(json.dumps(error, ensure_ascii=False), file=sys.stderr)
         return 2
 
 

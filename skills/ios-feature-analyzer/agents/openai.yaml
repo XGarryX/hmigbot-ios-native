@@ -1,0 +1,4 @@
+interface:
+  display_name: ios-feature-analyzer
+  short_description: 读取 iOS 功能行为与业务规则：沿 Swift/Objective-C 的事件、任务、委托、服务和持久化链提取状态转移、…
+  default_prompt: 请使用 $ios-feature-analyzer，按本技能的输入、执行步骤和验收条件完成当前任务。

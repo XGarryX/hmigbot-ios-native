@@ -1,3 +1,11 @@
+> 来源：Garry 随包资料摘录，含平台名称替换残留，未获官方核验。仅作检索线索，不能据此执行构建或判定 iOS/HarmonyOS API 支持；应回到实际厂商官方文档核验。
+
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
 # 蚂蚁科技
 
 # 蚂蚁科技
@@ -994,7 +1002,7 @@ apk 为 release 包时,卡顿阈值为 2.25 秒。
 要开启卡顿监控,界面需要继承 mPaaS 提供的类 BaseActivity 、 BaseFragmentActivity 或
 
 ```
- BaseAppCompatActivity 。
+ BaseAppCompatActivity 。 <!-- source excerpt 1 -->
 ```
 
 当 apk 为 debug 包时,卡顿监控为全量统计;apk 为 release 包时,卡顿监控为采样统计,采样率 10%。
@@ -1018,7 +1026,7 @@ apk 为 release 包时,卡顿阈值为 2.25 秒。
 要开启卡死监控,界面需要继承 mPaaS 提供的类 BaseActivity 、 BaseFragmentActivity 或
 
 ```
- BaseAppCompatActivity 。
+ BaseAppCompatActivity 。 <!-- source excerpt 2 -->
 ```
 
 # 4.2.3. 闪退日志

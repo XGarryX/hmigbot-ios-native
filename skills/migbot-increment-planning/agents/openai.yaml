@@ -1,0 +1,4 @@
+interface:
+  display_name: migbot-increment-planning
+  short_description: Migbot-Increment PLANNING 阶段 skill，用于需求分析与系统设计规划。 当用户说"执行 mig…
+  default_prompt: 请使用 $migbot-increment-planning，按本技能的输入、执行步骤和验收条件完成当前任务。

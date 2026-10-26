@@ -1,8 +1,6 @@
 ---
 name: skill-checker
-description: '检查 Skills / Agents / Commands / Rules 的「合规性」（frontmatter、taxonomy、references、计数，决定能否过 CI） 与「质量」（description 路由力、body 五分类、tiered 架构、措辞遵从度 + ArkTS 代码规范 harmony-docs 核验，依据 v2 审视 checklist）。 当用户说"检查新增的 skill / 是否合规 / 跑一下检查 / 看看有没有问题"，或"skill 体检 / 质量审视 / 瘦身分析 / 哪些 skill 该重构 / 批量检查所有 skill / token 太大"，或刚创建或修改了 SKILL.md / Agent / Command / Rule 时触发。 不要用于：从零生成新 skill（用 skill-creator）、跑业务迁移流程（用 a2h-* skills）、纯应用代码审查。
-
-  '
+description: "检查 Skills / Agents / Commands / Rules 的「合规性」（frontmatter、taxonomy、references、计数，决定能否过 CI） 与「质量」（description 路由力、body 五分类、tiered 架构、措辞遵从度 + ArkTS 代码规范 harmony-docs 核验，依据 v2 审视 checklist）。 当用户说\"检查新增的 skill / 是否合规 / 跑一下检查 / 看看有没有问题\"，或\"skill 体检 / 质量审视 / 瘦身分析 / 哪些 skill 该重构 / 批量检查所有 skill / token 太大\"，或刚创建或修改了 SKILL.md / Agent / Command / Rule 时触发。 不要用于：从零生成新 skill（用 skill-creator）、跑业务迁移流程（用 a2h-* skills）、纯应用代码审查。"
 metadata:
   type: tool
   domain: engineering

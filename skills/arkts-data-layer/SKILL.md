@@ -10,6 +10,10 @@ metadata:
   - persistence
   - rdb
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS Data Layer — 数据层生成器（V2 优先）
 
 ## API 版本与项目策略
@@ -183,7 +187,7 @@ export class EventConstants {
 - [ ] 子组件接收模型实例用 `@Param`（不是 V1 `@ObjectLink`）
 - [ ] 构造函数使用 Partial + 默认值防御（防御网络数据缺字段）
 - [ ] HTTP 请求有 try-finally + destroy 清理
-- [ ] 涉及需 INTERNET 的联网调用时，核实应用最终权限声明（多 HAP/库合并按实际应用核对）；纯本地分支不适用；已有声明不删除
+- [ ] module.json5 声明了 INTERNET 权限
 - [ ] 文件上传（multipart）：选中文件**先落沙箱**（`fileIo.copyFile`），`multiFormDataList` 文件项用 `filePath`（沙箱路径）、文本项用 `data`（不把外部路径/uri 当值传）
 - [ ] 发给后端/落盘的序列化走 `toJson()`（或无装饰器纯 DTO）——不直接 `JSON.stringify` `@ObservedV2` 实例（`__ob_` 前缀陷阱）
 - [ ] async/await 正确使用，错误统一在 catch 中转换；**自定义错误类 `extends Error` + `super(message)`** 才能被 `throw`

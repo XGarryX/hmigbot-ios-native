@@ -13,7 +13,8 @@ EXCLUDED = {".git", ".build", "build", "DerivedData", "Pods", "Carthage",
             "node_modules", "oh_modules", ".hvigor", ".swiftpm", ".hmigbot-ios", ".serena", "__pycache__"}
 SOURCE_SUFFIXES = {".swift", ".m", ".mm", ".h", ".c", ".cpp", ".plist",
                    ".entitlements", ".pbxproj", ".xcconfig", ".storyboard", ".xib",
-                   ".xcstrings", ".strings", ".stringsdict", ".xcprivacy"}
+                   ".xcstrings", ".strings", ".stringsdict", ".xcprivacy",
+                   ".xcscheme", ".xctestplan"}
 SOURCE_NAMES = {"Package.resolved", "Podfile", "Podfile.lock", "Cartfile.resolved",
                 "Contents.json", "contents.xcworkspacedata"}
 
@@ -203,6 +204,12 @@ def snapshot(root: Path):
             "files": entries, "sha256": digest(json_bytes(entries))}
 
 
+def source_snapshot(root: Path):
+    """Product migration identity; snapshot() retains the full audit identity."""
+    from .source_relevance import migration_snapshot
+    return migration_snapshot(root)
+
+
 def anchor(path: str, sha256: str, line: int = 1, **location):
     return {"path": path, "sha256": sha256, "line": line, **location}
 
@@ -213,7 +220,7 @@ def resolve_anchors(record: dict):
     if modern is not None and legacy is not None and modern != legacy:
         raise MigrationError("Conflicting source_anchors_ref and android_source_anchors_ref")
     if record.get("source_platform") == "ios" and legacy is not None:
-        raise MigrationError("iOS facts must not contain incompatible source-platform anchors")
+        raise MigrationError("iOS facts must not contain Android source anchors")
     return modern if modern is not None else legacy
 
 
@@ -309,3 +316,15 @@ def write_new_tree(output: Path, files: dict[str, bytes]):
             if publication_failure is None:
                 raise
             publication_failure.add_note(f"Temporary tree cleanup failed at {temp}: {cleanup_error}")
+
+
+def trusted_system_alias(path):
+    """Known Darwin root aliases are directory identities, not project link grants."""
+    import platform
+    path = Path(path)
+    if platform.system() != 'Darwin' or str(path) not in {'/var', '/tmp', '/etc'}:
+        return False
+    try:
+        return path.resolve(strict=True) == Path('/private') / path.name
+    except OSError:
+        return False

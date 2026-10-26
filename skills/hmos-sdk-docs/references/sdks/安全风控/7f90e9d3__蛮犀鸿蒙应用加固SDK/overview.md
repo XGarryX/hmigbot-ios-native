@@ -1,3 +1,9 @@
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
 # 蛮犀鸿蒙应用加固SDK
 
 - 市场详情页: https://developer.huawei.com/consumer/cn/market/prod-detail/7f90e9d3684d4ecc9c4003adb1ec8ecb/PLATFORM

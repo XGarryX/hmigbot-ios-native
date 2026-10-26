@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hmigbot.local/schemas/source-manifest-evidence.schema.json",
+  "title": "Source-bound SwiftPM manifest evaluation evidence",
+  "description": "Captured dump-package outputs for explicit Package.swift paths. This contract does not certify executable authenticity, dependency graph resolution, iOS target configuration or runtime behavior. Input configuration is defined in $defs.capture_config.",
+  "type": "object",
+  "required": ["schema_version", "kind", "status", "source_sha256", "source_after_sha256", "source_changed", "source_before_artifact", "source_after_artifact", "config_artifact", "host", "scope", "capture_authenticity", "dependency_resolution", "behavior_equivalence", "manifests", "failures", "artifacts"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "swiftpm_manifest_evaluation"},
+    "status": {"enum": ["captured", "capture_failed"]},
+    "source_sha256": {"$ref": "#/$defs/sha256"},
+    "source_after_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "source_changed": {"type": "boolean"},
+    "source_before_artifact": {"$ref": "#/$defs/artifact_path"},
+    "source_after_artifact": {"$ref": "#/$defs/artifact_path"},
+    "config_artifact": {"$ref": "#/$defs/artifact_path"},
+    "host": {"$ref": "#/$defs/host"},
+    "scope": {"const": "current_host_manifest_evaluation"},
+    "capture_authenticity": {"const": "not_verified"},
+    "dependency_resolution": {"const": "not_verified"},
+    "behavior_equivalence": {"const": "not_verified"},
+    "manifests": {"type": "array", "items": {"$ref": "#/$defs/manifest"}},
+    "failures": {"type": "array", "items": {"type": "string"}},
+    "artifacts": {"type": "object", "minProperties": 1, "propertyNames": {"$ref": "#/$defs/artifact_path"}, "additionalProperties": {"$ref": "#/$defs/sha256"}}
+  },
+  "additionalProperties": false,
+  "allOf": [{"if": {"properties": {"status": {"const": "captured"}}}, "then": {"properties": {"source_changed": {"const": false}, "failures": {"maxItems": 0}, "manifests": {"minItems": 1}, "source_after_sha256": {"$ref": "#/$defs/sha256"}}}}],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "argv": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "manifest_command": {
+      "description": "Explicit SwiftPM dump-package argv. Exactly one --package-path (separate or equals form) must resolve to the configured Package.swift parent. Native paths and WSL /mnt/<drive>/... are supported; remote package copies are refused. Runtime also checks packageKind.root when SwiftPM emits it.",
+      "allOf": [
+        {"$ref": "#/$defs/argv"},
+        {"contains": {"const": "package"}},
+        {"contains": {"const": "dump-package"}},
+        {"contains": {"type": "string", "pattern": "^--package-path(?:=.+)?$"}, "minContains": 1, "maxContains": 1}
+      ]
+    },
+    "artifact_path": {"type": "string", "pattern": "^artifacts/[^\\\\:]+$"},
+    "host": {
+      "type": "object", "required": ["system", "release", "machine"],
+      "properties": {"system": {"type": "string", "minLength": 1}, "release": {"type": "string", "minLength": 1}, "machine": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "capture_config": {
+      "type": "object", "required": ["schema_version", "manifests"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "manifests": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["path", "command", "version_command"],
+          "properties": {
+            "path": {"type": "string", "pattern": "(^|/)Package\\.swift$"},
+            "command": {"$ref": "#/$defs/manifest_command"},
+            "version_command": {"$ref": "#/$defs/argv"},
+            "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600, "default": 120},
+            "conditions": {"type": "string", "description": "Explicit notes on the evaluation environment; real command and version output remain evidence."}
+          },
+          "additionalProperties": false
+        }}
+      },
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "required": ["path", "command", "version_command", "timeout_seconds", "conditions", "source_sha256", "manifest_sha256", "status", "host", "scope", "version_record", "evaluation_record", "evaluation_artifact"],
+      "properties": {
+        "path": {"type": "string", "pattern": "(^|/)Package\\.swift$"},
+        "command": {"$ref": "#/$defs/manifest_command"},
+        "version_command": {"$ref": "#/$defs/argv"},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "conditions": {"type": "string"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "status": {"enum": ["manifest_evaluated", "capture_failed"]},
+        "host": {"$ref": "#/$defs/host"},
+        "scope": {"const": "current_host_manifest_evaluation"},
+        "version_record": {"$ref": "#/$defs/artifact_path"},
+        "evaluation_record": {"$ref": "#/$defs/artifact_path"},
+        "evaluation_artifact": {"$ref": "#/$defs/artifact_path"},
+        "version_output": {"type": "string", "pattern": "(?:Apple )?Swift version [0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:\\s|$)"},
+        "name": {"type": "string", "minLength": 1},
+        "targets": {"type": "array", "items": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "minLength": 1}}}},
+        "dependencies": {"type": "array", "items": {"type": "object", "minProperties": 1}},
+        "failure": {"type": "string"}
+      },
+      "additionalProperties": false,
+      "allOf": [{"if": {"properties": {"status": {"const": "manifest_evaluated"}}}, "then": {"required": ["version_output", "name", "targets", "dependencies"]}}]
+    }
+  }
+}

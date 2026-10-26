@@ -86,3 +86,5 @@ developer_instructions = '''
 
 信封：`final_state / loops_json_path / writeback_manifest / escalation|NONE`。
 '''
+
+# 0.13.4: follow skills/a2h-run/references/execution-boundary.md; source evidence remains Git-owned.

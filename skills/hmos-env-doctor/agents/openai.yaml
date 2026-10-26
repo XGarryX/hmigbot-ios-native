@@ -1,0 +1,4 @@
+interface:
+  display_name: hmos-env-doctor
+  short_description: 检查原生 iOS 迁移的鸿蒙目标环境：DevEco、SDK、Node、JDK、ohpm、hvigor、hdc 和签名；源理…
+  default_prompt: 请使用 $hmos-env-doctor，按本技能的输入、执行步骤和验收条件完成当前任务。

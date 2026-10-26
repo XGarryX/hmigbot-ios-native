@@ -28,23 +28,14 @@ hmos-fix-build-errors（最多 20 轮）
 
 ## CHECK-2：静态分析
 
-对所有 `.ets` 文件执行以下 grep 检查：
+先限定当前产品的实际 `.ets` 输入，复用本轮官方目标 SDK 编译诊断与已运行的结构检查。原始 grep 只定位候选，必须排除注释、字符串、示例和非产品文件，不得把文本命中当作 ERROR。
 
-| 检查项 | 命令 | 严重级别 |
-|--------|------|---------|
-| `any` 类型 | `grep -rn ": any\b" --include="*.ets"` | ERROR |
-| 废弃导入 | `grep -rn "from '@ohos\." --include="*.ets"` | WARN |
-| SQL 拼接 | `grep -rn "'\s*+\s*" --include="*.ets"` 在 SQL 上下文中 | ERROR |
-| `as` 类型断言 | `grep -rn " as " --include="*.ets"` | WARN |
-| `eval()` | `grep -rn "eval(" --include="*.ets"` | ERROR |
-| aboutToAppear 参数获取 | `grep -rn "aboutToAppear" --include="*.ets"` 中含 `pathInfo` | ERROR |
+| 候选 | 后续核验 | 判定 |
+|---|---|---|
+| `: any`、`eval()`、SQL 拼接、生命周期取参线索 | 目标 SDK 实际诊断，或能绑定可执行结构、接收者与具体后果的结构证据 | 原始文字为 WARN；真实已定位缺陷才阻断对应代码 |
+| 旧导入、`as` 断言 | 当前 SDK 支持范围及真实调用上下文 | 允许用法保留，记录迁移建议 |
 
-**结果判定**（与 SKILL.md §6 门控对齐——只有 ERROR 级阻塞）：
-
-- ERROR = 0 → CHECK-2: PASS（WARN > 0 时附 warnings 清单，不改变判定、不触发 §5 回环）
-- ERROR > 0 → CHECK-2: FAIL（仅 ERROR 项生成回环修复任务；WARN 项随报告记录）
-
-> WARN 项（如 ` as ` 断言、`@ohos.*` 旧导入）在迁移代码中存在大量合法用法，计入 FAIL 会让本 CHECK 恒失败、空转 §5 回环预算，而门控本就规定 WARN 不阻塞——因此 WARN 只记录不判负。
+CHECK-2 不为重复 SDK 错误另跑一次编译；引用 CHECK-1 的同签名原始诊断。没有可归因产品错误时可收口静态候选审阅，但不得据此声称编译或运行已验证。
 
 ---
 
@@ -78,35 +69,15 @@ grep 未注册的占位符：
 
 ## CHECK-4：App 身份校验（必选）
 
-验证 App 配置文件中的身份信息不是模板默认值：
+以已确认的产品身份合同和当前模块配置为依据：
 
-```
-App 身份校验规则:
-  │
-  ├─ 1. app.json5 的 bundleName 不匹配 "com.example.*"
-  │     → 匹配则 FAIL: "bundleName 仍是模板默认值"
-  │
-  ├─ 2. app.json5 的 vendor 不等于 "example"
-  │     → 等于则 FAIL: "vendor 仍是模板默认值"
-  │
-  ├─ 3. app.json5 的 versionName 不等于 "1.0.0"
-  │     → 等于则 WARN: "versionName 可能未从 iOS 同步"
-  │
-  ├─ 4. string.json 的 app_name 与 Spec 记录一致（如果 feature-index.md 中有 App 名称定义）
-  │     → 不一致则 FAIL: "app_name 与 Spec 不匹配"
-  │
-  ├─ 5. foreground.png / background.png 文件大小 > 1KB
-  │     → ≤ 1KB 则 WARN: "图标文件疑似默认图"
-  │
-  └─ 6. layered_image.json 存在且引用 $media:background + $media:foreground
-       → 缺失或引用错误则 FAIL: "自适应图标配置异常"
-```
+1. 若已确认 bundle、权限关联或品牌要求，比较当前配置与该具体合同；真实冲突绑定到相应模块和后果。
+2. `com.example.*`、vendor 为 `example`、版本为 `1.0.0` 只作待确认提示；没有已确认要求时不凭样例名字判失败。
+3. 从当前 ability/module/app 的真实资源引用解析图标、名称及适配配置，核验所引用资源存在、类型和目标 SDK 合法性。
+4. 不要求固定 `foreground.png`、`background.png` 或 `layered_image.json` 名称；合法的其他文件名和图标形式可以通过。
+5. 真实缺失的被引用资源、身份/权限冲突仍 FAIL；未知产品取舍记待确认，不能替开发者猜测。
 
-### 结果判定
-
-- 0 FAIL + 0 WARN → CHECK-4: PASS
-- 0 FAIL + N WARN → CHECK-4: PASS (附 warnings)
-- 任何 FAIL → CHECK-4: FAIL
+SDK 编译与资源诊断是原生合法性依据；文件级解析仅做引用闭包、身份对账和证据绑定。已完成构建轴与尚未确认的展示要求分别报告。
 
 ---
 

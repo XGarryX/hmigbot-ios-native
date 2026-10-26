@@ -1,0 +1,10 @@
+# openai.yaml — Codex skill interface for the converted `migbot-increment-init` command.
+# When the user selects this skill in /skills, `interface.default_prompt` is
+# auto-attached — the Codex equivalent of running the slash command.
+interface:
+  display_name: "migbot-increment-init"
+  default_prompt: |
+    Run the migbot-increment-init initialization checks now: project/env/TEST_ROOT detection, directory setup, then write specs/initialized.flag.
+
+policy:
+  allow_implicit_invocation: true

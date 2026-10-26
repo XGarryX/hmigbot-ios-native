@@ -1,16 +1,18 @@
 {
-  "name": "hmigbot-ios152",
-  "version": "1.5.2-ios.32",
-  "description": "Native iOS input port of HMigBot CodeX 1.5.2; original stage contracts and gates",
+  "name": "hmigbot-ios",
+  "version": "0.13.4",
+  "description": "iOS source analysis and HarmonyOS conversion workflow for macOS Apple Silicon, with selected native tools and evidence.",
   "author": {
-    "name": "fuxi-ailabs"
+    "name": "Local developer"
   },
-  "license": "MIT",
-  "keywords": [
-    "ios",
-    "harmonyos",
-    "arkts",
-    "migration"
-  ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "HMigBot iOS 原生迁移",
+    "shortDescription": "在原a2h流水线中将iOS源代码迁移为原生鸿蒙。",
+    "longDescription": "读取iOS源码与实际构建上下文，生成规格、计划及ArkTS/ArkUI实现，并按实际范围核验。当前发行支持macOS Apple Silicon。",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "使用a2h-run，读取iOS源码，按原HMigBot spec格式完成规划、鸿蒙实现、验证与复盘。"
+  }
 }

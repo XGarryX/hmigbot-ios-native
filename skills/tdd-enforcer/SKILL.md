@@ -1,9 +1,6 @@
 ---
 name: tdd-enforcer
-description: |
-  TDD 执行约束 skill，在 migbot-increment-applying 阶段对每个 task 强制执行 RED-GREEN-REFACTOR 循环。
-  覆盖：新增功能、功能变更、缺陷修复、优化或重构。
-  当执行代码生成任务时触发，确保先写测试、再写实现。
+description: "TDD 执行约束 skill，在 migbot-increment-applying 阶段对每个 task 强制执行 RED-GREEN-REFACTOR 循环。 覆盖：新增功能、功能变更、缺陷修复、优化或重构。 当执行代码生成任务时触发，确保先写测试、再写实现。"
 ---
 
 # TDD Enforcer

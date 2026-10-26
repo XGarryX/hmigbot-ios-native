@@ -7,6 +7,7 @@
 
 ## 公共纪律（三派发通用）
 
+- 先读[Plan交付合同](plan-delivery-contract.md)；派发带profile、active AC、精确spec_refs/contract_refs闭包。每个item有完整ref独立标题和固定七行责任表，聚合JSON逐字段exact对账，不让主控凭概述补造JSON。
 - **MUST-Read**：各派发列出的模板 / references 必须整文件 Read（SKILL Critical 强制加载条款适用于 subagent，跳过 = PROCESS_VIOLATION）。
 - **单写者分配**：A→ui-plan.md；B→plans/base-plan.md；C→plans/slices/* + spec/placeholder-registry.md（P1 窗口唯一 registry 写者——B 的 P-B 行信封带回，无并发）；索引 / coverage-matrix 主线程写，agent 禁碰。
 - **kernel 只抄不判**：归属消歧 / hub / 横切 / 定号已由主线程 P0 裁决并随 prompt 内联下发；agent 发现 kernel 与 spec 冲突 → 信封报告，禁自行改判。
@@ -22,6 +23,8 @@
   页面归属表（kernel，只抄不判，含 hub 裁决结果）: {page_owning_map}    # 页 id → 裸 F-ID
   分批输入: spec/baseline/ui-manifest.md（优先级 / confidence / 依赖三源见模板生成规则）
   写权: 仅 ui-plan.md。
+  合同输入: {page_spec_refs_with_sections_and_ac_ids} + {contract_refs_closure}
+  交付: Context/Batch表（item_id、精确目标路径）/结算点/Summary/唯一Plan items JSON。
 ```
 
 信封：`batches_count / pages_total / low_confidence_pages[] / kernel_conflicts[]（应空）`。
@@ -34,6 +37,8 @@
 生成 spec/baseline/plans/base-plan.md。MUST 先 Read: a2h-plan/templates/feature-plan-template.md（整文件，「文件二」段为生成规范）+ a2h-plan/references/skill-binding-rules.md。
   输入: spec/baseline/feature-base.md + feature-index.md 共享组件/服务；chain-auth 存在时按 SKILL Step 4.3 表注入 Base 侧 data_chain_refs（L0 / L2-L3 行）
   写权: 仅 base-plan.md；如产生 P-B 占位 → 行全文写入信封带回，禁直写 registry。
+  合同输入: {base_spec_refs_with_sections_and_ac_ids} + {contract_refs_closure}
+  交付: 各任务稳定item_id与精确输入/输出/验收责任 + 唯一Plan items JSON；resource-mapping只声明Execute Stage0输出。
 ```
 
 信封：`base_tasks_count / registry_rows_pending[]（P-B 行全文，主线程 append）/ chain_auth_injected: L0,L2-L3 | N/A`。
@@ -48,6 +53,8 @@
   页面归属表: {page_owning_map}
   对接点归属映射: {wiring_owner_map}                  # cross_slice_edits 的 owner 与 resolve_by 依据
   写权: plans/slices/slice-NN-<fid>.md（每文件恰写一次）+ placeholder-registry.md 直写（Step 4.1 原文执行）。
+  合同输入: {per_slice_spec_refs_with_sections_and_ac_ids} + {per_slice_contract_refs_closure}
+  交付: 结构化接线投影/四步稳定item_id与精确输入/唯一Plan items JSON。
 ```
 
 信封：`slices_written / per_slice: {N: {placeholders, fwd_refs}} / kernel_conflicts[]（应空）`。

@@ -1,0 +1,10 @@
+# openai.yaml — Codex skill interface for the converted `a2h-build` command.
+# When the user selects this skill in /skills, `interface.default_prompt` is
+# auto-attached — the Codex equivalent of running the slash command.
+interface:
+  display_name: "a2h-build"
+  default_prompt: |
+    Run $a2h-build now: run .migbot/bin/a2h-tool validate, then .migbot/bin/a2h-tool build (hvigorw assembleHap), and report the stage usage.
+
+policy:
+  allow_implicit_invocation: true

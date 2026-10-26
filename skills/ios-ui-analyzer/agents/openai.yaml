@@ -1,0 +1,4 @@
+interface:
+  display_name: ios-ui-analyzer
+  short_description: 按 SwiftUI、UIKit、Interface Builder 和桥接场景提取 iOS UI 与交互事实；保留状态所有…
+  default_prompt: 请使用 $ios-ui-analyzer，按本技能的输入、执行步骤和验收条件完成当前任务。

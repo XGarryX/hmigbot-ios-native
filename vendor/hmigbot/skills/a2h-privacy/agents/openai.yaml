@@ -1,0 +1,10 @@
+# openai.yaml — Codex skill interface for the converted `a2h-privacy` command.
+# When the user selects this skill in /skills, `interface.default_prompt` is
+# auto-attached — the Codex equivalent of running the slash command.
+interface:
+  display_name: "a2h-privacy"
+  default_prompt: |
+    Run $a2h-privacy now. Treat the user's input as the argument and dispatch to status (empty) / accept / deny / off.
+
+policy:
+  allow_implicit_invocation: true

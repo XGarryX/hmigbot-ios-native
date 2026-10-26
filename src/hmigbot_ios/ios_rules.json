@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "identity_usage": {
+    "compound_writes": ["+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", "&+=", "&-=", "&*="],
+    "comparisons": ["==", "!=", "<=", ">="],
+    "ownership_prefixes": ["&", "borrow", "consume"]
+  },
+  "context_rules": [
+    {
+      "selector": {"kind": "identity", "symbol": "id", "value": {"identity_usage": "member_read"}},
+      "rule": {"dimensions": ["identity"], "judgments": ["unit", "contract", "ui"], "obligation": "Retain member identity value, comparison and lookup behavior"}
+    }
+  ],
+  "rules": {
+    "state": {"dimensions": ["state_ownership", "state_transitions"], "judgments": ["unit", "ui"], "obligation": "Retain owner, storage, initializer, reset and visible update"},
+    "binding": {"dimensions": ["binding_flow"], "judgments": ["unit", "ui"], "obligation": "Retain bidirectional writeback and parent ownership"},
+    "event": {"dimensions": ["events", "event_connections"], "judgments": ["ui"], "obligation": "Follow input through processing to observable feedback"},
+    "write": {"dimensions": ["state_transitions", "data_flow"], "judgments": ["unit", "ui"], "obligation": "Retain assignment, arithmetic and ordering"},
+    "branch": {"dimensions": ["error_behavior", "state_transitions"], "judgments": ["unit", "contract", "ui"], "obligation": "Exercise both branch outcomes and boundary values"},
+    "task": {"dimensions": ["task_lifetime", "concurrency"], "judgments": ["unit", "device"], "obligation": "Retain restart, cancellation, isolation and stale-result handling"},
+    "navigation": {"dimensions": ["navigation"], "judgments": ["route", "ui"], "obligation": "Retain destination, parameters, return and modal state"},
+    "persistence": {"dimensions": ["persistence", "data_flow"], "judgments": ["unit", "contract", "device"], "obligation": "Follow save to reload to business effect, including failures"},
+    "service": {"dimensions": ["platform_capabilities", "data_flow"], "judgments": ["contract", "device"], "obligation": "Retain request, response, permission, errors and lifecycle contract"},
+    "lifecycle": {"dimensions": ["controller_lifecycle", "lifetime"], "judgments": ["ui", "device"], "obligation": "Retain creation, appearance, disappearance and cleanup"},
+    "constraint": {"dimensions": ["layout_constraints", "layout"], "judgments": ["ui", "visual"], "obligation": "Retain relation, priority and layout under actual bounds"},
+    "identity": {"dimensions": ["identity"], "judgments": ["ui"], "obligation": "Retain stable identity and state-reset boundaries"},
+    "resource": {"dimensions": ["composition"], "judgments": ["static", "visual"], "obligation": "Map variants, localization and logical dimensions without silent fallback"},
+    "composition": {"dimensions": ["composition", "layout"], "judgments": ["ui", "visual"], "obligation": "Retain view composition, conditional content and container behavior"},
+    "modifier": {"dimensions": ["modifier_order", "layout"], "judgments": ["ui", "visual"], "obligation": "Retain modifier ordering and its measured effect"},
+    "environment": {"dimensions": ["environment"], "judgments": ["unit", "ui"], "obligation": "Retain injected scope, defaults and updates"},
+    "language": {"dimensions": ["optionality", "nullability"], "judgments": ["unit", "contract", "ui"], "obligation": "Retain nil/default/error distinctions and optional values"},
+    "ownership": {"dimensions": ["ownership", "lifetime", "concurrency_model"], "judgments": ["unit", "device", "ui"], "obligation": "Retain reference ownership, weak captures and cleanup"},
+    "delegate": {"dimensions": ["delegates", "dynamic_dispatch"], "judgments": ["contract", "ui", "device"], "obligation": "Resolve callback receiver, ordering, optional methods and observable effect"}
+  }
+}

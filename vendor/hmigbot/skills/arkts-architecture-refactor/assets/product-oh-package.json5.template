@@ -1,0 +1,23 @@
+{
+  "name": "phone",
+  "version": "1.0.0",
+  "description": "Shell module (entry product).",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    // 业务模块——按 plan 实际拆出的 business 列表填
+    "business_common": "file:../../features/business_common",
+    // "business_home": "file:../../features/business_home",
+    // "business_<name>": "file:../../features/business_<name>",
+
+    // 公共独立组件（按需）
+    // "module_<name>": "file:../../components/module_<name>",
+
+    // 常用三方
+    "@pura/harmony-utils": "1.4.0",
+    "@ohos/lottie": "^2.0.23"
+  },
+  "devDependencies": {},
+  "dynamicDependencies": {}
+}

@@ -9,6 +9,10 @@ metadata:
   - structural-audit
 ---
 
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+
 > **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`, `scenario-builder`, `visual-fixer`, `visual-fixer-reviewer`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)
 >
 > **Join 协议（收口五条款）。** Codex 子代理完成后**不会**唤醒主会话——结果必须由派发方主动收口，违者=静默卡死（实测事故）。
@@ -113,7 +117,7 @@ bash scripts/run_loop.sh --mode pipeline --target final --round <R> --project-ro
 
 Loop 内部跑：
 - `audit_skeletons.py --scope=all` — 全工程 skeleton + dangling-fwd-ref + intentional-default 反查
-- 跨 Slice **orphan VM 检测**（候选 = `viewmodels/` / `store/` / `repository/` / `service/` / **`network/`** 下所有导出类；network/ 是基础设施层，只认 NO_IMPORTER / IMPORTED_BUT_NOT_INSTANTIATED 两类真死信号，ONLY_INSTANTIATED_BY_NON_UI 带证据豁免——拦截器由 HttpClient 等非 UI 装配是正常架构）+ **组件孤儿检测（E1）**（候选 = `components/` / `views/` / `widgets/` / `dialogs/` 下嵌入式组件：缺少外部导入且无已证明同文件组件组合入边的 `NO_IMPORTER` 阻断级 FAIL，`import` 了却从未渲染的 `IMPORTED_BUT_NOT_RENDERED` 浮为 WARN 复核）。**盲区豁免（fail-tight）**：orphan 检测基于实例化（`new X` / `X.getInstance()`），会误报"被用但非 new"的类——经 `extends`/`implements`（抽象基类/接口）、静态访问 `X.method()`（静态门面 / 常量路径 holder）、文件内自用（私有 helper）使用的类，由 `ref_graph_lib.usage_evidence()` 带**证据**移入 `exempted` 段、不进 fingerprint/不驱动循环；**零使用证据的类仍保留为 FAIL**（真孤儿 / 未接线绝不豁免）。`.agents/**` skill 模板 .ets 不属项目代码，已从扫描 skip。
+- 跨 Slice **orphan VM 检测**（候选 = `viewmodels/` / `store/` / `repository/` / `service/` / **`network/`** 下所有导出类；network/ 是基础设施层，只认 NO_IMPORTER / IMPORTED_BUT_NOT_INSTANTIATED 两类真死信号，ONLY_INSTANTIATED_BY_NON_UI 带证据豁免——拦截器由 HttpClient 等非 UI 装配是正常架构）+ **组件孤儿检测（E1）**（候选 = `components/` / `views/` / `widgets/` / `dialogs/` 下嵌入式组件：无任何 .ets `import` 的 `NO_IMPORTER` 阻断级 FAIL，`import` 了却从未渲染的 `IMPORTED_BUT_NOT_RENDERED` 浮为 WARN 复核）。**盲区豁免（fail-tight）**：orphan 检测基于实例化（`new X` / `X.getInstance()`），会误报"被用但非 new"的类——经 `extends`/`implements`（抽象基类/接口）、静态访问 `X.method()`（静态门面 / 常量路径 holder）、文件内自用（私有 helper）使用的类，由 `ref_graph_lib.usage_evidence()` 带**证据**移入 `exempted` 段、不进 fingerprint/不驱动循环；**零使用证据的类仍保留为 FAIL**（真孤儿 / 未接线绝不豁免）。`.agents/**` skill 模板 .ets 不属项目代码，已从扫描 skip。
 - 沉浸式/安全区四件套（范式差异类）— structural_loop 内置 Python 单遍扫描（判定逻辑与 `check-fullscreen-immersive-safearea.sh` 一致，`.sh` 留 CI/手工；Python 版免每文件 grep 进程 spawn，Windows 上单轮 ~10s → <0.1s）
 - **icon-sizing 自愈**（委托兄弟 skill `arkts-icon-sizing/scripts/icon_autofix.py`）— static under-constrained `Image` 自动补尺寸：原 detector 保留。原生入口先运行只读 audit/dry-run，潜在默认倍率改写集合非空则先按源证据补尺寸/比例再调用原循环；动态/无可测资源仍披露。原生输入不使用默认倍率，不把 Asset Catalog 作为原源资源参数。
 - **`verify_closure_ledger.py` — 债务终结闸**（registry 残留分类 + deferred_items 对账）：每条未解决 forward-ref，若 `resolve_by` 指向**终态切片**（PASS/ESCALATED/ROLLED_BACK）但仍 registered → GAP（FAIL）；`resolve_by=集成期…`/非 Slice → 合法外部延迟（D-007/D-008/R-005，PASS）。各 brief 的 open `deferred_items` 若依赖一个无 `.ets` 的工件（如某 ViewModel 从未创建）→ FAIL，否则 WARN 浮出复核。判定语义见 `skeleton_lib/deferral_policy.py`。**堵的洞**：旧 dangling-fwd-ref 仅对 PASS 切片报错，ESCALATED 切片的未解决 marker 被赦免 → FV-1 假 PASS（RCA 背景见 [a2h-plan 占位登记模板](../a2h-plan/templates/placeholder-registry-template.md) 的 dangling-fwd-ref 语义）。
@@ -147,7 +151,7 @@ pipeline 的 5 项里 **icon-sizing 会改源码**，漏跑 = 图标尺寸缺陷
 | detector | 独立入口 | 产物 |
 |---|---|---|
 | skeleton | `audit_skeletons.py --project-root . --scope all --output-json <p>` | `audit-pipeline-iterN.json` |
-| orphan VM / 组件 | 公开 pipeline 入口重测包内源码图及官方 ETS 同文件组合边；原内置测量完整归档，无独立公开 CLI | `orphans-pipeline-iterN.json` |
+| orphan VM | 内置（`structural_loop._run_pipeline_orphans`），无独立 CLI | `orphans-pipeline-iterN.json` |
 | 沉浸式四件套 | 内置 Python；等价 shell 版 `check-fullscreen-immersive-safearea.sh` | `immersive-pipeline-iterN.json` |
 | **icon-sizing 自愈** | `structural_loop.py iterate --mode pipeline ...`（原生 guard 包装后调用原 icon detector；不单独用默认倍率 apply） | `icon-pipeline-iterN.json` |
 | 债务终结闸 | `verify_closure_ledger.py --project-root . --output-json <p>` | `ledger-pipeline-iterN.json` |

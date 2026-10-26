@@ -22,7 +22,7 @@
   使用 `$arkts-state-manager` skill
   可调用的辅助 Skills（worker frontmatter 保留的 17 个之一）:
     - ios-ui-graph-query: 查 page/component 上下文
-    - ios-view-to-arkui: SwiftUI/UIKit/Interface Builder → ArkTS 组件翻译
+    - ios-ui-to-arkui: SwiftUI/UIKit/Interface Builder → ArkTS 组件翻译
     - arkts-knowledge-verifier: API 验证
 
   任务（complex feature 强制走完三段；simple 可跳过第一、第二段）:

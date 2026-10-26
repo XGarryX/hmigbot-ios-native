@@ -1,0 +1,4 @@
+interface:
+  display_name: prd-generator
+  short_description: 基于终端V2.1 PRD模板的PRD生成与分析工具。支持：(1)根据需求描述生成完整的PRD文档 (2)分析PRD文档的完…
+  default_prompt: 请使用 $prd-generator，按本技能的输入、执行步骤和验收条件完成当前任务。

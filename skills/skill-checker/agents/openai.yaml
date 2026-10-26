@@ -1,0 +1,4 @@
+interface:
+  display_name: skill-checker
+  short_description: 检查 Skills / Agents / Commands / Rules 的「合规性」（frontmatter、taxo…
+  default_prompt: 请使用 $skill-checker，按本技能的输入、执行步骤和验收条件完成当前任务。

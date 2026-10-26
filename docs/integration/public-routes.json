@@ -1,0 +1,392 @@
+{
+  "schema_version": 1,
+  "note": "Many-to-one/one-to-many command traceability; never used as capability count. Atom subcommands map to source/target responsibilities; help/meta operations are noncounting.",
+  "routes": {
+    "snapshot": [
+      "source.snapshot"
+    ],
+    "doctor": [
+      "runtime.capability-discovery"
+    ],
+    "preflight": [
+      "runtime.preflight"
+    ],
+    "validate": [
+      "runtime.preflight"
+    ],
+    "init-environment": [
+      "runtime.entry-permissions",
+      "runtime.quarantine"
+    ],
+    "repair-permissions": [
+      "runtime.quarantine"
+    ],
+    "portable-helper": [
+      "runtime.execution"
+    ],
+    "timeout_for": [
+      "runtime.timeouts"
+    ],
+    "scan": [
+      "source.project-survey"
+    ],
+    "source-index": [
+      "source.project-survey"
+    ],
+    "atom project-inventory": [
+      "source.project-membership"
+    ],
+    "atom dependency-inventory": [
+      "source.dependency-inventory"
+    ],
+    "source_build_membership": [
+      "source.compile-membership"
+    ],
+    "conditional-capture": [
+      "source.conditional-evidence"
+    ],
+    "atom build-settings": [
+      "source.build-settings"
+    ],
+    "atom swift-syntax": [
+      "source.swift-syntax"
+    ],
+    "atom clang-ast": [
+      "source.clang-ast"
+    ],
+    "atom interface-builder": [
+      "source.interface-builder"
+    ],
+    "atom asset-inventory": [
+      "source.asset-inventory"
+    ],
+    "atom localization-inventory": [
+      "source.localization-inventory"
+    ],
+    "atom asset-convert": [
+      "source.asset-conversion"
+    ],
+    "atom localization-convert": [
+      "source.localization-conversion"
+    ],
+    "source_anchor_info": [
+      "source.reading"
+    ],
+    "facts": [
+      "source.facts"
+    ],
+    "facts-view": [
+      "source.facts"
+    ],
+    "literals": [
+      "source.literal-inventory"
+    ],
+    "manifest-evaluate": [
+      "source.manifest-evaluation"
+    ],
+    "mcp-query": [
+      "source.mcp-evidence"
+    ],
+    "expertise-audit": [
+      "source.expertise-integrity"
+    ],
+    "expertise-plan": [
+      "source.expertise-review"
+    ],
+    "expertise-review": [
+      "source.expertise-review"
+    ],
+    "provider-plan": [
+      "source.provider-attempts"
+    ],
+    "source-refresh": [
+      "source.reviewed-refresh"
+    ],
+    "spec-check": [
+      "spec.content-contract"
+    ],
+    "responsibility": [
+      "spec.responsibility"
+    ],
+    "coverage_check": [
+      "spec.coverage-ownership",
+      "spec.obligation-coverage"
+    ],
+    "build_traceability_index": [
+      "spec.object-discovery"
+    ],
+    "lint_divergence": [
+      "spec.object-discovery"
+    ],
+    "extraction_finding": [
+      "spec.finding-identity"
+    ],
+    "spec-scaffold": [
+      "spec.content-rendering"
+    ],
+    "gate-artifacts spec": [
+      "spec.content-rendering",
+      "spec.coverage-report"
+    ],
+    "spec-scaffold --apply": [
+      "spec.content-commit"
+    ],
+    "source-analysis --apply-scaffold": [
+      "spec.content-commit"
+    ],
+    "spec-authoring": [
+      "spec.authoring-review"
+    ],
+    "spec-upgrade": [
+      "spec.upgrade"
+    ],
+    "product-literals": [
+      "spec.literal-projection"
+    ],
+    "plan-check": [
+      "plan.contract-validation"
+    ],
+    "plan-ir": [
+      "plan.ir-generation"
+    ],
+    "project_inputs": [
+      "plan.prompt-scope"
+    ],
+    "_validate_task_inputs": [
+      "plan.input-validation"
+    ],
+    "replan": [
+      "plan.replan"
+    ],
+    "gate-artifacts plan": [
+      "plan.projection"
+    ],
+    "next-batch": [
+      "execution.dispatch"
+    ],
+    "land-results": [
+      "execution.landing"
+    ],
+    "recover-blocked": [
+      "execution.recovery"
+    ],
+    "usage-start": [
+      "execution.usage-budget"
+    ],
+    "usage-record": [
+      "execution.usage-budget"
+    ],
+    "usage-reserve": [
+      "execution.usage-budget"
+    ],
+    "usage-release": [
+      "execution.usage-budget"
+    ],
+    "usage-summary": [
+      "execution.usage-budget"
+    ],
+    "usage-check": [
+      "execution.usage-budget"
+    ],
+    "usage-finish": [
+      "execution.usage-budget"
+    ],
+    "join": [
+      "execution.join"
+    ],
+    "build-target": [
+      "execution.target-build"
+    ],
+    "build": [
+      "execution.target-build"
+    ],
+    "diagnose-build": [
+      "target.build-diagnostics"
+    ],
+    "spec-summary": [
+      "execution.migration-report"
+    ],
+    "migration-report": [
+      "execution.migration-report"
+    ],
+    "gate-artifacts execute": [
+      "execution.migration-report"
+    ],
+    "verify-scope": [
+      "verify.scope"
+    ],
+    "behavior-check": [
+      "verify.behavior"
+    ],
+    "verify-report": [
+      "verify.report"
+    ],
+    "gate-artifacts verify": [
+      "verify.report"
+    ],
+    "compare-behavior": [
+      "verify.oracle-comparison"
+    ],
+    "pipeline-init": [
+      "workflow.evidence-workspace"
+    ],
+    "pipeline-status": [
+      "workflow.evidence-workspace"
+    ],
+    "task-create": [
+      "workflow.agent-packet"
+    ],
+    "task-check": [
+      "workflow.agent-packet"
+    ],
+    "scaffold": [
+      "target.project-scaffold"
+    ],
+    "generate": [
+      "target.closed-grammar-generation"
+    ],
+    "verify": [
+      "target.closed-grammar-generation",
+      "target.draft-integrity"
+    ],
+    "cloud-prepare": [
+      "cloud.source-build"
+    ],
+    "cloud-dispatch": [
+      "cloud.dispatch"
+    ],
+    "cloud-fetch": [
+      "cloud.fetch"
+    ],
+    "evidence-pack": [
+      "source.evidence-package"
+    ],
+    "evidence-check": [
+      "source.evidence-package"
+    ],
+    "capture": [
+      "source.capture"
+    ],
+    "ipa-inspect": [
+      "verify.ipa-inspection"
+    ],
+    "manage_install": [
+      "distribution.upgrade"
+    ],
+    "package_plugin": [
+      "distribution.package-integrity"
+    ],
+    "verify_package": [
+      "distribution.package-integrity"
+    ],
+    "smoke_package": [
+      "distribution.package-integrity"
+    ],
+    "validate_release": [
+      "distribution.release-audit"
+    ],
+    "audit-hmigbot": [
+      "distribution.release-audit"
+    ],
+    "lint": [
+      "target.static-lint"
+    ],
+    "verify_slice_wiring": [
+      "target.slice-wiring"
+    ],
+    "assembly_gate": [
+      "target.assembly"
+    ],
+    "binding_gate": [
+      "target.binding"
+    ],
+    "dead_shell_gate": [
+      "target.dead-shell"
+    ],
+    "carrier_gate": [
+      "target.carrier"
+    ],
+    "hit_test_gate": [
+      "target.hit-test"
+    ],
+    "resource_name_gate": [
+      "target.resource-names"
+    ],
+    "literal_gate": [
+      "target.literal-readiness"
+    ],
+    "icon_autofix": [
+      "target.icon-sizing"
+    ],
+    "capability_ledger_gate": [
+      "target.capability-ledger"
+    ],
+    "writeback": [
+      "target.writeback"
+    ],
+    "source-check": [
+      "spec.source-provenance",
+      "spec.native-claims",
+      "spec.obligation-coverage",
+      "spec.coverage-ownership",
+      "spec.responsibility"
+    ],
+    "validate_native_claims": [
+      "spec.native-claims"
+    ],
+    "init": [
+      "runtime.project-identity"
+    ],
+    "resolve": [
+      "source.path-resolution"
+    ],
+    "migration-contract": [
+      "source.contract-draft"
+    ],
+    "hmigbot-bind": [
+      "distribution.external-binding"
+    ],
+    "hmigbot-check": [
+      "distribution.external-binding"
+    ],
+    "hmigbot-handoff": [
+      "execution.legacy-handoff"
+    ],
+    "hmigbot-handoff-check": [
+      "execution.legacy-handoff"
+    ],
+    "check-facts": [
+      "source.fact-provenance"
+    ],
+    "source-analysis": [
+      "source.project-survey",
+      "source.facts",
+      "source.provider-attempts",
+      "source.literal-inventory",
+      "spec.content-rendering",
+      "spec.content-commit"
+    ],
+    "harness-check": [
+      "spec.source-provenance",
+      "spec.native-claims",
+      "spec.obligation-coverage",
+      "spec.coverage-ownership",
+      "spec.responsibility"
+    ],
+    "harness-init": [
+      "runtime.project-identity"
+    ],
+    "import-legacy": [
+      "runtime.project-identity",
+      "spec.upgrade"
+    ],
+    "capabilities": [],
+    "gate-artifacts": [
+      "spec.content-rendering",
+      "spec.coverage-report",
+      "plan.projection",
+      "execution.migration-report",
+      "verify.report"
+    ]
+  }
+}

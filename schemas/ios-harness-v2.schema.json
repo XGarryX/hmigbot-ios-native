@@ -1,0 +1,712 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hmigbot-ios:harness:2",
+  "$defs": {
+    "strings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "id",
+        "role",
+        "goal",
+        "ownership",
+        "fact_ids",
+        "ac_ids",
+        "parents"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "goal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ownership": {
+          "$ref": "#/$defs/strings"
+        },
+        "fact_ids": {
+          "$ref": "#/$defs/strings",
+          "minItems": 1
+        },
+        "ac_ids": {
+          "$ref": "#/$defs/strings"
+        },
+        "parents": {
+          "$ref": "#/$defs/strings"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plan_item_refs": {
+          "minItems": 1,
+          "$ref": "#/$defs/strings"
+        },
+        "mapping_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verification": {
+          "enum": [
+            "generated",
+            "compile",
+            "behavior",
+            "visual"
+          ]
+        },
+        "deletions": {
+          "$ref": "#/$defs/hashes",
+          "description": "Explicit deletion intent: exact owned regular file paths and their pre-dispatch SHA-256; not a product approval."
+        }
+      },
+      "additionalProperties": false
+    },
+    "promptScope": {
+      "description": "Explicit author-adopted prompt consumers only; omitted scope keeps a decision global. Runtime also validates known IDs and at least one actual consumer.",
+      "type": "object",
+      "properties": {
+        "task_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ac_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "description": "Existing decision fields remain open for compatibility; prompt_scope controls inlining, never ownership or acceptance.",
+      "type": "object",
+      "properties": {
+        "prompt_scope": {
+          "$ref": "#/$defs/promptScope"
+        }
+      },
+      "additionalProperties": true
+    },
+    "planRequest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave",
+        "graph_sha256",
+        "tasks"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "wave": {
+          "enum": [
+            "understand",
+            "domains"
+          ]
+        },
+        "graph_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "max_parallel": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/task"
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/decision"
+          }
+        },
+        "replan_review": {
+          "properties": {
+            "reviewer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "reviewer",
+            "reason"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "receipt": {
+      "type": "object",
+      "required": [
+        "ios_receipt_version",
+        "task_id",
+        "domain",
+        "source_sha256",
+        "plan_sha256",
+        "status",
+        "final_state",
+        "behavior_verified",
+        "ac_ids",
+        "file_hashes",
+        "files_touched",
+        "fixed",
+        "skipped",
+        "findings"
+      ],
+      "properties": {
+        "ios_receipt_version": {
+          "const": 2
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "plan_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "status": {
+          "enum": [
+            "generated",
+            "blocked"
+          ]
+        },
+        "final_state": {
+          "enum": [
+            "PASS",
+            "BLOCKED"
+          ]
+        },
+        "behavior_verified": {
+          "const": false
+        },
+        "ac_ids": {
+          "$ref": "#/$defs/strings"
+        },
+        "file_hashes": {
+          "$ref": "#/$defs/hashes"
+        },
+        "files_touched": {
+          "$ref": "#/$defs/strings"
+        },
+        "fixed": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "$ref": "#/$defs/strings"
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "deleted_files": {
+          "$ref": "#/$defs/hashes",
+          "description": "Physically absent planned paths and their pinned pre-dispatch SHA-256. file_hashes contains only existing written outputs."
+        }
+      },
+      "additionalProperties": false
+    },
+    "planItem": {
+      "required": [
+        "item_id",
+        "ac_ids",
+        "ownership",
+        "parents",
+        "page_ids",
+        "scope",
+        "verification"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "page_ids": {
+          "items": {
+            "type": "string",
+            "pattern": "^page_\\d{4}$"
+          },
+          "uniqueItems": true,
+          "type": "array"
+        },
+        "ownership": {
+          "$ref": "#/$defs/strings"
+        },
+        "verification": {
+          "enum": [
+            "generated",
+            "compile",
+            "behavior",
+            "visual"
+          ]
+        },
+        "scope": {
+          "enum": [
+            "product",
+            "excluded"
+          ]
+        },
+        "parents": {
+          "$ref": "#/$defs/strings"
+        },
+        "item_id": {
+          "type": "string",
+          "pattern": "^(?:UI:PAGE-\\d{4}|BASE:Base-\\d+(?:\\.\\d+)?|SLICE:F\\d+:3[a-d]|FV:FV-\\d+)$"
+        },
+        "ac_ids": {
+          "$ref": "#/$defs/strings"
+        }
+      },
+      "type": "object"
+    },
+    "planItems": {
+      "required": [
+        "plan_items_version",
+        "items"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "plan_items_version": {
+          "const": 2
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/planItem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "evidenceAxis": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_run",
+            "stale",
+            "legacy_unclassified",
+            "passed",
+            "failed",
+            "unverified",
+            "unmapped",
+            "unlanded",
+            "generated",
+            "blocked",
+            "partial"
+          ]
+        },
+        "ac_statuses": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "passed",
+              "failed",
+              "unverified"
+            ]
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "evidenceAxes": {
+      "type": "object",
+      "required": [
+        "generation",
+        "compilation",
+        "behavior",
+        "visual"
+      ],
+      "properties": {
+        "generation": {
+          "$ref": "#/$defs/evidenceAxis"
+        },
+        "compilation": {
+          "$ref": "#/$defs/evidenceAxis"
+        },
+        "behavior": {
+          "$ref": "#/$defs/evidenceAxis"
+        },
+        "visual": {
+          "$ref": "#/$defs/evidenceAxis"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pageEvidence": {
+      "type": "object",
+      "required": [
+        "page_id",
+        "spec",
+        "plan_item_refs",
+        "task_ids",
+        "target_paths",
+        "ac_ids",
+        "axes"
+      ],
+      "properties": {
+        "page_id": {
+          "type": "string",
+          "pattern": "^page_[0-9]{4}$"
+        },
+        "spec": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plan_item_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "task_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "target_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "ac_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "axes": {
+          "$ref": "#/$defs/evidenceAxes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "specSummary": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "source_sha256",
+        "axes",
+        "inputs",
+        "pages",
+        "behavior_verified",
+        "counts",
+        "legacy_progress",
+        "placeholders",
+        "scope"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "axes": {
+          "$ref": "#/$defs/evidenceAxes"
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pageEvidence"
+          }
+        },
+        "behavior_verified": {
+          "type": "boolean"
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "acceptance",
+            "features",
+            "pages"
+          ],
+          "properties": {
+            "acceptance": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "features": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pages": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "acceptance_all": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "acceptance_source_history": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "legacy_progress": {
+          "type": "object"
+        },
+        "placeholders": {
+          "type": "object"
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_responsibility": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "counts",
+            "behavior_verified"
+          ],
+          "properties": {
+            "enabled": {
+              "const": true
+            },
+            "counts": {
+              "type": "object"
+            },
+            "behavior_verified": {
+              "const": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "baseline": {
+          "type": "object",
+          "required": [
+            "status",
+            "missing_inputs",
+            "resume"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "not_established",
+                "pending_review",
+                "blocked"
+              ]
+            },
+            "missing_inputs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "resume": {
+              "type": "string"
+            },
+            "input_error": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalBuildIdentity": {
+      "type": "object",
+      "required": [
+        "project",
+        "scheme",
+        "target",
+        "configuration",
+        "sdk",
+        "architecture"
+      ],
+      "properties": {
+        "project": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scheme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "configuration": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sdk": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalConfig": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "build_evidence",
+        "expected_build"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "build_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_build": {
+          "$ref": "#/$defs/conditionalBuildIdentity"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditionalManifest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "source_sha256",
+        "build_evidence",
+        "build_manifest_sha256",
+        "expected_build",
+        "artifacts",
+        "scope",
+        "capture_authenticity",
+        "behavior_equivalence"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "clang_directives_only"
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "build_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "expected_build": {
+          "$ref": "#/$defs/conditionalBuildIdentity"
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "scope": {
+          "const": "textually_observed_compilation_units_and_include_occurrences"
+        },
+        "capture_authenticity": {
+          "const": "not_verified"
+        },
+        "behavior_equivalence": {
+          "const": "not_verified"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

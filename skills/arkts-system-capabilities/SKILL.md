@@ -10,6 +10,10 @@ metadata:
   - file-io
   - background-task
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。当前范围禁止屏幕读取/截图/录屏及设备远控；依赖这些观察的检查记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS System Capabilities — 系统能力指南
 
 ## API 版本
@@ -211,7 +215,7 @@ avPlayer.url = 'fd://' + file.fd.toString();
 
 ## 权限配置三件套
 
-音频/网络应用常用权限组合（均为 system_grant，无需弹窗）：按实际能力分别选用，不是每个音频 App 的固定要求；GET_NETWORK_INFO 对应实际网络信息 API 调用，纯本地播放不因该示例新增网络权限。
+音频/网络应用常用权限组合（均为 system_grant，无需弹窗）：
 
 ```json5
 "requestPermissions": [

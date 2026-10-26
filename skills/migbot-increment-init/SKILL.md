@@ -1,12 +1,7 @@
 ---
 name: migbot-increment-init
-description: |
-  触发：`$migbot-increment-init` 或自然语言（"初始化"/"init"/"环境检查"）。Migbot-Increment 工作流初始化 skill，在首次使用 migbot-increment-workflow 前执行环境检查和目录配置。
-  当用户说"初始化"、"init"、"环境检查"或首次使用 migbot-increment-workflow 前触发。
-  功能：项目路径验证、环境检查（编译/测试）、TEST_ROOT 检测、目录配置确认、Git 状态检查、会话恢复检查。
+description: "触发：`$migbot-increment-init` 或自然语言（\"初始化\"/\"init\"/\"环境检查\"）。Migbot-Increment 工作流初始化 skill，在首次使用 migbot-increment-workflow 前执行环境检查和目录配置。 当用户说\"初始化\"、\"init\"、\"环境检查\"或首次使用 migbot-increment-workflow 前触发。 功能：项目路径验证、环境检查（编译/测试）、TEST_ROOT 检测、目录配置确认、Git 状态检查、会话恢复检查。"
 ---
-
-> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # migbot-increment-init Skill
 
@@ -87,7 +82,6 @@ Step 8: 写入初始化标记 + 写入 README.md 配置摘要
 |---------|---------|---------|---------|
 | `hvigorw` | HarmonyOS | `hvigorw assembleHap` | `hvigorw test@entry` |
 | `package.json` | Node/JS/TS | `npm run build` | `npm test` |
-| `gradlew` | Gradle/iOS | `gradlew assembleDebug` | `gradlew test` |
 | 其他 | 未知类型 | 询问用户 | 询问用户 |
 
 ### 2-2: 验证项目路径
@@ -138,7 +132,6 @@ _
 |---------|---------|---------|
 | HarmonyOS | `hvigorw --version` | 输出版本号 |
 | Node/JS/TS | `node --version && npm --version` | 输出版本号 |
-| Gradle | `gradlew --version` | 输出版本号 |
 | 未知 | 询问用户 | 用户提供命令 |
 
 **失败处理（BLOCK — 必须修复，循环检查）：**
@@ -181,7 +174,6 @@ _
 |---------|---------|---------|
 | HarmonyOS | `hvigorw assembleHap` | BUILD SUCCESS |
 | Node/JS/TS | `npm run build` | 退出码 0 |
-| Gradle | `gradlew assembleDebug` | BUILD SUCCESSFUL |
 | 未知 | 询问用户 | 用户确认 |
 
 **失败处理（BLOCK — 必须修复，循环检查）：**
@@ -305,7 +297,6 @@ _
 | HARMONYOS_SDK_HOME | SDK 根目录 | {value} |
 | HARMONY_SDK_ROOT | SDK 根目录 | {value} |
 | OHOS_SDK_ROOT | SDK 根目录 | {value} |
-| JAVA_HOME | Java 运行环境 | {value} |
 | PATH | 系统路径 | {已记录} |
 
 ```
@@ -328,7 +319,6 @@ _
 | 工具 | 状态 |
 |------|------|
 | hvigorw | {✅/❌} |
-| Java | {✅/❌} |
 | SDK | {⚠️未设置} |
 
 ```
@@ -337,14 +327,12 @@ _
 | 工具 | 状态 |
 |------|------|
 | hvigorw | {✅ 找到 / ❌ 未找到} |
-| Java | {✅ 找到 / ❌ 未找到} |
 | SDK | {⚠️ 未设置} |
 
 请提供以下路径（如已知）：
 
 SDK 根目录：_
 hvigorw 路径：_
-Java 路径：_
 ```
 
 #### 3-4-3: 验证测试框架
@@ -487,66 +475,6 @@ git branch --show-current
 
 ### 8-1: 创建 specs/initialized.flag
 
-```markdown
-# Migbot-Increment Skill Bank - Initialization Flag
-
-## Init Date
-{YYYY-MM-DD HH:MM}
-
-## Project Configuration
-PROJECT_ROOT: {PROJECT_ROOT}
-CHANGES_ROOT: specs/changes
-SPECS_FEATURE_ROOT: specs/specs
-TEST_ROOT: {TEST_ROOT}
-
-## Build Configuration
-Build Tool: {build_tool}
-Build Version: {version}
-Build Command: hvigorw assembleHap
-Build Status: success/failed
-
-## Test Configuration
-Test Command: hvigorw test@entry
-Test Available: {true/false/fallback}
-Test Framework: {framework_name}
-Test Skills:
-  - harmony-ui-test: {loaded/skipped}
-Test Paths:
-  Primary: {TEST_ROOT}
-  Alternative: {user_provided_path}
-Test Notes: {user_provided_notes}
-Platform: {macOS/Linux/Windows}
-Project Type: {HarmonyOS/Node/Gradle/Other}
-
-## SDK Configuration
-SDK_HOME: {sdk_path}
-SDK Version: {sdk_version}
-hvigorw Path: {hvigorw_path}
-hvigorw Version: {version}
-Java Path: {java_path}
-Java Version: {version}
-Platform: {macOS/Linux/Windows}
-Project Type: {HarmonyOS/Node/Gradle/Other}
-
-## User Provided Paths
-SDK: {user_provided_sdk}
-hvigorw: {user_provided_hvigorw}
-Java: {user_provided_java}
-
-## Directories
-- [x] PROJECT_ROOT exists
-- [x] specs/changes/ created
-- [x] specs/guidelines/ created
-- [x] specs/archives/ created
-- [x] TEST_ROOT exists
-
-## Git State
-Status: {clean/dirty}
-Branch: {branch}
-
-## Session Recovery
-Last Session: {none/session_id}
-```
 
 ### 8-2: 写入 {PROJECT_ROOT}/README.md 配置摘要
 
@@ -569,7 +497,6 @@ Last Session: {none/session_id}
 | Tool | Path | Version |
 |------|------|---------|
 | hvigorw | {hvigorw_path} | {version} |
-| Java | {java_path} | {version} |
 | SDK | {sdk_path} | {sdk_version} |
 
 ### SDK

@@ -1,0 +1,6 @@
+interface:
+  display_name: Android UI to ArkUI
+  short_description: Audit and migrate Android View UI into ArkUI batches
+  default_prompt: Use $android-view-to-arkui to audit an Android View/XML app and migrate one feature batch into ArkUI with coverage and build checks.
+policy:
+  allow_implicit_invocation: false

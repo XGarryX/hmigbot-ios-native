@@ -168,7 +168,7 @@ PROCEDURE:
       # {项目名}
 
       > iOS → HarmonyOS 迁移工作区：{项目名}。
-      > 源项目：{ios_source_path}{tech_stack_chinese_note}。
+      > 源项目：{source_path_path}{tech_stack_chinese_note}。
       > Spec baseline 在 `spec/baseline/`；项目决策历史在 @spec/decision-ledger.md。
 
       {SNIPPET_BODY_DECISION}
@@ -180,12 +180,9 @@ PROCEDURE:
     RETURN created
 
   # 占位符填充规则：
-  #   {项目名}                    = a2h-spec 探测的项目短名（如 pokedex-compose / notepad-ios）
-  #   {ios_source_path}       = a2h-spec Step 3.0 记录的 $IOS_SRC（原始路径，不翻译）
+  #   {source_path_path}       = a2h-spec Step 3.0 记录的 $SOURCE_ROOT（原始路径，不翻译）
   #   {tech_stack_chinese_note}   = 可选，技术栈中文简述：
-  #                                  - "（SwiftUI，无 Storyboard/XIB）"
   #                                  - "（传统 View 体系，含 XML 布局）"
-  #                                  - "（Swift/Objective-C + SwiftUI/UIKit/Interface Builder 混合）"
   #                                  自动探测；无法探测时留空字符串
 
   content = read(CLAUDE_MD)

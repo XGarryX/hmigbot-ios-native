@@ -1,0 +1,13 @@
+# **HarmonyOS OneID SDK** 集成指南 
+
+## 前言 
+
+* 本文档介绍 DevEco Studio 版本 5.0.3.900 ,鸿蒙 API 12 ,个推 OneID SDK 集成方式 * 本文档适 用 OneID SDK 版本: 1.0.0 及以后 - 本文默认读者已经具有基础的鸿蒙知识,以及项目工程结构 如下: 
+
+Demo/ |- entry/ (项目主模块) | |- libs/ (第三方库 , 用户手动创建) 
+
+| |- src/ (代码目录) | |- oh-package.json5 (模块级 oh-package.json5 文件) |- build-profile.json5 |- hvigorfile.ts |- oh-package.json5 (顶层 oh-package.json5 文件) | ...... 注:其中 “......” 表示省略其他与本教程无关的内容,以下 “......” 表示相同意义,不再重复说明。 ## **1.** 重点提示 ### **1.1** 开发环境配置 - DevEco Studio 版本 5.0.3.900 及以上,鸿蒙 API 12 及以上。 早期需要联系华为技术人员获 取,在其指导下搭建好开发环境 ## **2.** 创建个推应用 请参考 创建应用 获取相应的 `AppID` 信息。该信息在之后的步骤配置中将会使用。 ## **3.** 本地集成 注意:当前只支持本地集成 ### **3.1** 下载配置 **SDK** 的 **har** 包 - 通过官网下载或技术支持获取 `OneID.har` - 在项目主模块 entry 下创建 libs 文件夹 将下载好的 har 包 `OneID.har` 放到 libs 文件夹下 Demo/ |- entry/ (项目主模块) | |- libs/ (第三方库 , 用户手动创建) | |-OneID-HM-1.0.0.har ( 个推 OneID SDK) | ...... ### **3.2** 配置依赖及参数 #### 1. 找到 entry 模块级 oh-package.json5 文件,依赖 `OneID.har` Demo/ |- entry/ (项目主模块) | |- libs/ (第三方库 , 用户手动创建) | |- src/ (代码目录) | | |- main/ | | | |- module.json5 (模块级基本配置文件) | |- oh-package.json5 (模块级 oh-package 文件) | ...... #### 2. oh-package.json5 配置如下: { "name": "entry", "version": "1.0.0", "description": "Please describe the basic information.", "main": "", "author": "", "license": "", "dependencies": { "@getui/oneid": "file:./libs/OneID-HM-1.0.0.har" } } #### 3. module.json5 配置如下: 配置注册好的 个推 `AppId` 和权限 { "module": { ..... "metadata": [ { "name": "GETUI_APPID", "value": " 替换您注册个推 AppId" }, { "name": "ZX_CHANNELID_GT", "value": "xxxx" } ], "requestPermissions": [ { "name": "ohos.permission.INTERNET" }, { "name": "ohos.permission.LOCATION", "usedScene": { "when": "always" }, "reason": "$string:permission_reason" }, { "name": "ohos.permission.APPROXIMATELY_LOCATION", "usedScene": { "when": "always" }, "reason": "$string:permission_reason" } ] } } #### 4. 运行指令 ohpm install - 在控制台进入 entry 目录,执行 ohpm install - 在 entry 目录下出现 oh_modules 文件夹,代表依赖成功 ## **4.** 集成代码 ### **4.1** 预初始化 在合适的时机进行初始化: `OneID.init(context: Context): Promise<string>` import { OneID } from '@getui/oneid'; OneID.init(this.context) .then((ret) => { hilog.info(0x0000, 'testOneID', 'OneID.init %{public}s', ret) }) .catch((err: Error) => { hilog.info(0x0000, 'testOneID', 'OneID.init Error %{public}s', err.message) }) ### **4.2** 场景查询
+
+查询场景信息: `OneID.queryLBS(context: Context, gpsInterval: number, gpsTimeOut: number): Promise<string>` 
+
+OneID.queryLBS(this.context, 30, 20) .then((ret) => { hilog.info(0x0000, 'testOneID', 'OneID.queryLBS %{public}s', ret) }) .catch((err: Error) => { hilog.info(0x0000, 'testOneID', 'OneID.queryLBS Error %{public}s', err.message) })

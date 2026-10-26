@@ -345,3 +345,5 @@ test -f docs/autofix-log/round-{ROUND}/fixer-summary*.md || echo "❌ 未写摘�
 
 不达标必须返工后再返回主线程。
 '''
+
+# 0.13.4: follow skills/a2h-run/references/execution-boundary.md; source evidence remains Git-owned.

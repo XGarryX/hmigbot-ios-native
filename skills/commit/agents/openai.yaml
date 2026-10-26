@@ -1,0 +1,4 @@
+interface:
+  display_name: commit
+  short_description: ArkTS 迁移/修复工作的 git commit 生成器，强制 7 字段结构化 commit message（大类/问题…
+  default_prompt: 请使用 $commit，按本技能的输入、执行步骤和验收条件完成当前任务。

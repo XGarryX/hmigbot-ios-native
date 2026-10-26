@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hmigbot-ios/spec-upgrade/1",
+  "type": "object",
+  "required": ["schema_version", "kind", "status", "project_root", "source_root", "source_sha256", "input_hashes", "spec_contract_version", "artifact_contract_revision", "retained_ids", "profile_diagnostics", "findings", "patches", "manual", "behavior_verified", "handoff"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "hmigbot-ios/spec-upgrade"},
+    "status": {"const": "diagnostic_requires_review"},
+    "project_root": {"type": "string", "minLength": 1},
+    "source_root": {"type": "string", "minLength": 1},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "input_hashes": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+    "spec_contract_version": {"enum": [1, 2]},
+    "artifact_contract_revision": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "retained_ids": {"type": "object", "required": ["features", "pages", "acceptance"], "properties": {
+      "features": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^F[0-9]+$"}},
+      "pages": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^page_[0-9]+$"}},
+      "acceptance": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^F[0-9]+-AC[0-9]+$"}}
+    }, "additionalProperties": false},
+    "profile_diagnostics": {"type": "object", "required": ["1", "2"], "properties": {"1": {"$ref": "#/$defs/diagnostic"}, "2": {"$ref": "#/$defs/diagnostic"}}, "additionalProperties": false},
+    "findings": {"type": "array", "items": {"type": "object", "required": ["category", "subject", "profiles", "rules", "origins"], "properties": {
+      "category": {"enum": ["missing", "legacy", "v2_added"]}, "subject": {"type": "string"}, "profiles": {"type": "array", "items": {"enum": [1, 2]}}, "rules": {"type": "array", "items": {"type": "string"}}, "origins": {"type": "array", "items": {"type": "object"}}
+    }, "additionalProperties": false}},
+    "patches": {"type": "array", "items": {"type": "object", "required": ["patch_id", "path", "before_sha256", "after_sha256", "operations", "content"], "properties": {
+      "patch_id": {"type": "string", "pattern": "^UP-[0-9a-f]{20}$"}, "path": {"type": "string", "pattern": "^spec/baseline/(features/F[0-9]+[^/]*\\.md|ui-snapshots/page_[0-9]+/meta\\.json)$"},
+      "before_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "after_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "operations": {"type": "array", "minItems": 1, "items": {"type": "object"}}, "content": {"type": "string"}
+    }, "additionalProperties": false}},
+    "manual": {"type": "array", "items": {"type": "object", "required": ["rule", "subject", "detail", "blocking"]}},
+    "behavior_verified": {"const": false},
+    "handoff": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false,
+  "$defs": {"diagnostic": {"type": "object", "required": ["status", "exit_code", "findings"], "properties": {"status": {"enum": ["PASS", "FAIL"]}, "exit_code": {"enum": [0, 2]}, "findings": {"type": "array", "items": {"type": "object"}}}, "additionalProperties": false}}
+}

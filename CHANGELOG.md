@@ -1,299 +1,292 @@
-# iOS 1.5.2-ios.32 · 网络权限预检适用性（2026-10-26）
+## [0.13.4] Git/Garry 阶段能力融合
+
+- init/spec/plan 的冲突实现由 git 主导，execute 本身及后续由 Garry 主导。
+- 采用 Garry 的执行/收口规程、签名路径适配、原始宿主日志 join、失败派发/授权恢复和图标输入守卫；不复制第二套源解析包。
+- 新增 execution-contract，实际校验并冻结上游输入，生成明确为静态的下游 meta/outline；拒绝混用两套 domains 调度。
+- 源事实/官方能力链、预算、受审重排、所有权、安装事务和旧冻结任务恢复保持各自合同。新增来源与阶段机器目录，过程证据保存在工具包外。
+- 本记录仅说明实现；真实测试、未验证平台与应用迁移结果分开交付。
+
+# 0.12.0 — 2026-10-23（原生能力归一）
+
+- 以原生 Xcode、资源坐标、ObjC、条件证据、责任及门禁内容为主，融合 Swift 边界/计算属性/identity、缓存、Provider attempts、预算、调度与 Windows 适配。
+- 显式 init-environment 准备受控入口与隔离属性；运行时只读复核。候选预览与提交共用内容生产器，schema 1 候选需重生成，作者文件与原账本写权保持。
+- 区分编译成员与预处理依赖；config 优先输入身份，未消费 input 不参与预检。明确行为范围，不扩大四项总体判定。
+- 验收结果与平台未验证项另记，工具回归不表示应用迁移或设备验收通过。
+
+# 0.9.7 — 2026-10-23（工具审计与责任投影闭环）
+
+- 新增项目边界内按需隔离属性修复（含原launcher约束）与显式repair-permissions；升级前归档清理旧机器派生文件、失败回滚，保留作者合同/原始证据/控制账本。
+- 二进制/XML plist 由真实格式解析器验证；语义证据使用实际资源坐标及字节摘要，坏资源继续阻断，Swift/OC 源码严格解码。
+- 同一只读 source responsibility 合同贯通原生语义、typed claims、覆盖、活动目标 AC、计划、调度、动作和质量视图；保留源事实、历史义务/AC、私有 unknown 与普通应用责任。
+- 批准替代核对原 helper 重建的 AC/决策、精确应用方法/公开调用、历史动作边界；支持合法混合目标动作但普通 app AC 仍需覆盖和归属。无可靠可达性证据的 unused_symbol 继续拒绝。
+- 冻结审阅、决策、语义、页面锚点、构建/条件证据、责任载荷、原解析器与通用规则；候选不能直接授权派发，变化在落账前拒绝。
+- UI 派生报告按精确源锚点登记，并展示全部复合类型；保留现有作者计划，不把文件存在或报告改善算作门禁通过。
+- 修复安装冒烟实测发现的macOS同目录别名共享合同报错，目录根归一后保留完整传递依赖；新增目录别名回归。
+- 新增工具/项目结果分离规程和托管 AGENTS 规则；工具回归、发布、安装、项目实测分别记录。安装与项目重跑见 [安装说明](docs/INSTALL.md) 和 [升级清理规则](docs/UPGRADE-CLEANUP.md)。
+
+# 0.9.6 — 2026-10-23（Objective-C状态事实修复）
+
+- 在0.9.5交付目录上保留资源路由、打包和安装修复，增加真实property/ivar状态事实。
+- 保留owner/type/ownership、存储依据、零初始化与独立init/lifecycle赋值证据；未知宏、字符字面量等不支持语法显式阻断。
+- 修复自定义setter、self遮蔽、属性宏、条件上下文边界，原typed消费者继续拒绝篡改和漏项，提取器纳入冻结revision。
+- 工具回归与源事实核验不能替代业务覆盖、主工程构建或设备验收；完整边界见docs/objc-state-facts.md。
+
+# 0.9.5 — 2026-10-23（本地目录交付修正）
+
+- 直接维护hmigbot-ios-main，以该目录为唯一交付源；README主标题与四处版本字段统一0.9.5。
+- 打包保留源目录名、文件内容、权限、ZIP精度的修改时间与空目录；新增根目录配置会随源树进入交付。
+- 显式列出系统缓存与本地状态排除项；输出位于源目录外，链接与打包期间的源变化拒绝生成完成收据。
+- 新增逐项源目录/ZIP/清单核对，安装冒烟从清单定位目录并验证，覆盖二进制资源及OC共存回归。
+- 0.9.3优化与0.9.4资源读取修复保留在本目录；未自动更新迁移工程，未上传服务器。
+
+# 0.9.4 — 2026-10-22（本地修复版）
+
+- 修复 source-check --harness 对资源事实无条件UTF-8读取并扫描Preview的问题；只对Swift源文件执行支持的Preview词法区间识别。
+- 规格汇总使用相同文件路由；plist/entitlements/xcprivacy/stringsdict等资源仍保留原事实、义务、AC与源摘要检查。现有plist格式分析器继续按字节使用plistlib解析。
+- 增加binary/XML plist、完整后续义务诊断、伪Preview排除拒绝、资源变更过期、损坏Swift及report-only不写回归。
+- 将source_scope/ios_harness绑定到冻结工具revision；已有冻结任务按原协议审阅/replan，不继承旧PASS。
+- 当前迁移项目仅做只读诊断，未自动升级其安装副本或修改任何共享账本；本次修复不宣称业务迁移完成。
+
+# 0.9.3 — 2026-10-22（本地发布候选）
+
+- 整合工程中已验证的 pragma、路径/调度、Spec/Plan、能力接线、结构审计、失败恢复及证据报告优化；逐项来源和限制保存在当轮外置整合证据中。
+- 选择性纳入 Clang 条件证据生产/回放/冻结及独立门禁诊断；保留未解析、不适用矛盾和过期阻断。
+- 接入门禁文件自动生成、零 AC 诚实汇总、精确派生文件审计与 shell/PowerShell 参数透传。
+- 修复 macOS 中文安装路径下原Nuitka检查器初始化abort，公共包装器统一ASCII临时执行位置。
+- 修复 macOS 原落账内核的共享库/解释器冲突和结构检查器布局；不修改原二进制字节或三账本算法。
+- 修复 Xcode 自动 AST 采集的 DerivedData/response 生命周期、失败构建拒绝及输出参数；真实 Clang 回归验证。
+- 发行检查改用 pytest 收集全部测试；登记原包既有参考资料差异，保留上游摘要、无二进制字节变更。
+- 本次验证范围为工具合同和本机安装/升级；不代表任何真实 App 的迁移、HAP 或双端行为验收。未上传服务器。
 
-- 修复所有HAP缺INTERNET一律FAIL的误判，公开入口增加可选三态适用性。默认unknown保留WARN；明确需要且配置的HAP/库主清单均缺声明时仍FAIL；调用方确认不需要时记不适用，工具不自动证明离线或写工程权限。
-- 同产品多HAP共享INTERNET声明；产品覆盖混合或成员未知保留WARN；仅库有声明时列出权限合并未核实，避免要求HAP重复申请。GET_NETWORK_INFO不作为通用必需。坏配置、缺模块、缺已声明签名材料等失败保留。
-- 同步数据层清单、网络排错建议及脚手架说明中的 INTERNET 适用性；第三方 SDK 资料及示例权限列表保留。
-- 同步环境医生skill、参考与自动修复条件，已知网络需求须传required，不以默认WARN代替权限验收。保留.31共享实例、安装入口及原阶段门；只在独立中性目录验证，不向运行工程安装。维护者 Garry，原作者及许可保留。
+# 0.9.2 — 2026-10-17
 
-# iOS 1.5.2-ios.31 · 共享实例转引与原生校验入口（2026-10-26）
+- 精确识别Xcode自动自引用workspace、已知IDE检查缓存和直属xcuserdata；真实workspace引用、共享Scheme、锁文件、配置与源码继续使摘要过期。
+- 新增只读spec-authoring完整清单与受当前源/MD摘要绑定的候选渲染；生成器与原门禁共享disposition schema、native维度/事实校验及源真值锚点规则。
+- 同步Spec规程、模板、产物合同及续跑步骤；未知/缺失/重复/越界和NA矛盾继续拒绝，不改应用源码或放宽门禁。
 
-- 为共享源文件提供可选的实例ID、声明位置到真实owner AC的直接引用；沿当前Source核对来源，再由原编译检查器分别测量直接覆盖和临时展开结果。正式画像、F/AC与分母保持，真实遗漏仍阻断。
-- 保留第一遍的非实例findings、组/skip及原writer循环语义；局部与report-only只读，诊断写入既有context。
-- 修复a2h-tool validate对正式runtime安装目录的发现，已安装入口按自身位置解析项目根，兼容空格/符号链接与旧布局；iOS runtime缺失明确失败。维护者 Garry，原作者及许可保留。
+# 0.9.1 — 2026-10-16
 
-# iOS 1.5.2-ios.30 · 冷启日志误报修正（2026-10-25）
+- 统一真实 Markdown 表格解析及目标列权限，处理相邻表、代码示例、行号/单元格跨度、核心标题歧义、缺件合并和显式未完成断言。
+- 按 catalog 的核心节/表头/稳定 ID 精确投影进度，阻断业务状态、范围与归属变化，typed segments 消除原文占位符碰撞；同步 Spec/Plan MD。
+- Swift 字符串保留完整 raw 分隔符、表达式和跨度，无法解码时标记 unresolved，不输出错误 value；同步资源消费 MD。
+- 新增只读 spec-upgrade 和明确选择候选的受控应用，不猜语义、不自动切 profile 或继承 PASS。
+- summary schema 2 逐页连接计划、原调度身份/落账、回执和当前输出；行为从本页 AC 原始观察推导；新增确定性 migration-report/--check，并在 Execute/Verify MD 实际调用。
+- 增加边界反例、独立审查及中性真实构建/逻辑评估；实际业务工程和双端设备验收仍不在本次完成范围。
 
-- 冷启崩溃判据区分官方 HiLog 默认格式的 D/I 级 Fault 生命周期通知与故障证据，W/E/F 和无法解析的匹配行继续阻断。
-- 远端状态 nonce 拆分输出，避免 ps 回显命令造成标记歧义；严格标记解析不变，进程名核对同时要求 PID 字段为数字。
-- AppRecovery 使用完整标识符边界，避免把框架 SetAppRecoveryFlag 等配置方法名当作恢复事件；cppcrash/jscrash 判据保留。范围仅通用探针、身份与说明，未改工程代码、C29回写及既有门禁。
-- 官方源码核对为 master，未证明设备ROM源码版本一致；未知 AppRecovery tag/作用域仍保守阻断。全局日志判据不证明目标应用发出了网络请求，也不替代设备行为或视觉验收。维护者 Garry，原作者及许可保留。
+# 0.9.0 — 2026-10-16
 
-# iOS 1.5.2-ios.29 · 终态回写与冷启探针结果修正（2026-10-25）
+- 以 MD 为主完善源分析步骤、正反例、页面组件/布局/ArkUI映射/资源表、共享动作单源、逐动作联读和原作者返修/独立复查；同步 Spec/Plan 模板、派发协议与角色。
+- 新项目启用 spec_contract_version=2；catalog/schema 与实际只读检查器共同限定核心章节、表头、页面 meta、动作定义/消费及按需 JSON 引用视图；原 API inventory 服务协议保留。
+- Plan 的 indexed MD、plan_items 投影与 typed task 对账 AC、页面、依赖、写权、范围及验证义务；冻结传递输入与工具合同版本，索引仅精确进度可变，禁止降级绕过。
+- 执行任务注入精确合同闭包，未读 addenda 阻断受影响 AC；独立 FV 无全工程写权，修复回原责任任务；统一既有六种 placeholder kind。
+- 新增 product-literals/spec-summary/plan-check；不覆盖 raw 字面量或三控制账本，不把历史 verified/brief PASS 当运行证据。编译和行为报告绑定当前源码、目标及规格摘要。
+- 增加正反例回归、实际模型生成的旧/新规则样本及独立源复核。发行检查验证工具合同和安装使用；不宣称真实 App 双端设备验收。
 
-- 补齐原规程 final 回写的 feature_index.verified 字段，保留原编译引擎和已有字段行为；全部预检、原生 dry-run、真实执行及状态写入分别留出失败结果。
-- 冷启探针校验 HDC 远端 nonce 状态、官方 aa 输出及精确进程名，防止 transport exit 0 掩盖启动失败。明确锁屏返回 3 并保留原粘性未验证债；未知应用启动失败仍返回 1。原 crash/网络 grep 语义保留。
-- 保留 .28 固定的继承上下文核验。设备成功路径目前仅中性模拟验证，锁屏真机只能验证不可观测分支；不宣称应用或视觉验收通过。维护者 Garry，原作者及许可保留。
+# 0.8.0 — 2026-10-14
+
+- 从原spec原则、下游plan/execute消费者和软件设计实践完善主规格、目标公共接口、状态/对接点与独立AC合同；保留原五阶段和三账本写者。
+- 增加只读spec-check，并集成source-check --harness；检查正文、明确目标符号、UI目标状态、精确共享引用、延期断言及import/Preview真值反例。
+- import不再生成持久化操作义务；保留Preview原始事实和义务，通过哈希、精确词法区间、审阅与skip-list验证非产品排除。
+- domains冻结共享合同的传递依赖与决策账本，保留进度索引可写性，并将Stage 0真实资源映射留在执行所有权/回执检查中。
+- 新门禁证明内容/消费者合同，不能证明全量语义或设备行为；旧baseline需补合同、重提事实并显式重排，不继承旧成功。
+
+# 0.7.0 — 2026-10-12
+
+- 固定并随包导入 AvdLee SwiftUI、Swift Concurrency 和 Axiom UIKit/内存主题，3 个 MIT 快照、87 个真实文件；逐文件来源和 SHA256 审计。
+- 增加 expertise-plan/review：按真实源 token 路由、固定资料摘要、逐源文件观察与审阅记录；接入 source-check --harness 和 domains 计划冻结。旧 0.6.0 项目续跑需补审阅，保持原 ID。
+- 增加 stdio MCP 源读客户端：初始化/发现/白名单查询、分页、超时与错误证据、原始响应和 transcript 摘要；语义以 tool_evidence_ids 关联，失败/过期/无关证据拒绝。
+- README 明确初始化及五阶段细分步骤、skill/MCP、产物路径、门禁和前后衔接；恢复/复盘继续复用原账本。
+- 本机实际验证为源审阅合同、隔离 MCP 协议进程及原消费者/安装；未实测真实 Serena/SourceKit/Xcode 服务或完整 App 双端行为。
+
+# 0.6.0 — 2026-10-09
 
-# iOS 1.5.2-ios.28 · 宿主继承上下文的派发者归属（2026-10-25）
+- 新增机器 iOS 事实图和规则派生义务，四类分析视图与实际 provider 接入；保留解析层级、源码片段、摘要和未知。
+- v2 事实门禁阻断 NA 矛盾、错误初值、无关锚点、漏义务及弱 oracle；七技能补可执行入口、专业规程、模板和 ArkUI 语义映射。
+- 接入字节不变的 CodeX 1.7.0 四拍核心；typed task/所有权/DAG/fact/AC、任务书和 baseline 冻结，真实回执及文件差异检查。
+- 增加事件/存储效果链和显式进程观察；默认未运行为 UNVERIFIED，不继承旧版 PASS。
+- 显式旧版导入、源刷新、重排与历史留存；Windows 冻结核心的宿主解释器适配；发行检查失败/超时保留报告。
+- 独立使用发现并修复单页 Batch 规则冲突、差异表头误报与字面量零扫描；原字面量入口改为真实 iOS 源提取。
+- 验收范围为工具与隔离样本，真实 App/Apple 构建/鸿蒙 HAP/双端设备验收仍未验证。
+
+# 0.5.0
 
-- 区分直接子任务的宿主继承上下文与真实自身操作；按真实父日志有序 payload、原 spawn 请求及规范返回路径双向核验，不裁剪原日志，不忽略未标记的外域控制。
-- 保留原根任务审计、真实子任务完成/契约与失败历史；目前仅支持已观察的 depth1 fork 格式，嵌套格式拒绝推断。
-- 包外子任务适配器须只读使用并记录来源，不覆盖已登记工程内的工具、STATE 或 receipt。整包安装须遵循原恢复协议。维护者 Garry，原作者及许可保留。
+- 原生重写 spec 前端；工程/UI/功能/API 四分析规程，保留 SwiftUI/UIKit/语言语义与独立行为真值。
+- 通用 source_anchors 与 ios-semantics 检查；保持原 a2h 计划/实施/验证消费者兼容。
+- 启用层全局清理源平台残留；96 技能、29 角色；完整 3,516 原资源独立归档随包。
+- 退出旧源画像/路由/默认尺寸推断入口；初始化无旧平台回退，图片检查只读前置。
+- 明确 Apple 官方技能存在但本次未加载，MCP 未连接；更新安装、README 和验证边界。
+
+# 0.4.0 — 2026-09-29
 
-# iOS 1.5.2-ios.27 · 安装布局升级的历史登记兼容（2026-10-25）
+- 将原独立 HMigBot 1.6.1 的 99 个技能、31 个角色、模板、参考、运行时和编译依赖复制入包；新增 3 个 iOS 技能与 2 个角色。
+- 恢复原 a2h 五阶段主线和原 spec/双计划/AC/findings/brief 接口；源分析、页面、资源、oracle 改为 iOS 分支。
+- 安装器改为独立全资源安装，清退旧六入口和外部绑定，保留用户修改与安全卸载。
+- 加入原消费者兼容、失败路径与独立发行包验证；记录原结构检查对空处理器的检测边界。
+
+# 0.3.1 · 2026-09-29
+
+- 六个入口改为直接维护的迁移规程，补齐上下文选择、源语义决策、实际实施与接线、失败修复、验收和续跑；增加各自按需参考。
+- 同步脚本只维护目录和机器索引，旧生成入口兼容但不再覆盖技能正文。
+- pipeline-status不再把缺失或空复盘报告标为已就绪；已登记的未关闭问题阻止进入验收审查。
+- 新增技能维护保真、参考安装/卸载回归，文档链接检查覆盖技能参考。
+- 本轮属于执行规程与状态正确性修正，不代表复杂应用或长任务代理行为已验证。
+
+# 0.3.0 · 2026-09-28
+
+- 纠正主线为“iOS源码/功能契约 → 原HMigBot鸿蒙技能 → 实际目标代码”，撤回0.2.0已完成通用工具的表述。
+- 新增原HMigBot绑定、契约草稿、真实原技能路由与执行前新鲜度校验；任务准备不冒充代码已生成。
+- 6个迁移入口取代66个入口，62项保留为内部检查清单；旧CLI和原子ID兼容。
+- 安装器支持原HMigBot路径，保留绑定、编辑保护，升级清理已退休的原生成技能。
+- 原Android单测oracle、闭包/覆盖消费者尚未适配，禁止假冒接通；云构建/iPhone回归辅助验收定位。
+
+# 0.2.0 · 2026-09-28（历史记录，架构缺陷已在0.3.0纠正）
+
+- 62个独立原子技能及完整编排，保留3个快捷入口，共66个；维护源、自动生成脚本、明确执行模式与验收契约。
+- pbxproj/锁文件/IB/SwiftSyntax/Clang实际provider，源锚点与过期证据检查。
+- 原生Stage骨架、PNG与字面量本地化转换、资源调用绑定；目标构建支持模块/产品与人工代码修订。
+- 五阶段运行目录、功能覆盖、独立oracle比较、实际外部采集。
+- 私有GitHub云Xcode构建、证据下载和IPA设备架构检查；Windows普通Apple账户本地签名教程。
+- 完整安装/升级/卸载脚本、中文/空格路径、归属及用户编辑保护，重写使用说明和范围说明。
+
+完整性、自测和局部构建不能代替任意业务应用的双端验收，验证结果以当轮外置证据为准。
+
+# 0.1.0 · 2026-09-28
+
+首个源码开发版：原生工程静态扫描、事实/配置/证据契约、迁移计划、闭合 SwiftUI 子集到 ArkUI 页面草稿、Stage 工程生成、显式 Hvigor 编译和可移植插件打包。
+
+通用规则与业务示例分离。未知语法拒绝转换，旧配置冲突拒绝读取，生成不覆盖已有工程，旧摘要不能证明新源码，完整性/编译/行为验证状态分别记录。
+
+完整原生应用迁移、编译器语义 provider、UIKit 转换、跨端运行等价与 HMigBot 原五阶段集成尚未完成。具体证据保存在当轮外置验证记录中。
+
+# 0.11.0 — 2026-10-22
+
+- Align decision-ledger paths, source/build admission and failed-hard-gate handling; expose existing prompt scopes through maintained author instructions, examples and schema.
+- Validate shared task input paths and conflicting hashes before hashing each distinct file once per scheduler step; retain full current evidence gates.
+- Add atomic explicit usage reservations, settlement and audited uncalled releases. First reservation upgrades ledgers to schema 2 so older readers cannot ignore in-flight bounds; unresolved usage remains blocking.
+- Preflight complete provider plans before execution; record current discovery-only host/provider guidance in source preparation receipts without claiming native execution or compiler binding.
+- Reuse existing Windows extended-length IO at provider capture/config/input/retry boundaries, with real deep-path lifecycle regression coverage and portable contract paths.
+- Distinguish exact reviewed platform comparisons from unreviewed legacy instructions in native-surface audits; preserve adjacent-command and stale-review rejection.
+- Make full-suite release timeout and fresh dedicated test paths explicit and retain timeout evidence; correct the Execute skill description for the official validator.
+- Deliver a standalone Mac handoff with native evidence design; application acceptance still requires separate verification.
+- Preserve original pipeline, vendor resources, control-state writers and local verification semantics. Real App equivalence and end-to-end scale/time/token goals remain unverified.
+
+# 0.10.1 — 2026-10-21
+
+- Distinguish replayed identity member reads from ForEach and identity modifier calls; allow unit/contract/UI observations for value reads while retaining conservative UI judgments for calls, writes and unknown uses.
+- Bind contextual selectors and lexical classification policy to the complete rules digest; preserve fact IDs/counts and reject tampered metadata through source replay.
+- Require existing baselines to be re-extracted and reviewed with the current runtime; no stale gate success is inherited. Tool checks do not establish application UI or functional equivalence.
+
+# 0.10.0 — 2026-10-20
+
+- Add fresh source preparation and source-bound, unreviewed specification scaffolds.
+- Guard Unicode feature discovery, zero-object checks, input/output isolation and coverage ownership.
+- Keep target-specific extraction findings distinct; restore the original Swift string regression cases.
+- Project explicit decision consumers into task prompts while preserving shared decisions and full ledger hashes.
+- Add replayable usage and wall-time budgets, boot/host checks and isolated synthetic scale probes.
+- Check explicitly selected usage budgets before scheduler dispatch; preserve landing after exhaustion.
+- Make subprocess limits configurable by stage with a shared deadline; isolate default pytest collection from vendor archives.
+- Add three neutral host behavior baselines with separate business/guard denominators and explicit runtime selection.
+- Bind per-file fact caches to content hashes and preserve concurrent provider attempts and their exact inputs.
+- Capture actual Xcode compiler membership and pin its identity when a selected-build scope consumes it.
+- Save reviewed Harmony build diagnostics, reject contradictory success logs and stage the real base Python on Windows.
+- Preserve unknown/unsupported/unverified states. Application equivalence and end-to-end performance require separate evidence.
 
-- 按原收据链、历史快照边界和归档脚本 SHA 核验各代规范登记路径，避免以当前安装目录误判旧登记。当前登记仍只接受本代真实入口，原调用、失败审计与格式守卫保留。
-- 保留状态丢失检查；旧路径只用于阻断丢失状态，不能授权新登记或改变范围。
-- 保留 .26 的检测、官方 SDK 与运行时修复；本候选的登记回归与应用 EXECUTE 分开验证。维护者 Garry，原作者及许可保留。
+# 0.9.2 — 2026-10-17
 
-# iOS 1.5.2-ios.26 · Mac 运行时目录与检测入口修复（2026-10-25）
+- 精确识别Xcode自动自引用workspace、已知IDE检查缓存和直属xcuserdata；真实workspace引用、共享Scheme、锁文件、配置与源码继续使摘要过期。
+- 新增只读spec-authoring完整清单与受当前源/MD摘要绑定的候选渲染；生成器与原门禁共享disposition schema、native维度/事实校验及源真值锚点规则。
+- 同步Spec规程、模板、产物合同及续跑步骤；未知/缺失/重复/越界和NA矛盾继续拒绝，不改应用源码或放宽门禁。
 
-- 托管整包运行时迁至 `.agents/hmigbot-runtime/`，更新技能定位、安装归属及恢复检查；保留用户文件与原门禁。
-- 补齐新制能力装配闸的 Mac 分发入口，仍调用同包原始检测器。
-- 补齐同文件组件组合的官方 ETS 识别与 WidgetKit 官方 UI 内容槽位，保持原事实、失败历史及未验证边界。
-- 当前为验证候选；维护者 Garry，原作者及许可保留。
+# 0.9.1 — 2026-10-16
 
-# iOS 1.5.2-ios.25 · 原生显隐投影与 FV 测量适配（2026-10-25）
+- 统一真实 Markdown 表格解析及目标列权限，处理相邻表、代码示例、行号/单元格跨度、核心标题歧义、缺件合并和显式未完成断言。
+- 按 catalog 的核心节/表头/稳定 ID 精确投影进度，阻断业务状态、范围与归属变化，typed segments 消除原文占位符碰撞；同步 Spec/Plan MD。
+- Swift 字符串保留完整 raw 分隔符、表达式和跨度，无法解码时标记 unresolved，不输出错误 value；同步资源消费 MD。
+- 新增只读 spec-upgrade 和明确选择候选的受控应用，不猜语义、不自动切 profile 或继承 PASS。
+- summary schema 2 逐页连接计划、原调度身份/落账、回执和当前输出；行为从本页 AC 原始观察推导；新增确定性 migration-report/--check，并在 Execute/Verify MD 实际调用。
+- 增加边界反例、独立审查及中性真实构建/逻辑评估；实际业务工程和双端设备验收仍不在本次完成范围。
 
-- 以 .24 为基础合入独立 .23 候选的通用修复，保留合法空作用域审计及原收敛规则。原 Mac 二进制和执行位清单不变。
-- 补齐原 pipeline 引擎发现同包六个检测入口与两个运行库入口的路径转发，实际调用原检测器，不替代检查或产生空 PASS。
-- 为已批准平台映射提供可选的整行显隐投影输入；官方 SwiftSyntax、ETS parser/checker 核对完整 FormBindingData/LocalStorage/组件条件链。缺少声明保持原路径，不能证明时保留原 FAIL，不按源变量名强迫目标改名。
-- 有声明时，原 13 个检测器在独立临时目录真实测量，完整原始输出留证；重算当前事实并沿原历史判定。采用 state 最后提交、失败回滚与未完成事务预检，不向 state/result 添加新字段。
-- 明确既有 P1-C 调用方、事件、内部动作与晚绑定的投影说明；判定器、阶段、用户门和验收范围不增加。
-- 本目录先作为整包验证候选；各模块中性测试不等于整包 QA、应用 EXECUTE 或设备验收完成。维护者 Garry；原作者及许可保留。
+# 0.9.0 — 2026-10-16
 
-# iOS 1.5.2-ios.24 · 恢复原空作用域审计（2026-10-25）
+- 以 MD 为主完善源分析步骤、正反例、页面组件/布局/ArkUI映射/资源表、共享动作单源、逐动作联读和原作者返修/独立复查；同步 Spec/Plan 模板、派发协议与角色。
+- 新项目启用 spec_contract_version=2；catalog/schema 与实际只读检查器共同限定核心章节、表头、页面 meta、动作定义/消费及按需 JSON 引用视图；原 API inventory 服务协议保留。
+- Plan 的 indexed MD、plan_items 投影与 typed task 对账 AC、页面、依赖、写权、范围及验证义务；冻结传递输入与工具合同版本，索引仅精确进度可变，禁止降级绕过。
+- 执行任务注入精确合同闭包，未读 addenda 阻断受影响 AC；独立 FV 无全工程写权，修复回原责任任务；统一既有六种 placeholder kind。
+- 新增 product-literals/spec-summary/plan-check；不覆盖 raw 字面量或三控制账本，不把历史 verified/brief PASS 当运行证据。编译和行为报告绑定当前源码、目标及规格摘要。
+- 增加正反例回归、实际模型生成的旧/新规则样本及独立源复核。发行检查验证工具合同和安装使用；不宣称真实 App 双端设备验收。
 
-- 基于生产版 .22，仅修复 source_loop 的合法空 scope 分支：与原 1.5.2 编译引擎一样，按真实零候选集合写四键空审计回执，避免误调用要求文件参数的扫描 CLI。非空扫描路径、C1–C4、收敛规则和最终全工程审计不变。
-- 未增加扫描范围或门禁；不将未扫描的自建文件说成已审计。原模块仅提供 CLI，无可直接调用的审计函数，空回执以同字节原编译 payload 的实际输出作 oracle。
-- 保留 .22 的全部既有修复；未合入尚未完成的 .23 FV 适配候选。Mach-O payload 与权限清单不变。
+# 0.8.0 — 2026-10-14
 
-# iOS 1.5.2-ios.22 · 包身份同步（2026-10-25）
+- 从原spec原则、下游plan/execute消费者和软件设计实践完善主规格、目标公共接口、状态/对接点与独立AC合同；保留原五阶段和三账本写者。
+- 增加只读spec-check，并集成source-check --harness；检查正文、明确目标符号、UI目标状态、精确共享引用、延期断言及import/Preview真值反例。
+- import不再生成持久化操作义务；保留Preview原始事实和义务，通过哈希、精确词法区间、审阅与skip-list验证非产品排除。
+- domains冻结共享合同的传递依赖与决策账本，保留进度索引可写性，并将Stage 0真实资源映射留在执行所有权/回执检查中。
+- 新门禁证明内容/消费者合同，不能证明全量语义或设备行为；旧baseline需补合同、重提事实并显式重排，不继承旧成功。
 
-- 同步 Python 运行时、插件元数据和构建版本号。ios.21 因运行时版本常量未同步，在真实 seal 身份校验时失败；该候选包、安装清单及失败日志完整保留，未进入新登记。
-- 保留 ios.21 已审过的通用结构检查实现和 ios.20 运行库权限修复，四个测量模块及原二进制字节不变；不放宽身份或恢复门禁。
+# 0.7.0 — 2026-10-12
 
-# iOS 1.5.2-ios.21 · Mac 结构检查修正（2026-10-25）
+- 固定并随包导入 AvdLee SwiftUI、Swift Concurrency 和 Axiom UIKit/内存主题，3 个 MIT 快照、87 个真实文件；逐文件来源和 SHA256 审计。
+- 增加 expertise-plan/review：按真实源 token 路由、固定资料摘要、逐源文件观察与审阅记录；接入 source-check --harness 和 domains 计划冻结。旧 0.6.0 项目续跑需补审阅，保持原 ID。
+- 增加 stdio MCP 源读客户端：初始化/发现/白名单查询、分页、超时与错误证据、原始响应和 transcript 摘要；语义以 tool_evidence_ids 关联，失败/过期/无关证据拒绝。
+- README 明确初始化及五阶段细分步骤、skill/MCP、产物路径、门禁和前后衔接；恢复/复盘继续复用原账本。
+- 本机实际验证为源审阅合同、隔离 MCP 协议进程及原消费者/安装；未实测真实 Serena/SourceKit/Xcode 服务或完整 App 双端行为。
 
-- slice/group 的 C2/C3 从实际源码独立判定，使用所选官方 DevEco SDK ETS parser 及其配置；C1/C4、audit、stage/pipeline/finalize 继续复用原引擎，二进制字节保留。
-- 修复 APFS 大小写候选、原组装根真实消费误拒、跨 handler 的 FWD 归属及嵌套箭头自体标记漏检；保留原真正失败条件、目录优先级和原收敛常量/上限。
-- 修复混合 PID/行号指纹排序崩溃、同轮旧 audit PASS 被复用；原历史值与失败记录保留，证据按次归档。
-- 通过 macOS 文件描述符取得物理路径和身份；C2 候选与 C3 明示文件分离，保留 Mac 同文件别名及原项目外路径语义。CRLF/CR/UTF-8 与 SDK 坐标一致。
-- 整轮共享计划、源码、登记表、handoff 输入签名，途中变化和额外证据 IO 失败停止本轮；原初始格式错误仍交原引擎处理。不增加阶段、审批或应用特判。
-- 保留 ios.20 的运行库执行位修复。本候选包 QA 与实际流水线收口分开记录，不代表应用 EXECUTE 或设备验收完成。
+# 0.6.0 — 2026-10-09
 
-# iOS 1.5.2-ios.20 · Mac 运行库执行权限修复（2026-10-24）
+- 新增机器 iOS 事实图和规则派生义务，四类分析视图与实际 provider 接入；保留解析层级、源码片段、摘要和未知。
+- v2 事实门禁阻断 NA 矛盾、错误初值、无关锚点、漏义务及弱 oracle；七技能补可执行入口、专业规程、模板和 ArkUI 语义映射。
+- 接入字节不变的 CodeX 1.7.0 四拍核心；typed task/所有权/DAG/fact/AC、任务书和 baseline 冻结，真实回执及文件差异检查。
+- 增加事件/存储效果链和显式进程观察；默认未运行为 UNVERIFIED，不继承旧版 PASS。
+- 显式旧版导入、源刷新、重排与历史留存；Windows 冻结核心的宿主解释器适配；发行检查失败/超时保留报告。
+- 独立使用发现并修复单页 Batch 规则冲突、差异表头误报与字面量零扫描；原字面量入口改为真实 iOS 源提取。
+- 验收范围为工具与隔离样本，真实 App/Apple 构建/鸿蒙 HAP/双端设备验收仍未验证。
 
-- 恢复与安卓 1.5.2 内容 SHA 相同的 Mac 运行库原有执行位；共享库不再被误识别为子进程解释器。原引擎字节、源码映射、阶段、模板与门禁不改。
-- 随包记录运行库 SHA 与执行位；安装、升级按该清单复制，内容相同但执行位错误的旧文件也会修复。旧安装清单兼容，用户内容修改仍按 SHA 保护，失败回滚保留原权限。
-- 已定位旧 ios.12/ios.14 分发包及 ios.14 Git 索引中存在错误执行位；最初引入该权限的操作尚未确认。
-- 增加开发期打包权限检查脚本；安装不依赖外部安卓目录。不采用未部署 ios.19 实验的 Mach-O 改写、重签名或解释器 relay。
+# 0.5.0
 
-# iOS 1.5.2-ios.18 · 登记表追加格式与显式恢复（2026-10-24）
+- 原生重写 spec 前端；工程/UI/功能/API 四分析规程，保留 SwiftUI/UIKit/语言语义与独立行为真值。
+- 通用 source_anchors 与 ios-semantics 检查；保持原 a2h 计划/实施/验证消费者兼容。
+- 启用层全局清理源平台残留；96 技能、29 角色；完整 3,516 原资源独立归档随包。
+- 退出旧源画像/路由/默认尺寸推断入口；初始化无旧平台回退，图片检查只读前置。
+- 明确 Apple 官方技能存在但本次未加载，MCP 未连接；更新安装、README 和验证边界。
 
-- 补齐通用 P-ID producer 的独立六列表段追加格式，保留原登记时机与并行追加例外。
-- closer 可通过 manifest 显式申请只插表头的历史格式修复；apply launcher 处理后交原二进制，保留原数据行、retag/resolve、exit 与门禁。失败回滚 registry，dry-run 使用私有副本。
-- 无新字段的原路径保持；不包含应用、页面或 P-ID 特判。保留 .17 的历史恢复边界修正。
+# 0.4.0 — 2026-09-29
 
-# iOS 1.5.2-ios.17 · 历史恢复校验范围修正（2026-10-24）
+- 将原独立 HMigBot 1.6.1 的 99 个技能、31 个角色、模板、参考、运行时和编译依赖复制入包；新增 3 个 iOS 技能与 2 个角色。
+- 恢复原 a2h 五阶段主线和原 spec/双计划/AC/findings/brief 接口；源分析、页面、资源、oracle 改为 iOS 分支。
+- 安装器改为独立全资源安装，清退旧六入口和外部绑定，保留用户修改与安全卸载。
+- 加入原消费者兼容、失败路径与独立发行包验证；记录原结构检查对空处理器的检测边界。
 
-- 授权恢复时，历史 previous attempt 按其原始 enrollment 边界验证；两处历史调用不再把后续已封存的失败调用误当作旧活动尝试的新输入。缺少历史边界仍沿用原严格行为。
-- 当前 attempt 的完整协议、真实宿主调用/成功输出、源码前缀、receipt、安装归属和备份校验保持；完整旧日志、foreign 调用和失败审计原样封存，不转成当前收口证据。
-- 保留 .16 的通用可见性、Stage 审计收集和具体步骤断点恢复修复。本条不是迁移应用完成或设备验收证明。
+# 0.3.1 · 2026-09-29
 
-# iOS 1.5.2-ios.16 · 可见性事实与局部恢复修正（2026-10-24）
+- 六个入口改为直接维护的迁移规程，补齐上下文选择、源语义决策、实际实施与接线、失败修复、验收和续跑；增加各自按需参考。
+- 同步脚本只维护目录和机器索引，旧生成入口兼容但不再覆盖技能正文。
+- pipeline-status不再把缺失或空复盘报告标为已就绪；已登记的未关闭问题阻止进入验收审查。
+- 新增技能维护保真、参考安装/卸载回归，文档链接检查覆盖技能参考。
+- 本轮属于执行规程与状态正确性修正，不代表复杂应用或长任务代理行为已验证。
 
-- Swift 可见性候选复用已有 Xcode SwiftParser / SwiftSyntax provider，记录条件、动态 opacity、UIKit isHidden/alpha 的真实语法范围、最近类型及数据引用；常量样式、构造器/参数标签、按钮行为闭包不充当动态显隐字段。未知渲染闭包单列 unresolved，保留原 Phase A 语义补充；Objective-C 的有限原路径保留。
-- Stage 结构审计的默认文件收集补入工作区、暂存及未跟踪且未忽略的 ETS，与基线以来已提交差异合并。显式 scope-files 原样尊重；原二进制引擎、断言、等级和范围模式不改。
-- 在 iOS 映射附注澄清非状态变量装饰器仍须遵守目标 SDK 继承签名；安卓原 v2 命名规则文件逐字保留。
-- 按用户要求，将恢复粒度明确为最早实际受影响的具体步骤，保留未受影响产物；不因工具版本变化自动整阶段重跑，不增加审批或门禁。
-- 独立副本修复；本条不代表应用 EXECUTE、设备或视觉验收已完成。
+# 0.3.0 · 2026-09-28
 
-# iOS 1.5.2-ios.15 · 通用执行调用与映射知识修正（2026-10-24）
+- 纠正主线为“iOS源码/功能契约 → 原HMigBot鸿蒙技能 → 实际目标代码”，撤回0.2.0已完成通用工具的表述。
+- 新增原HMigBot绑定、契约草稿、真实原技能路由与执行前新鲜度校验；任务准备不冒充代码已生成。
+- 6个迁移入口取代66个入口，62项保留为内部检查清单；旧CLI和原子ID兼容。
+- 安装器支持原HMigBot路径，保留绑定、编辑保护，升级清理已退休的原生成技能。
+- 原Android单测oracle、闭包/覆盖消费者尚未适配，禁止假冒接通；云构建/iPhone回归辅助验收定位。
 
-- AC 认领 linter 的调用时机按原 writeback schema 对齐：无 AC 归属的 batch / 仅 brief 单元不执行该认领结算；普通 group（含单 slice）及 final 的原认领、缺失阻断与完整覆盖要求保留。原编译引擎、错误等级和断言不改，不按项目名、需求数量或认领文件是否存在放行。
-- 将已有原生 UI 映射文件改为实际引用的 `ios-to-arkui-mapping.md`；内容保留，修复通用缺失引用。
-- 收窄 Stack 子项 `.align()` 定位警示，并同步公共 prompt、清理该段源平台 `FrameLayout` 术语残留；原三种定位映射的排他要求保留，保留官方 `CommonMethod.align` / `StackAttribute.alignContent` 对 Stack 本体的合法语义与后设置者生效规则。
-- 删除 `arkts-large-font` 三处不存在的 `Image.fontSize` 说法；依据当前官方 `ImageAttribute` / `CommonMethod` 声明，保留 `SymbolGlyph.fontSize` 的 fp 与局部缩放说明，以及 Image 几何尺寸规则。
-- 原生映射补充 Apple 官方 fixed / semantic 字号差别、布局收缩与系统字号缩放的区别，以及官方 `SheetOptions.showClose` 默认值核对；仅说明通用语言/API 语义，不包含应用名、页面、业务数值或放行特例。
-- 独立副本修复；旧失败和修复验证分别留证，不代表应用 EXECUTE、设备或视觉验收已完成。
+# 0.2.0 · 2026-09-28（历史记录，架构缺陷已在0.3.0纠正）
 
-# iOS 1.5.2-ios.14 · 字号单位知识修正（2026-10-24）
+- 62个独立原子技能及完整编排，保留3个快捷入口，共66个；维护源、自动生成脚本、明确执行模式与验收契约。
+- pbxproj/锁文件/IB/SwiftSyntax/Clang实际provider，源锚点与过期证据检查。
+- 原生Stage骨架、PNG与字面量本地化转换、资源调用绑定；目标构建支持模块/产品与人工代码修订。
+- 五阶段运行目录、功能覆盖、独立oracle比较、实际外部采集。
+- 私有GitHub云Xcode构建、证据下载和IPA设备架构检查；Windows普通Apple账户本地签名教程。
+- 完整安装/升级/卸载脚本、中文/空格路径、归属及用户编辑保护，重写使用说明和范围说明。
 
-- 修正从安卓 1.5.2 沿用的 `arkts-large-font` 知识矛盾：`SymbolGlyph.fontSize` 的裸数字默认 fp；固定系统字体缩放依靠局部 `minFontScale(1).maxFontScale(1)`，是否固定仍按源语义决定。仅修正该 skill 与 patterns 的四处说明，现有 API 示例调用、流程、模板和门禁保留。
-- 依据本机官方 SDK `ets/component/symbolglyph.d.ts:619–641` 的 `Unit: fp`、`:778–805` 的缩放 API 声明。该结论只适用于 `fontSize`，不将 width/height/padding 的裸数字单位改成 fp。
-- 独立副本实施；本条不是新轮流水线完成或设备验收证明，实际回归与重跑证据单独记录。
+完整性、自测和局部构建不能代替任意业务应用的双端验收，验证结果以当轮外置证据为准。
 
-# iOS 1.5.2-ios.13 · Mac 官方输入适配（2026-10-23）
+# 0.1.0 · 2026-09-28
 
-- 当前安装面向 Mac；直接发现完整 Xcode、编译器及 SDK。
-- OpenStep 语法转交 Apple plutil；正式 Swift 词法、声明、枚举及静态字符串解码使用 SwiftParser / SwiftSyntax。
-- 原子条件查询与完整表达式对照使用目标 iOS 编译器，SwiftIfConfig 在原始坐标选择分支；保留 unknown 与原证据校验。
-- 新增真实 Release 查询/无签名构建捕获；仅去重 Xcode 逐字段相同的配置条目，缺省 flags 与实际 SwiftDriver 参数核对。
-- 原阶段、F/AC、模板、覆盖门禁与原编译程序保留；历史 Windows 回归不冒称本轮 Mac 验证。当前验证以独立本轮报告为准。
-- 修正结构检查读取 CRLF frontmatter 名称的行尾处理；安装时仅对本包清单内、当前架构且哈希核对一致的原生程序逐文件处理下载隔离标记，保留原升级保护及事务回滚。
-- 官方数字 token 消除 `$0` / `$1` 的伪常量；十进制下划线数字标准化并保留原表达式，未解码的非十进制数单独记账。INIT / 原生输入说明同步 Mac 本地捕获与自动 provider 流程。
+首个源码开发版：原生工程静态扫描、事实/配置/证据契约、迁移计划、闭合 SwiftUI 子集到 ArkUI 页面草稿、Stage 工程生成、显式 Hvigor 编译和可移植插件打包。
 
-- 2026-10-24 Mac 实测补修：收口器将宿主精确的纯文本非法任务名拒绝归为失败派发，保留原请求及错误；不改名、不造句柄、不放行旧失败。未知纯文本仍拒绝，原JSON错误/成功与授权空工程恢复语义不变。专项12项回归通过；本轮EXECUTE尚未完成。
+通用规则与业务示例分离。未知语法拒绝转换，旧配置冲突拒绝读取，生成不覆盖已有工程，旧摘要不能证明新源码，完整性/编译/行为验证状态分别记录。
 
-- 2026-10-24 Mac 构建实测补修：原签名探测引擎传绝对项目路径会误报配置不存在；Mac launcher 对单个已存在项目目录先解析调用方路径，再用对应 cwd 与 `.` 调原引擎并同步 PWD。原签名判断、证书链及 profile 到期检查、输出和退出码保留，不改用户签名或引擎字节。14 项真实引擎对照通过；回归见 `evaluations/test_signing_path.py`，R4 在正式 assemble 前停止并按授权重新从空工程运行。
-
-# iOS 1.5.2-ios.12（2026-10-23）
-
-- 修复环境体检公开 argv 入口，支持项目路径、报告、帮助和有界超时。
-- 补齐 SDK/工具版本、设备列表、签名材料、HAP 权限与库模块边界；修复 JSON5 转义、跨平台路径及继承输出句柄问题。
-- 原编译二进制字节保留；原生诊断实现和边界明确披露。保留 ios.11 的日志范围和恢复登记修复。
-- Windows 完整回归 644 passed、2 skipped、51 subtests passed，exit 0。两项 skip 为 WinError 1314 目录符号链接权限。结构检查 99 skills / 22 agents PASS。独立 Clidex Claude 仅文字复核，最终未发现阻断项，未独立执行测试。Mac/Linux 真实环境未验证；本版 INIT→EXECUTE 尚未完成，没有最终 HAP 或应用行为结论。
-
-# iOS 1.5.2-ios.11（2026-10-23）
-
-- 顶层及内部收口入口以实际 CODEX_THREAD_ID 绑定自身完整原生日志，修复按同目录混计不同会话的缺陷。
-- 增加授权恢复后的同宿主尝试登记：完整归档、核验事先批准的空备份并安装后，在 INIT 前登记；旧失败保留，原日志不修改，当前任务仍需真实 completed 与产物契约。
-- 补齐完整任务列表的筛选及调用时序检查、失败派发的补派要求、历史任务别名及子树隔离、安装文件实物哈希核对。
-- seal 要求显式传入事先批准的空备份清单 SHA；拒绝将含 spec 或迁移配置的目录作为空备份。登记写出 created 后又非零退出的调用不再被当作可忽略失败。
-- 保留 ios.10 的枚举词边界、跨行逗号及关联值/switch 修复。
-- 规范登记绑定实际独立进程，支持从同一真实进程 session 的空 stdin 续取退出码；拒绝进程编号复用、输出截断预算及非规范调用。
-- Windows 完整回归 617 passed、2 skipped、51 subtests passed（exit 0）；两项 skip 为 WinError 1314 目录符号链接权限。结构检查 99 skills / 22 agents PASS。独立 Clidex Claude 仅做文字复核，最终回复未发现阻断项，未独立执行测试。Mac provider 构建与 App 运行尚未验证；本版 INIT→EXECUTE 尚未重跑，无 HAP 或应用行为验证结论。
-
-# iOS 1.5.2-ios.10（2026-10-23）
-
-- 修正 ios.9 枚举扫描器的切片词边界回归：参数标签 showcase value: Int 不再误报 value；.lowercase 后换行的真实 case disabled 不再被吞掉。
-- 在原字符串位置匹配 case，核对前置分隔符并排除括号/方括号内部，保留 ios.9 的关联值、switch 和嵌套 enum 修复；用真实 Swift 语法样例和原门禁回归。
-- 修复合法的跨行逗号枚举声明，例如 `case a,` 换行接 `b`、以及 `case a` 换行接 `, b`；保留真实漏项的 exit 2 门禁。
-- 补齐 CRLF、注释、字符串及正则边界回归；扩展正则在 Swift 词法入口明确要求语法提供器，避免括号污染、enum 外伪声明和 #// 吞掉同一行真实 case。保留直接枚举扫描的防御检查。裸正则仍属于已知词法限制。
-
-# iOS 1.5.2-ios.9（2026-10-23）
-
-- 修正 Swift enum case 实例提取：关联值中的逗号与 enum 内 switch 模式不再生成伪实例，嵌套 enum 的 case 归属其实际类型。
-- 嵌套 enum 实例 ID 语义变更：例如原误归属的 `enum:WalkSuitabilityLevel.recommend` 改为 `enum:DisplayTier.recommend`；旧短 ID 不自动视为新 ID 的记账声明，规格需按新 ID 复核。
-- 保持真正未对账实例的 `INSTANCE_UNACCOUNTED` 严重度及 exit 2 门禁。
-
-# iOS 1.5.2-ios.8（2026-10-23）
-
-修正可达阶段的原生源语言与页面示例输入；原阶段、目标门禁与全部已验证修复保留。验证结果以本版最终交付记录为准。
-
-# iOS 1.5.2-ios.7（2026-10-23）
-
-修复原生 UI 图身份字段与原只读校验、查询接口的接线；校正原生 UI 输入文档和映射参考。原阶段与目标引擎保持，既有修复保留。
-
-# iOS 1.5.2-ios.6（2026-10-23）
-
-修复独立内部流水线任务的原生日志收口作用域；顶层继续使用原引擎，子线程按同一直接子任务规则解析自身完整原始记录。此前原生输入和发行身份修复保留。
-
-# iOS 1.5.2-ios.5（2026-10-23）
-
-统一插件、运行模块、安装身份与发行说明的主动版本，增加包含隐藏清单的版本契约回归及实际安装/升级断言。此前原生输入与门禁修复全部保留，历史记录不覆盖。
-
-发行版本 `1.5.2-ios.N` 对应 Python PEP 440 版本 `1.5.2.N`。安装版本权威记录为 `.hmigbot-ios/install.json`，来源为包内 `.codex-plugin/plugin.json`；项目配置的 `tool_package` 是稳定包标识，不是发行版本，不新增冗余字段。
-
-# iOS 1.5.2-ios.1（2026-10-23）
-
-独立移植 iOS 1.5.2 输入层，保留原流程、模板结构和规则；复用已验证的 iOS 工程、Release 条件、资源与路径修复。独立安装、项目归属和包内路径隔离；C4.6b 显式采用原 ownership 兜底。详细边界见 README.md 和 docs/RELEASE-INPUT.md；验证证据单独交付。
-
----
-
-# Changelog
-
-本文件记录 hmigbot-CodeX（原 migbot-CodeX，2026-08 改名）（Codex 版 iOS → ArkTS / HarmonyOS 迁移插件包）各迭代的关键改动。
-
-## [version v1.5.2] - 2026-08-31
-
-本次 skills 同步（来自 ArkTs-Core `version_830_codex_v`）修掉三类静默失效：领域 agent 装了从不被派发、打点调用指向不存在的二进制、装机脚本重跑会叠加内容。
-
-### 🐛 修复 (Fixed)
-
-* **领域 agent 装了却从不被派发**：22 个 `arkts-*` 领域 agent 随 `agents-codex/` 正常装进 `.codex/agents/`，但「主会话何时派发、派给谁、怎么校验回复末尾的 `loaded_skills:` 行」这条规则只写在上游的 `AGENTS.dispatch.md` 里，`install.sh` / `install.ps1` 从不读它 —— 契约只送到一半（agent 侧的自律条款随 `*.toml` 同步了，调度端的规则没有）。**失败是静默的**：22 个 `.toml` 全部正常，看不出异常，只是永远没被 `spawn_agent`。现在 `install.sh` 新增 §5b、`install.ps1` 新增 §5c，把 `AGENTS.dispatch.md` 以「替换或追加」方式写入 `AGENTS.md` 的 `arkts-domain-agents` 标记块，沿用同文件 `migbot-platform` 块的既有惯用法；`install.sh` 用纯 awk 实现，不引入 python3 依赖。原 §5 的 `migbot` 空标记块逻辑一字未动，两个块共存互不干扰。
-* **装机脚本重跑会叠加内容**：上游 `AGENTS.dispatch.md` 的 `arkts-domain-agents:end` 标记原在文件中段，其后的「设备截图落点纪律」一段落在标记块**外面**，而注入是「用整个文件替换标记块」⇒ 每装一次块外内容追加一份（实测 17 → 23 → 29 行）。上游已把结束标记移到文件末尾，整个文件成为一个受管块；三连装稳定 25 行、每块各 1 个。
-* **打点调用指向不存在的二进制**：五个流水线 skill（`a2h-spec` / `plan` / `execute` / `verify` / `retrospect`）收尾调的是 `.migbot/bin/a2h-codex mark-stage`，而 v1.0.1 起运行时只装 `a2h`（`a2h-codex` 是已退役的发行别名，`install.sh` 还会主动删除它）。这些调用旁标注「忽略退出码、绝不阻断流水线」，于是 8 处全部 `no such file or directory` 且被静默吞掉 —— 流水线表面全绿，**看板永远收不到阶段水位**。上游已改用 `a2h`，并修掉转换器里把二进制名连同子命令一起替换的改写规则。
-* **`validate.sh` 三条硬失败清零**：skill 目录 `ios2hmos_resources_convert` 改名为 `ios-resources-convert`（对齐 `NAME_RE`，与既有的 `hmos_fix_build_errors` → `hmos-fix-build-errors` 同款处理）；`a2h-execute` 参考文档里两处 `.claude/skills` 残留改为单平台陈述；6 个 `agents-codex/*.toml` 里的下划线 skill 名一并更正。
-
-### ⚠️ 升级提示
-
-* 已有工程重装后，`AGENTS.md` 会新增 `arkts-domain-agents` 标记块（幂等，重复安装不叠加）；块内内容由上游生成，请勿手改。
-* 若此前手工建过 `.migbot/bin/a2h-codex` 软链作为绕行，`install.sh` 会自动清除，不再需要。
-
-## [version v1.5.1] - 2026-08-30
-
-统一版本线 1.5.1：配套运行时 migbot-runtime-src v1.4.7、服务端 migbot-server v1.2.32。本版把**同意改为安装级**（一台机器同意一次，新工程自动继承），`migbot_session_id` 改为每工程一个，用户数按 `install_id` 去重。
-
-- **Install-level consent (agree once per machine)** (with migbot-runtime-src ≥ v1.4.7, migbot-server ≥ v1.2.32): `a2h init-run` mints/reuses this machine's `install_id` (`~/.migbot/install.json`) and inherits the machine's consent decision into new projects; `a2h-init` §2.1 and `a2h-privacy` §B run `init-run` before showing the agreement, so a project that inherits `granted` no longer prompts. `migbot_session_id` is now **per project** (one dashboard row = one project); users are de-duplicated by `install_id`. `/a2h-privacy status` also shows `install_id` — one deletion request clears every project on the machine.
-- Runtime binaries synced to migbot-runtime-src **v1.4.7**.
-
-## [version v1.5.0] - 2026-08-27
-
-版本线统一：自本版起与 hmigbot（Claude Code 线）同号发布（1.5.0），配套运行时 migbot-runtime-src v1.4.3。功能内容承接 v1.0.1（见下），另含 publish 版本门禁与 publish-lite secret 名修正。
-
-## [version v1.0.1] - 2026-08-27
-
-本次迭代主线是「打点能力与 hmigbot 一致」：二进制统一命名 a2h（a2h-codex 别名退役）、a2h-init / a2h-privacy 改为从 hmigbot commands 机械生成、同意流程幂等化、hook 信任自检。配套运行时 migbot-runtime-src v1.4.1+。
-
-### 🔧 变更 (Changed)
-
-- **a2h-init / a2h-privacy（中英四份）改为从 hmigbot 的 `commands/*.md` 机械生成**，脚本 `scripts/sync-commands.py`（取代一次性的 `.convert/commands.py`）。宿主差异全部收敛在脚本里：`/`→`$`、`a2h-bootstrap`/`a2h-agreement` 路径、plugin 与 install.sh 措辞、剥离 Claude Code 专属 OTel 清理、注入 Codex 专属 hook-trust 自检。**不要再手改这四个 SKILL.md**——改 hmigbot 的 command 后重跑 `python3 scripts/sync-commands.py --src <hmigbot>/commands`；`--check` 可做漂移检查。
-- 生成结果与此前手改版对比：a2h-privacy 逐字节相同；a2h-init 仅措辞级差异（以源为准）。
-
-
-### 🔧 优化 (Improved)
-
-* **遥测二进制统一命名 `a2h-codex` → `a2h`**：运行时二进制与 hmigbot（Claude Code 版）的 `a2h` 本就是同一个程序，`a2h-codex` 只是发行别名。现在两个插件统一使用 `a2h` 这一个名字：`bin/a2h-<os>-<arch>[.exe]` 六个平台产物、`install.sh` / `install.ps1` / `a2h-bootstrap(.ps1)` 就位路径（`.migbot/bin/a2h`、`.migbot\bin\a2h.exe`）、`.codex/config.toml` 的 `[hooks.*]` 命令（`./.migbot/bin/a2h hook`）、全部 skill 中的 `init-run` / `mark-stage` / `hook-trust` / `count-lines` 调用、`validate.sh` 与发布 workflow 的断言、README / PORTING 文档一并改名。子命令集合不变。
-* **旧安装自动迁移（幂等）**：`install.sh` / `install.ps1` 若检测到 `.codex/config.toml` 中仍是 `a2h-codex hook` / `a2h-codex.exe hook`，会原地改写为 `a2h`（只替换该 token，其余内容不动，可反复执行）；就位 `a2h` 后同时删除磁盘上残留的 `.migbot/bin/a2h-codex[.exe]`，`a2h-bootstrap(.ps1)` 的清扫列表亦同步加入该旧名。注意：改写 hook 命令行后 Codex 的 hook 信任 hash 会变化，需在 Codex 里重新 `/hooks` 信任一次（安装尾声的 `hook-trust` 自检会提示）。
-
-
-本次迭代的主线是「让计划变轻、让执行可追责」：plan 产物从 127KB 单体文件重构为「索引 + 逐切片账本」的分层形态并由多个 subagent 并行生成；execute 的收尾链路统一到单一收尾者与脚本化回写，崩溃后秒级恢复；spec 侧引入证据驱动的覆盖门禁与 AC 级追溯，让「被静默漏掉的需求」在每个阶段都会被机械点名。全部改动均由 aippt / jetsnack 多轮端到端验证驱动。
-
-改动同步自源仓库 ArkTs-Core：[#77 a2h-plan/execute 分层优化]、[#79 Spec 证据驱动覆盖门禁]，及 version_815_planFix 分支的后续调度修正。
-
-### ✨ 新增 (Added)
-
-* **证据驱动覆盖门禁（a2h-spec）**：从 iOS 源码机械检出行为信号与具名实例（埋点事件、桥方法、枚举、阈值等），逐实例记账——每一条要么被 AC 认领、要么显式跳过并披露，漏账即阻断。取代旧的「AC 数量预算」，数量不再参与判定。
-* **AC 级跨阶段追溯**：spec → plan → execute → verify 每阶段一份账本、一个 linter，漏认领 / 绑旧断言 / 双实现自动检出并定责到具体阶段；同一问题多轮不收敛自动熔断，转为决策卡交用户裁决。
-* **plan 三写并行编排**：ui-plan、base-plan、全部切片账本由三个 subagent 并行生成，主线程只负责全局裁决（拓扑、归属、分组）与收拢审批。
-* **统一收尾者 + 回写脚本**：execute 各阶段收尾统一为一个四模式 agent；状态账本与 brief 的落盘交给幂等脚本执行——收尾崩溃后重跑脚本即恢复，不再重做接线与编译。
-
-### 🔧 优化 (Improved)
-
-* **计划体量与读取开销大幅下降**：plan 产物 127KB → 约 33KB（-74%），执行期 plan 相关上下文读取约 -95%；subagent 返回一律压缩为 30 行内信封。
-* **编译链路精简**：删除 Stage 1 逐批编译门（页面互不依赖，统一在阶段末一次容忍性编译收口）；全程增量构建 + 环境预热；发布门强制真实构建防「空转假通过」。
-* **调度规则收敛**：UI 分批改为纯优先级分组；单任务的组/批一律消除（并组、附挂或并批）；组容量改为直接按切片数计数，不再加权。
-* **spec 生成提速**：最长的 api-inventory 子任务前置隐藏约 15–18 分钟；切片生成即自检，覆盖修复不再拖串行尾巴；DataBinding 与自定义资源目录的布局解析一次通过。
-
-### 🐛 修复 (Fixed)
-
-* **切片被按步骤拆成多个 subagent**：废除单元化波次派发（实测有害无益），改为每切片恒一个 worker，确实过大时按依赖断面拆分。
-* **444 条「需求未认领」**：根因是记账缺口而非实现缺口——实现认领现由收尾者从计划账本自动抄录、随回写脚本落盘。
-* **结构验证产物写错目录**：Windows 下手动驱动脚本时误写 docs/，现脚本层硬拒旧路径并指引正确落点。
-* **旧术语泄漏**：生成产物中残留的 handoff 旧称全量清理为 brief。
-
-### ⚠️ 兼容性：
-
-* 旧版单体 feature-plan 会被明确报错并提示重新生成计划（执行进度存于状态账本，重排零损失）；旧产物中的已废弃字段可被解析器容忍，无需迁移。
-
-## [version v0.2.0] - 2026-07-30
-
-本次以**登录能力落地**与**多项 skill 自优化**为主线：新增登录功能，并对 skill 自优化、visual verify、spec 分层分级三条能力线做了一轮打磨。
-
-### ✨ 新增 (Added)
-
-- **登录功能实现**：接入登录能力，迁移插件包在使用前具备账号登录入口。
-
-### 🔧 优化 (Improved)
-
-- **Skill 自优化**：对 skill 自优化闭环做一轮打磨，提升迭代优化的稳定性与效果。
-- **Visual verify 优化**：优化视觉校验（visual verify）流程，提升 UI 验证的准确性与可用性。
-- **Spec 分层分级优化**：优化 spec 的分层、分级机制，改善规格内容的组织与消费。
-
-
-## [version v0.1.4] - 2026-07-24
-
-本次以**补齐编排型 skill 的前置配置**为主线：`config-seed.toml` 开箱写入 Codex 多线程编排所需的三项配置，安装器对已有 `config.toml` 的老用户做幂等补写，并新增三键守护校验。本版仅配置与安装器变更，`a2h-codex` 六平台二进制未重编，与 v0.1.2 完全一致。
-
-### ✨ 新增 (Added)
-
-- **`config-seed.toml` 补齐编排三项前置配置**（#2，Closes #1）：编排型 skill（`a2h-execute` / `a2h-verify` / `arkts-visual-verify` / `arkts-ut-verifier`）依赖 Codex 的多线程编排能力，seed 现在开箱写入 `[features] multi_agent = true`、`[agents] max_threads = 6`，并为原有的 `max_depth = 2` 补上默认值说明。
-- **安装器对老用户幂等补写**：老用户已有 `config.toml` 时 seed 不会拷贝，此前这三项前置配置只能手工补。`install.sh` / `install.ps1` 镜像 `hooks=true` 的模式新增：
-  - **4a'**：幂等补写 `multi_agent = true`——表内插入、不写重复表头；用户显式配置了 `false` 时只告警不覆盖，尊重用户选择。
-  - **4a''**：检测到 `max_depth < 2` 时告警不改值。
-
-### ✅ 校验 (Validated)
-
-- `validate.sh` 新增三键守护检查（`multi_agent` / `max_threads` / `max_depth`），本地跑通：`VALIDATE: PASS`（skills checked: 89，agents checked: 7）。
-
-### 📝 文档 (Docs)
-
-- README / `docs/PORTING.md` 同步，顺带修正 `docs/PORTING.md` 过期的 `max_depth = 1` 表述。
-
-### 🔗 配套服务端版本 (Server)
-
-- 无服务端配套要求，本版不涉及打点链路。
-
-> **二进制说明**：本版仅配置与安装器变更，`bin/a2h-codex-*` 六平台二进制未改动，与 v0.1.2 完全一致（未重编）。
+完整原生应用迁移、编译器语义 provider、UIKit 转换、跨端运行等价与 HMigBot 原五阶段集成尚未完成。具体证据保存在当轮外置验证记录中。

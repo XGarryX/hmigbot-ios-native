@@ -1,0 +1,237 @@
+#!/bin/bash
+# a2h-tool — deterministic helper for migbot plugin checks.
+# Subcommands: validate (config + emulator readiness), build.
+# Reads .migbot/config.json relative to CWD.
+set -uo pipefail
+
+CFG=".migbot/config.json"
+
+# ── WSL-on-Windows guard (issue #41) ────────────────────────────────
+# If `bash` resolved to WSL on a Windows host, this script cannot see C:\
+# paths and would look for an extension-less binary -> every check misreports.
+# Hand off to the PowerShell twin (Windows-native view) instead. Git Bash /
+# MSYS is NOT WSL (no /mnt/<drive> mount, no "microsoft" kernel) and stays here.
+_a2h_wsl_handoff() {
+  local ps1="$1"; shift
+  local kr; kr="$(uname -r 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+  case "$kr" in *microsoft*|*wsl*) ;; *) return 1 ;; esac
+  case "$(pwd -P)" in /mnt/[a-zA-Z]/*) ;; *) return 1 ;; esac   # project lives on a Windows drive
+  local exe; exe="$(command -v powershell.exe 2>/dev/null || true)"
+  [ -n "$exe" ] || exe="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+  [ -x "$exe" ] && [ -f "$ps1" ] || return 1
+  local winps; winps="$(wslpath -w "$ps1" 2>/dev/null)" || return 1
+  exec "$exe" -NoProfile -ExecutionPolicy Bypass -File "$winps" "$@"
+}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+_a2h_wsl_handoff "$SCRIPT_DIR/a2h-tool.ps1" "$@" || true
+
+read_field() {
+  grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$CFG" 2>/dev/null \
+    | head -n1 \
+    | sed -E "s/^\"$1\"[[:space:]]*:[[:space:]]*\"(.*)\"$/\1/"
+}
+
+# ── i18n ────────────────────────────────────────────────────────────
+# Resolve language from .migbot/config.json:language; default en.
+LANG_CHOICE="en"
+if [ -f "$CFG" ]; then
+  resolved_lang=$(read_field language)
+  case "$resolved_lang" in zh|en) LANG_CHOICE="$resolved_lang" ;; esac
+fi
+
+i18n_en() {
+  case "$1" in
+    cfg_missing)        echo "config.json missing" ;;
+    android_unset)      echo "android path unset" ;;
+    android_missing)    echo "android path missing" ;;
+    harmonyos_unset)    echo "harmonyos path unset" ;;
+    harmonyos_missing)  echo "harmonyos path missing" ;;
+    hvigorw_not_exec)   echo "hvigorw not executable" ;;
+    hvigorw_not_exec_in)echo "hvigorw not executable in" ;;
+    emu_android_off)    echo "No Android device or emulator found online. Please connect a device or start an emulator." ;;
+    emu_harmonyos_off)  echo "No HarmonyOS device or emulator found online. Please connect a device or start an emulator." ;;
+    emu_adb_missing)    echo "adb command not found. Please check your Android SDK setup." ;;
+    emu_hdc_missing)    echo "hdc command not found. Please check your HarmonyOS SDK (commandline-tools) setup." ;;
+    usage)              echo "Usage: a2h-tool <validate|build>" ;;
+  esac
+}
+i18n_zh() {
+  case "$1" in
+    cfg_missing)        echo "config.json 缺失" ;;
+    android_unset)      echo "android 路径未设置" ;;
+    android_missing)    echo "android 路径不存在" ;;
+    harmonyos_unset)    echo "harmonyos 路径未设置" ;;
+    harmonyos_missing)  echo "harmonyos 路径不存在" ;;
+    hvigorw_not_exec)   echo "hvigorw 不可执行" ;;
+    hvigorw_not_exec_in)echo "hvigorw 在该目录中不可执行" ;;
+    emu_android_off)    echo "未检测到 Android 设备或模拟器在线，请连接设备或启动模拟器。" ;;
+    emu_harmonyos_off)  echo "未检测到 HarmonyOS 设备或模拟器在线，请连接设备或启动模拟器。" ;;
+    emu_adb_missing)    echo "未找到 adb 命令，请检查 Android SDK 配置。" ;;
+    emu_hdc_missing)    echo "未找到 hdc 命令，请检查 HarmonyOS SDK (commandline-tools) 配置。" ;;
+    usage)              echo "用法：a2h-tool <validate|build>" ;;
+  esac
+}
+i18n() { if [ "$LANG_CHOICE" = zh ]; then i18n_zh "$1"; else i18n_en "$1"; fi; }
+
+cmd_validate() {
+  if [ ! -f "$CFG" ]; then
+    printf '{"ok":false,"failures":["%s"]}\n' "$(i18n cfg_missing)"
+    exit 1
+  fi
+
+  local android harmonyos hvigorw_override
+  android=$(read_field android)
+  harmonyos=$(read_field harmonyos)
+  hvigorw_override=$(read_field hvigorw)
+
+  local failures=()
+  if [ -z "$android" ]; then
+    failures+=("\"$(i18n android_unset)\"")
+  elif [ ! -d "$android" ]; then
+    failures+=("\"$(i18n android_missing): $android\"")
+  fi
+
+  # Test rule: -x is unreliable for Windows .bat files in Git Bash; use -f
+  # for *.bat and -x otherwise. Existence is the contract — the OS decides
+  # whether bash/cmd can actually invoke the file at build time.
+  hvigorw_present() {
+    local p="$1"
+    case "$p" in
+      *.bat|*.BAT) [ -f "$p" ] ;;
+      *)           [ -x "$p" ] ;;
+    esac
+  }
+
+  if [ -z "$harmonyos" ]; then
+    failures+=("\"$(i18n harmonyos_unset)\"")
+  elif [ ! -d "$harmonyos" ]; then
+    failures+=("\"$(i18n harmonyos_missing): $harmonyos\"")
+  elif [ -n "$hvigorw_override" ] && ! hvigorw_present "$hvigorw_override"; then
+    failures+=("\"$(i18n hvigorw_not_exec): $hvigorw_override\"")
+  elif [ -z "$hvigorw_override" ] && ! hvigorw_present "$harmonyos/hvigorw" && ! hvigorw_present "$harmonyos/hvigorw.bat"; then
+    failures+=("\"$(i18n hvigorw_not_exec_in) $harmonyos\"")
+  fi
+
+  # ── Emulator / tool checks (merged from emulator-check) ──
+  # Skip via A2H_SKIP_EMU_CHECK=1 for CI / path-only validation.
+  if [ "${A2H_SKIP_EMU_CHECK:-}" != "1" ]; then
+
+  # Android: check adb tool
+  local adb_path
+  adb_path=$(read_field adb)
+  if [ -n "$adb_path" ] && [ -x "$adb_path" ]; then
+    : # config.json adb ok
+  elif command -v adb >/dev/null 2>&1; then
+    : # PATH adb ok
+  else
+    failures+=("\"$(i18n emu_adb_missing)\"")
+  fi
+
+  # Android: detect any online device (real device OR emulator).
+  # 1) Prefer `adb devices`: any line ending with "device" (not "offline") means online.
+  # 2) Fall back to pgrep (Linux/macOS) for the qemu process.
+  # 3) Fall back to Windows `tasklist` (Git Bash lacks pgrep).
+  local android_running=0
+  local adb_cmd=""
+  if [ -n "$adb_path" ] && [ -x "$adb_path" ]; then
+    adb_cmd="$adb_path"
+  elif command -v adb >/dev/null 2>&1; then
+    adb_cmd="adb"
+  fi
+  if [ -n "$adb_cmd" ]; then
+    if "$adb_cmd" devices 2>/dev/null | tr -d '\r' | grep -E $'^.+\tdevice$' >/dev/null 2>&1; then
+      android_running=1
+    fi
+  fi
+  if [ "$android_running" -eq 0 ] && command -v pgrep >/dev/null 2>&1; then
+    pgrep -f "qemu-system.*-avd" >/dev/null 2>&1 && android_running=1
+  fi
+  if [ "$android_running" -eq 0 ] && command -v tasklist >/dev/null 2>&1; then
+    tasklist 2>/dev/null | grep -qi "qemu-system" && android_running=1
+  fi
+  if [ "$android_running" -eq 0 ]; then
+    failures+=("\"$(i18n emu_android_off)\"")
+  fi
+
+  # HarmonyOS: check hdc tool
+  local hdc_path
+  hdc_path=$(read_field hdc)
+  if [ -n "$hdc_path" ] && [ -x "$hdc_path" ]; then
+    : # config.json hdc ok
+  elif command -v hdc >/dev/null 2>&1; then
+    : # PATH hdc ok
+  else
+    failures+=("\"$(i18n emu_hdc_missing)\"")
+  fi
+
+  # HarmonyOS: detect a running emulator/device.
+  # 1) Prefer `hdc list targets`: any non-empty target means online.
+  # 2) Fall back to pgrep (Linux/macOS) for the Emulator process.
+  # 3) Fall back to Windows `tasklist` (Git Bash lacks pgrep).
+  local harmonyos_running=0
+  local hdc_cmd=""
+  if [ -n "$hdc_path" ] && [ -x "$hdc_path" ]; then
+    hdc_cmd="$hdc_path"
+  elif command -v hdc >/dev/null 2>&1; then
+    hdc_cmd="hdc"
+  fi
+  if [ -n "$hdc_cmd" ]; then
+    local hdc_out
+    hdc_out=$("$hdc_cmd" list targets 2>/dev/null | tr -d '\r' | grep -vE "^\s*(\[Empty\]|No any target)?\s*$" | head -n1)
+    if [ -n "$hdc_out" ]; then
+      harmonyos_running=1
+    fi
+  fi
+  if [ "$harmonyos_running" -eq 0 ] && command -v pgrep >/dev/null 2>&1; then
+    pgrep -f "emulator/Emulator.*-hvd" >/dev/null 2>&1 && harmonyos_running=1
+  fi
+  if [ "$harmonyos_running" -eq 0 ] && command -v tasklist >/dev/null 2>&1; then
+    tasklist 2>/dev/null | grep -q "Emulator.exe" && harmonyos_running=1
+  fi
+  if [ "$harmonyos_running" -eq 0 ]; then
+    failures+=("\"$(i18n emu_harmonyos_off)\"")
+  fi
+
+  fi  # end A2H_SKIP_EMU_CHECK guard
+
+  if [ ${#failures[@]} -eq 0 ]; then
+    printf '{"ok":true}\n'
+    exit 0
+  fi
+  local IFS=,
+  printf '{"ok":false,"failures":[%s]}\n' "${failures[*]}"
+  exit 1
+}
+
+cmd_build() {
+  if [ ! -f "$CFG" ]; then
+    echo "$(i18n cfg_missing)" >&2
+    exit 1
+  fi
+  local harmonyos hvigorw_override hvigorw_path
+  harmonyos=$(read_field harmonyos)
+  hvigorw_override=$(read_field hvigorw)
+  if [ -z "$harmonyos" ] || [ ! -d "$harmonyos" ]; then
+    echo "$(i18n harmonyos_missing): $harmonyos" >&2
+    exit 1
+  fi
+  if [ -n "$hvigorw_override" ]; then
+    case "$hvigorw_override" in
+      /*) hvigorw_path="$hvigorw_override" ;;
+      *)  hvigorw_path="$(pwd)/$hvigorw_override" ;;
+    esac
+  elif [ -x "$harmonyos/hvigorw" ]; then
+    hvigorw_path="./hvigorw"
+  elif [ -f "$harmonyos/hvigorw.bat" ]; then
+    hvigorw_path="./hvigorw.bat"
+  else
+    hvigorw_path="./hvigorw"
+  fi
+  cd "$harmonyos" && exec "$hvigorw_path" assembleHap
+}
+
+case "${1:-}" in
+  validate)       cmd_validate ;;
+  build)          cmd_build ;;
+  *) echo "$(i18n usage)" >&2; exit 64 ;;
+esac

@@ -1,0 +1,20 @@
+// 片段：贴到 build-profile.json5 中 modules[i] 名为 phone 的模块的 targets 数组里
+{
+  "name": "default",
+  "runtimeOS": "HarmonyOS",
+  "config": {
+    "buildOption": {
+      "arkOptions": {
+        "buildProfileFields": {
+          "appName": "<APP_NAME>",
+          "appBaseType": "<BASE_TYPE>",
+          "ChanelId": "<CHANNEL_ID>",
+          "WXAppId": "<WX_APP_ID>",
+          "WXAppSecret": "<WX_APP_SECRET>",
+          "umengId": "<UMENG_ID>"
+        }
+      }
+    },
+    "deviceType": ["phone", "tablet"]
+  }
+}
