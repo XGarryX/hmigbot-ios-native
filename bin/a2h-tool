@@ -1,6 +1,54 @@
 #!/bin/bash
-if [ "${1:-}" = "validate" ] && [ -f .hmigbot-ios/plugin/scripts/ios_setup.py ]; then
-  exec python3 .hmigbot-ios/plugin/scripts/ios_setup.py validate
+if [ "${1:-}" = "validate" ]; then
+  # Resolve this installed entry, including a symlink, with macOS bash 3.2.
+  _a2h_entry="${BASH_SOURCE[0]}"
+  _a2h_links=0
+  while [ -L "$_a2h_entry" ]; do
+    _a2h_links=$((_a2h_links + 1))
+    [ "$_a2h_links" -le 40 ] || { echo 'a2h-tool: entry symlink loop' >&2; exit 2; }
+    _a2h_parent="$(CDPATH= cd -- "$(dirname "$_a2h_entry")" && pwd -P)" || exit 2
+    _a2h_link="$(readlink "$_a2h_entry")" || exit 2
+    case "$_a2h_link" in /*) _a2h_entry="$_a2h_link" ;; *) _a2h_entry="$_a2h_parent/$_a2h_link" ;; esac
+  done
+  _a2h_dir="$(CDPATH= cd -- "$(dirname "$_a2h_entry")" && pwd -P)" || exit 2
+  _a2h_source_entry=''
+  case "$_a2h_dir" in
+    */.migbot/bin) _a2h_workspace="$(CDPATH= cd -- "$_a2h_dir/../.." && pwd -P)" || exit 2 ;;
+    */.agents/hmigbot-runtime/bin) _a2h_workspace="$(CDPATH= cd -- "$_a2h_dir/../../.." && pwd -P)" || exit 2 ;;
+    *) _a2h_workspace="$(pwd -P)"; _a2h_source_entry="$_a2h_dir/../scripts/ios_setup.py" ;;
+  esac
+  if [ -n "$_a2h_source_entry" ] && [ -f "$_a2h_source_entry" ]; then
+    for _a2h_arg in "$@"; do
+      case "$_a2h_arg" in --workspace|--workspace=*)
+        shift
+        unset HMIGBOT_ENTRY_WORKSPACE
+        exec python3 "$_a2h_source_entry" validate "$@"
+        ;;
+      esac
+    done
+  fi
+  _a2h_native=''
+  for _a2h_candidate in "$_a2h_workspace/.agents/hmigbot-runtime/scripts/ios_setup.py" "$_a2h_workspace/.hmigbot-ios/plugin/scripts/ios_setup.py" "$_a2h_source_entry"; do
+    if [ -n "$_a2h_candidate" ] && [ -f "$_a2h_candidate" ]; then _a2h_native="$_a2h_candidate"; break; fi
+  done
+  if [ -n "$_a2h_native" ]; then
+    shift
+    HMIGBOT_ENTRY_WORKSPACE="$_a2h_workspace" exec python3 "$_a2h_native" validate --workspace "$_a2h_workspace" "$@"
+  fi
+  _a2h_kind='other'
+  if [ -f "$_a2h_workspace/.migbot/config.json" ]; then
+    _a2h_kind="$(python3 -c 'import json,sys
+try:
+    with open(sys.argv[1],encoding="utf-8-sig") as handle: cfg=json.load(handle)
+    if not isinstance(cfg,dict): raise ValueError("expected a config object")
+    print("ios" if cfg.get("source_platform")=="ios" or cfg.get("tool_package")=="hmigbot-ios152" or "ios" in cfg else "other")
+except (ValueError,OSError) as exc:
+    print("a2h-tool: invalid configuration: "+str(exc),file=sys.stderr);sys.exit(2)' "$_a2h_workspace/.migbot/config.json")" || exit 2
+  fi
+  if [ -f "$_a2h_workspace/.hmigbot-ios/install.json" ] || [ "$_a2h_kind" = 'ios' ]; then
+    echo 'a2h-tool: iOS runtime missing; reinstall this package in the workspace' >&2
+    exit 2
+  fi
 fi
 # a2h-tool — deterministic helper for migbot plugin checks.
 # Subcommands: validate (config + emulator readiness), build.

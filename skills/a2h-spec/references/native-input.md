@@ -48,6 +48,18 @@ API 的 Phase 1 只生成词法调用、URL、模型及请求组装候选，不�
 
 原 `lint_coverage.py` 入口已接线：局部 `--only-feature` 现场建 profile、只读、不推进修复次数；全局写原 findings section、沿用原熔断和回流。特征/实例/判/真/addendum 判定复用原编译引擎；Swift/ObjC 文件归属、入口声明、全局文件全集由平台包装层补输入，沿用原 rule ID 和严重度。仅检查文件对应，不做额外编译器符号/行号合法性硬门。
 
+### 共享文件的可选实例转引
+
+多个功能锚定同一源文件时，消费者可以在主规格的 `## 共享实例引用` 节使用下表，引用已在其他主规格直接验收的行为；没有转引表时按原规则检查。表是现有规格内的可选说明，不是新账本，也不复制 AC。
+
+| 实例ID | 源位置 | owner AC |
+|---|---|---|
+| `enum:LoadState.ready` | `Sources/Domain.swift:12` | `F003-AC08` |
+
+实例ID沿用当前 `feature-profiles.json`，源位置是实例记录中的文件和声明行；同一ID合并了多个位置时逐位置列出。owner必须是其他主规格中未被替代、具备源/判/真的真实AC，锚定同一源文件且直接覆盖该实例；合法的 `组:{…}` 字段仍可使用。全量检查要求owner主规格及该实例也在本轮画像范围内；自由文本F-ID、skip和链式转引不产生豁免。源位置陈旧、AC缺失、不同来源的同名值或原引擎不能确认覆盖时保留原缺项。
+
+`lint_coverage.py` 在临时目录分别用原编译引擎测量消费者与被引AC，再展开已确认的直接引用；正式profile不变，总数保留，新增覆盖在既有findings context的 `instance_stats.shared` 中披露。按具体实例集合核对展开后未覆盖集合恰为展开前集合减去已确认转引项；总数和原全量统计也须一致，否则保留该类别原阻断。第一遍其他findings和warning不被展开结果取代。局部 `--only-feature` 和 `--report-only` 不写正式findings；全局仍由原writer重跑闭环。拒绝原因和源指纹在既有context中留证。
+
 原 `extract_literals.py` 读的是定稿 SPEC，保持原实现；不能换成源码所有数字，否则会扩大原字面量收货义务。原 `score_complexity`、traceability index、addenda closure、HARD-DIV、plan/execute/verify coverage 检查继续原实现。原主线与旧 reference 有 AC 数量措辞冲突时，按原主线和 coverage-rules 的“对数量不设上下限”执行，不新增配额。
 
 ## PLAN、EXECUTE、VERIFY

@@ -157,7 +157,75 @@ def devices(tools,timeout):
     targets=[v.strip() for v in result['stdout'].splitlines() if re.fullmatch(r'[^\s\[\]]+',v.strip())] if result['exit_code']==0 else []
     return check('devices','鸿蒙设备','PASS' if targets else 'WARN','Target device identifiers listed; authorization and usability unverified' if targets else 'No target device listed; not a build result',hdc=str(path),hmos_targets=targets,hdc_timed_out=result['timed_out'],exit_code=result['exit_code'],source_platform='ios',source_runtime_verified=False)
 
-def project_checks(project):
+def permission_products(data,haps):
+    """Describe only explicit product membership; never guess missing targets."""
+    products=data.get('app',{}).get('products')
+    if not isinstance(products,list) or not products or any(not isinstance(p,dict) or not isinstance(p.get('name'),str) or not p['name'] for p in products):
+        return {},['Product membership not determined']
+    names=[p['name'] for p in products]
+    if len(set(names))!=len(names):return {},['Duplicate product names']
+    groups={name:{'haps':[],'provided_by':[]} for name in names};unknown=[]
+    for hap in haps:
+        module=data['modules'][hap['module_index']]
+        targets=module.get('targets');members=set();known=True
+        if not isinstance(targets,list) or not targets:known=False
+        else:
+            for target in targets:
+                applies=target.get('applyToProducts') if isinstance(target,dict) else None
+                if not isinstance(applies,list) or not applies or any(not isinstance(p,str) or p not in groups for p in applies):
+                    known=False
+                else:members.update(applies)
+        if not known or not members:unknown.append(str(hap['module']))
+        for name in members:
+            groups[name]['haps'].append(hap['module'])
+            if hap['internet_declared']:groups[name]['provided_by'].append(hap['module'])
+    return groups,unknown
+
+def permission_check(data,details,network_mode):
+    mode=network_mode or 'unknown';source='default' if network_mode is None else 'cli'
+    if mode not in {'unknown','required','not-required'}:raise ValueError('Invalid network mode')
+    invalid=[v for v in details if v['status']=='FAIL']
+    haps=[v for v in details if 'internet_declared' in v]
+    providers=[v['module'] for v in haps if v['internet_declared']]
+    library_declarations=[v['module'] for v in details if v.get('library_internet_declared')]
+    products,unknown=permission_products(data,haps)
+    uncovered=[name for name,p in products.items() if p['haps'] and not p['provided_by']]
+    fields={'network_mode':mode,'network_mode_source':source,'offline_verified':False,
+            'needs_confirmation':False,'provided_by':providers,'products':products,
+            'membership_unknown':unknown,'uncovered_products':uncovered,'library_declarations':library_declarations,
+            'dependency_permissions_verified':False,'applicable':True,'modules':details,
+            'declaration_scope':'Configured src/main/module.json5 only; built variants and runtime not verified'}
+    if invalid:
+        return check('permissions','网络权限','FAIL','; '.join(str(v['module'])+': '+v.get('hint','') for v in invalid),**fields)
+    if not haps:
+        fields.update(applicable=False)
+        return check('permissions','网络权限','WARN','No configured HAP modules; library declarations do not provide application permissions',**fields)
+    if mode=='unknown':
+        status='WARN';detail='Network permission requirement is unknown; confirm capability scope before permission acceptance'
+        fields['needs_confirmation']=True
+    elif mode=='not-required':
+        status='PASS';detail='Not applicable: caller declares INTERNET is not required; offline application behavior was not verified'
+        fields['applicable']=False
+    elif not providers and library_declarations:
+        status='WARN';detail='INTERNET declared in libraries but not HAPs; dependency inclusion, product scope and build-time permission merging not verified'
+        fields['needs_confirmation']=True
+    elif not providers:
+        status='FAIL';detail='INTERNET required by caller but missing from configured main manifests; external dependencies and built variants not checked; confirm actual application permission absence before repair'
+    elif len(providers)==len(haps):
+        status='PASS';detail='INTERNET declared in every configured HAP; permission declaration check only'
+    elif products and not unknown and all(p['provided_by'] for p in products.values() if p['haps']):
+        status='PASS';detail='INTERNET provided within every explicitly mapped HAP product; declaration check only'
+    else:
+        status='WARN';detail='INTERNET declared, but product coverage is mixed or unknown; resolve actual build scope before permission acceptance'
+        if uncovered:detail+='; configured products without a HAP declaration: '+', '.join(uncovered)
+        fields['needs_confirmation']=True
+    for hap in haps:
+        hap.update(status=status,applicable=fields['applicable'])
+        hap['provided_by']=list(dict.fromkeys(p for product in products.values() if hap['module'] in product['haps'] for p in product['provided_by']))
+        if hap['internet_declared'] and hap['module'] not in hap['provided_by']:hap['provided_by'].append(hap['module'])
+    return check('permissions','网络权限',status,detail,**fields)
+
+def project_checks(project,network_mode=None):
     rows=[];profile=project/'build-profile.json5'
     if not profile.is_file():return [check('signing','签名配置','WARN','build-profile.json5 absent'),check('permissions','网络权限','WARN','Project modules not determined')]
     try:
@@ -174,30 +242,34 @@ def project_checks(project):
         rows.append(check('signing','签名配置','FAIL' if missing else 'PASS' if declared else 'WARN','Declared signing material paths missing' if missing else 'Declared signing paths exist; signing not performed' if declared else 'No signing material paths; unsigned build may be possible',missing=missing,declared_paths=declared,signing_verified=False))
         modules=data.get('modules',[]);details=[]
         if not isinstance(modules,list):raise ValueError('modules must be an array')
-        for module in modules:
+        for index,module in enumerate(modules):
             path=resolve(project,module.get('srcPath',module.get('name','')))/'src/main/module.json5'
             if not path.is_file():details.append({'module':module.get('name'),'status':'FAIL','hint':'module.json5 missing'});continue
             manifest=json5(path).get('module',{})
-            if manifest.get('type') in {'har','shared'}:
-                details.append({'module':module.get('name'),'status':'PASS','applicable':False,'hint':'Library permissions are supplied by the consuming HAP'});continue
             permissions=manifest.get('requestPermissions',[])
+            if not isinstance(permissions,list) or any(not isinstance(p,dict) or not isinstance(p.get('name'),str) or not p['name'] for p in permissions):
+                raise ValueError('requestPermissions must be an array of named permission objects')
             names={p.get('name') for p in permissions if isinstance(p,dict)}
-            details.append({'module':module.get('name'),'status':'PASS' if 'ohos.permission.INTERNET' in names else 'FAIL','hint':'' if 'ohos.permission.INTERNET' in names else 'INTERNET permission missing','network_info_declared':'ohos.permission.GET_NETWORK_INFO' in names})
-        applicable=[v for v in details if v.get('applicable',True)]
-        detail=('; '.join(str(v['module'])+': '+v.get('hint','') for v in applicable if v['status']=='FAIL') or 'HAP permission declarations checked') if applicable else 'No configured HAP modules'
-        rows.append(check('permissions','网络权限',worst(applicable) if applicable else 'WARN',detail,modules=details))
+            if manifest.get('type') in {'har','shared'}:
+                details.append({'module':module.get('name'),'status':'PASS','applicable':False,
+                    'library_internet_declared':'ohos.permission.INTERNET' in names,
+                    'network_info_declared':'ohos.permission.GET_NETWORK_INFO' in names,
+                    'hint':'Library declaration only; dependency inclusion and permission merging not verified'});continue
+            details.append({'module':module.get('name'),'module_index':index,'status':'PASS',
+                'internet_declared':'ohos.permission.INTERNET' in names,'network_info_declared':'ohos.permission.GET_NETWORK_INFO' in names})
+        rows.append(permission_check(data,details,network_mode))
     except (OSError,ValueError,TypeError,AttributeError) as exc:rows.append(check('project_config','工程配置','FAIL','Project configuration parse failed: '+type(exc).__name__))
     return rows
 
-def inspect(project,timeout):
+def inspect(project,timeout,network_mode=None):
     cfg={};root=project or Path.cwd()
     if project and (project/'.migbot/config.json').is_file():
         cfg=json.loads((project/'.migbot/config.json').read_text(encoding='utf-8-sig'))
         if not isinstance(cfg,dict):raise ValueError('Migration config must be an object')
     tools,item=installation(root,cfg)
     rows=[item,inspect_tools(tools,timeout),devices(tools,timeout),check('python','Python','PASS' if sys.version_info>=(3,11) else 'FAIL',platform.python_version())]
-    if project:rows+=project_checks(project)
-    return {'platform':sys.platform,'generated_by':'hmos-env-doctor/scripts/env_doctor.py','implementation':'native-python-argv-adapter','project':str(project) if project else None,'checks':rows,'verdict':worst(rows),'read_only':True,'external_tool_side_effects_possible':True,'source_build_verified':False,'source_runtime_verified':False,'target_build_verified':False,'behavior_verified':False}
+    if project:rows+=project_checks(project,network_mode)
+    return {'platform':sys.platform,'generated_by':'hmos-env-doctor/scripts/env_doctor.py','implementation':'native-python-argv-adapter','project':str(project) if project else None,'checks':rows,'verdict':worst(rows),'network_mode':network_mode or 'unknown','network_mode_source':'default' if network_mode is None else 'cli','read_only':True,'external_tool_side_effects_possible':True,'source_build_verified':False,'source_runtime_verified':False,'target_build_verified':False,'behavior_verified':False}
 
 def markdown(result):
     escape=lambda text:str(text).replace('|','\\|').replace('\r',' ').replace('\n',' ')
@@ -213,11 +285,13 @@ def main(argv=None):
         if hasattr(stream,'reconfigure'):stream.reconfigure(encoding='utf-8')
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--project',type=Path);parser.add_argument('--timeout',type=positive,default=15)
+    parser.add_argument('--network-mode',choices=['unknown','required','not-required'],default=None,
+                        help='Confirmed INTERNET permission requirement; omission remains unknown (WARN)')
     parser.add_argument('--json',action='store_true');parser.add_argument('--markdown',type=Path);args=parser.parse_args(argv)
     try:
         project=args.project.resolve(strict=True) if args.project else None
         if project and not project.is_dir():raise ValueError('Project must be a directory')
-        result=inspect(project,args.timeout)
+        result=inspect(project,args.timeout,args.network_mode)
         if args.markdown:
             args.markdown.parent.mkdir(parents=True,exist_ok=True);args.markdown.write_text(markdown(result),encoding='utf-8')
         print(json.dumps(result,ensure_ascii=False))

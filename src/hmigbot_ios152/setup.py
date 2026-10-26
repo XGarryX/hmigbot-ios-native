@@ -3,9 +3,16 @@ from pathlib import Path
 import argparse, json, os, platform, shutil, sys
 
 def main(argv=None):
-    p=argparse.ArgumentParser(); p.add_argument('command',choices=['bootstrap','validate'])
+    p=argparse.ArgumentParser(allow_abbrev=False); p.add_argument('command',choices=['bootstrap','validate'])
     p.add_argument('--workspace',default='.'); p.add_argument('--lang',default='zh')
-    a=p.parse_args(argv); root=Path(a.workspace).resolve(); path=root/'.migbot/config.json'
+    values=list(sys.argv[1:] if argv is None else argv)
+    a=p.parse_args(values); root=Path(a.workspace).resolve(); path=root/'.migbot/config.json'
+    entry=os.environ.get('HMIGBOT_ENTRY_WORKSPACE')
+    if entry:
+        requested=[values[i+1] for i,value in enumerate(values[:-1]) if value=='--workspace']
+        requested.extend(value.split('=',1)[1] for value in values if value.startswith('--workspace='))
+        if root!=Path(entry).resolve() or any(Path(value).resolve()!=Path(entry).resolve() for value in requested):
+            print(json.dumps({'ok':False,'error':'--workspace conflicts with the installed a2h-tool workspace'})); return 2
     cfg=json.loads(path.read_text(encoding='utf-8-sig')) if path.is_file() else {}
     if cfg and (cfg.get('source_platform') not in (None,'ios') or cfg.get('tool_package') not in (None,'hmigbot-ios152')
                 or (not cfg.get('source_platform') and not cfg.get('ios'))):

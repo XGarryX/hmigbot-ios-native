@@ -78,6 +78,62 @@ def supplementary(source,project,profiles,findings,skip_breadth=False):
                 severity='warn',fix_hint='按模块核对文件归属；不要求一文件一 AC'))
     return out,{'unowned_files':unowned,'manifest_components':summary}
 
+def original_measurement(scripts,source,project,profiles,rules_path,fw):
+    profile_path=project/'profiles.json'
+    profile_path.write_text(json.dumps(profiles,ensure_ascii=False),encoding='utf-8')
+    cmd=[sys.executable,'-B',str(Path(scripts)/'_upstream_lint_coverage.py'),
+         '--src',str(source.root),'--project-root',str(project),'--profiles',str(profile_path),
+         '--rules',str(rules_path),'--skip-breadth']
+    result=subprocess.run(cmd,capture_output=True,env={**os.environ,'PYTHONUTF8':'1','ARKTS_SKILL_DIR':str(scripts)},timeout=120)
+    if result.returncode not in (0,2):
+        from hmigbot_ios.core import MigrationError
+        raise MigrationError('Original coverage engine failed: '+str(result.returncode)+' '+result.stderr.decode('utf-8','replace')[-2000:])
+    section=fw.load(str(project)).get('sections',{}).get('spec/lint_coverage')
+    if section is None:
+        from hmigbot_ios.core import MigrationError
+        raise MigrationError('Original coverage engine produced no findings section')
+    return section
+
+def shared_measurement(source,features,profiles,rules,scripts,rules_path,fw,scratch,original,local=False):
+    from .shared_instances import prepare,probe_inputs,approved_records,expansion,merge,collection_inputs,collection_results
+    records,rejected=prepare(source,features,profiles,rules,local=local)
+    if not records:
+        if rejected:
+            original.setdefault('context',{})['shared_instance_references']={'accepted':[],'rejected':rejected}
+        return original['findings'],original.get('context',{})
+    texts={name:(Path(features)/name).read_text(encoding='utf-8-sig') for name in profiles['features']}
+    probe_profiles,documents,lookups=probe_inputs(records,profiles,texts)
+    probe=scratch/'direct-probes'; probe_features=probe/'spec/baseline/features';probe_features.mkdir(parents=True)
+    # Match the original consumer's skip behavior; an owner proof may never rely on skip.
+    skip=scratch/'spec/baseline/skip-list.md'
+    if skip.is_file():shutil.copy2(skip,probe_features.parent/'skip-list.md')
+    for name,text in documents.items():(probe_features/name).write_text(text,encoding='utf-8')
+    measured=original_measurement(scripts,source,probe,probe_profiles,rules_path,fw)
+    approved,refused=approved_records(records,lookups,measured.get('context',{}));rejected+=refused
+    additions,accepted=expansion(approved,profiles,rejected)
+    projected=original
+    collections={}
+    if accepted:
+        for name,assertions in additions.items():
+            path=scratch/'spec/baseline/features'/name
+            with path.open('a',encoding='utf-8') as handle:
+                handle.write('\n\n## Temporary expansion of verified shared AC references\n'+ '\n'.join(assertions.values())+'\n')
+        projected=original_measurement(scripts,source,scratch,profiles,rules_path,fw)
+        collection_profiles,collection_docs,collection_lookups=collection_inputs(profiles,texts,additions,accepted)
+        collection_root=scratch/'collection-probes';collection_features=collection_root/'spec/baseline/features';collection_features.mkdir(parents=True)
+        if skip.is_file():shutil.copy2(skip,collection_features.parent/'skip-list.md')
+        for name,text in collection_docs.items():(collection_features/name).write_text(text,encoding='utf-8')
+        collection=original_measurement(scripts,source,collection_root,collection_profiles,rules_path,fw)
+        collections=collection_results(collection_lookups,collection.get('context',{}))
+    items,context=merge(original,projected,accepted,rejected,collections=collections)
+    from hashlib import sha256
+    context['shared_instance_references'].update(source_fingerprint=source.fingerprint,
+        original_engine_probes=len(lookups),probe_other_findings=[i for i in measured['findings'] if i['rule']!='SPEC.INSTANCE_UNACCOUNTED'],
+        verified_direct_references=[{'consumer':r['consumer'],'instance':r['instance'],'site':r['site'],'owner_ac':r['owner_ac'],
+            'owner_file':r['owner']['file'],'owner_line':r['owner']['line'],
+            'owner_assertion_sha256':sha256(r['owner']['text'].encode('utf-8')).hexdigest()} for r in approved])
+    return items,context
+
 def run(args,scripts):
     fw=writer(scripts); project=Path(args.project_root).resolve()
     features=Path(args.features_dir).resolve() if args.features_dir else project/'spec/baseline/features'
@@ -107,18 +163,8 @@ def run(args,scripts):
             for p in features.glob(stem+'*.md'): shutil.copy2(p,scratch_features/p.name)
         else:
             for p in features.glob('*.md'): shutil.copy2(p,scratch_features/p.name)
-        profile_path=scratch/'profiles.json'
-        profile_path.write_text(json.dumps(profiles,ensure_ascii=False),encoding='utf-8')
-        cmd=[sys.executable,'-B',str(Path(scripts)/'_upstream_lint_coverage.py'),
-             '--src',str(source.root),'--project-root',str(scratch),'--profiles',str(profile_path),
-             '--rules',str(rules_path),'--skip-breadth']
-        result=subprocess.run(cmd,capture_output=True,env={**os.environ,'PYTHONUTF8':'1','ARKTS_SKILL_DIR':str(scripts)},timeout=120)
-        if result.returncode not in (0,2):
-            sys.stdout.buffer.write(result.stdout); sys.stderr.buffer.write(result.stderr); return result.returncode
-        data=fw.load(str(scratch)); section=data.get('sections',{}).get('spec/lint_coverage')
-        if section is None:
-            print('Original coverage engine produced no findings section'); return 3
-        items=section['findings']; context=section.get('context',{})
+        section=original_measurement(scripts,source,scratch,profiles,rules_path,fw)
+        items,context=shared_measurement(source,features,profiles,rules,scripts,rules_path,fw,scratch,section,local=local)
     existing={(v['rule'],v['subject']) for v in items}
     for item in native_anchor_coverage(source,features,profiles['features'],fw):
         if (item['rule'],item['subject']) not in existing:

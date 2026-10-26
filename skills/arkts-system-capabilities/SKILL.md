@@ -211,7 +211,7 @@ avPlayer.url = 'fd://' + file.fd.toString();
 
 ## 权限配置三件套
 
-音频/网络应用常用权限组合（均为 system_grant，无需弹窗）：
+音频/网络应用常用权限组合（均为 system_grant，无需弹窗）：按实际能力分别选用，不是每个音频 App 的固定要求；GET_NETWORK_INFO 对应实际网络信息 API 调用，纯本地播放不因该示例新增网络权限。
 
 ```json5
 "requestPermissions": [

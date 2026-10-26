@@ -37,10 +37,12 @@ metadata:
 本原生独立包要求 Python 3.11+。ios.12 起使用项目内可读 Python 入口，修复原编译分发器将 `--project`/`--help` 拆成字符的问题；保留原二进制供对照，不声称改过其内部实现。参数、状态与原生侧边界见 [原生体检说明](references/native-preflight.md)。
 
 ```bash
-python3 $SKILLS_ROOT/hmos-env-doctor/scripts/env_doctor.py --project <鸿蒙工程根> --markdown spec/env-report.md
+python3 $SKILLS_ROOT/hmos-env-doctor/scripts/env_doctor.py --project <鸿蒙工程根> --network-mode <required|not-required|unknown> --markdown spec/env-report.md
 #   exit 0 = 全 PASS（WARN 不影响）   1 = 有 FAIL   2 = 脚本异常
 #   stderr 人类可读表；stdout JSON；--markdown 落 §4 格式报告
 ```
+
+调用时按已确认的源行为、迁移规格和实际目标API需求选择 `--network-mode`：需要 INTERNET 传 `required`；确认本轮不需要该权限传 `not-required`；尚不确定传 `unknown` 或省略。空 endpoints、库存 degraded、没扫到 URL 都不能证明不需要联网。模式是调用方提供的适用性，不是工具自动证明；needs_confirmation 只是调用方确认需求的提示，不新增审批或产物。已确认需要网络能力的派发必须传 `required`，避免沿用旧调用时把默认 WARN 当权限验收。外部未传参调用保持可用，但默认 unknown 的权限结果为 WARN，不能证明网络需求已满足。
 
 它一次跑完 §3.1–3.6：DevEco 定位（三平台**固定候选位**，不递归搜盘）、工具链版本（hvigorw/ohpm/java/node，
 各 15s 硬超时）、目标设备在线（hdc，10s 硬超时；源端另按原生环境证据记录，区分"未找到 / 超时 / 有工具无设备"）、签名路径存在性与
@@ -141,18 +143,12 @@ python3 --version || python --version
 
 ### 3.5 项目配置检查
 
-**module.json5 权限声明**：
-```bash
-grep -q "ohos.permission.INTERNET" entry/src/main/module.json5
-```
+**module.json5 权限声明（网络类应用）**：由上方原生体检入口按 network-mode 和产品范围检查。已确认网络调用需要 INTERNET 且应用实际缺失时，网络请求可能失败；单个 entry 文件不能代表多模块应用的最终声明。
 
-缺少 INTERNET 权限是真机上网络请求静默失败的最常见原因。
-
-**必须声明的权限**（网络类应用）：
+**按实际调用声明权限**：确认需要 Internet 网络能力时声明 `INTERNET`；`GET_NETWORK_INFO` 只在调用需要读取网络信息的 API 时另行声明，不与 HTTP 捆绑。多 HAP 同产品内可以共享权限，不要求每个模块重复声明。HAR 权限在依赖构建时可合并；仅库有声明时，体检列出库声明并提示合并未核实，须核对实际依赖与构建结果后再决定是否缺失。
 ```json5
 "requestPermissions": [
-  { "name": "ohos.permission.INTERNET" },
-  { "name": "ohos.permission.GET_NETWORK_INFO" }
+  { "name": "ohos.permission.INTERNET" }
 ]
 ```
 
@@ -218,7 +214,7 @@ grep -q "ohos.permission.INTERNET" entry/src/main/module.json5
 | Node.js | PASS/FAIL | 版本: xxx |
 | Python | PASS/WARN | 版本: xxx (可选) |
 | 签名配置 | PASS/FAIL/WARN | 状态描述 |
-| 网络权限 | PASS/FAIL | module.json5 |
+| 网络权限 | PASS/WARN/FAIL | 按network-mode与同产品HAP声明；不适用另记applicable=false |
 | App 身份 | PASS/WARN | bundleName/vendor |
 | 入口页面 | PASS/FAIL | main_pages.json + EntryAbility |
 
@@ -239,7 +235,7 @@ grep -q "ohos.permission.INTERNET" entry/src/main/module.json5
 | 问题 | 自动修复 | 操作 |
 |------|---------|------|
 | PATH 未设置 | YES | 输出 export 命令 |
-| 缺少 INTERNET 权限 | YES | 追加到 module.json5 |
+| 已确认需要 INTERNET 且实际应用缺失 | 条件允许 | 仅在当前授权允许修改工程时追加；unknown/not-required不自动补权限 |
 | 签名指向其他机器 | YES | 移除 signingConfig 引用 |
 | main_pages.json 入口错误 | YES | 更新 src 数组 |
 | bundleName 为模板默认值 | ASK | 提示用户输入正确的包名 |

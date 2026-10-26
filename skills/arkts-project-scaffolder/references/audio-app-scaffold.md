@@ -9,7 +9,7 @@
 
 ## 1. module.json5 音频应用模板
 
-音频应用需要 3 个权限 + 1 个 backgroundMode + workScheduler 扩展。
+本示例为联网播客，使用以下权限、backgroundMode 和 workScheduler 扩展；其他音频应用按已确认功能选用，权限列表不是音频应用的固定要求。
 
 ```json5
 {

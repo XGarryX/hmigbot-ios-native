@@ -1,6 +1,6 @@
 # HMigBot iOS 1.5.2 · Mac 原生输入版
 
-独立工具包，版本 `1.5.2-ios.30`，分发 ID `hmigbot-ios152`。以 HMigBot CodeX 1.5.2 的流程、模板、规则和门禁为基础，输入为原生 iOS 工程，目标为原生 HarmonyOS 工程。后续只维护 Mac，尽可能调用 Xcode / Apple Swift 官方能力。
+独立工具包，版本 `1.5.2-ios.32`，分发 ID `hmigbot-ios152`。以 HMigBot CodeX 1.5.2 的流程、模板、规则和门禁为基础，输入为原生 iOS 工程，目标为原生 HarmonyOS 工程。后续只维护 Mac，尽可能调用 Xcode / Apple Swift 官方能力。
 
 Mac 运行库的原始执行位由随包 `docs/macos-runtime-modes.json` 保留。安装和升级会修复同内容旧文件的错误执行位；制作分发包后可运行 `python3 -B scripts/check_runtime_permissions.py` 校验，`--fix` 仅恢复清单中内容 SHA 一致文件的执行位。
 
@@ -28,6 +28,10 @@ bash <本工具目录>/install.sh --target <鸿蒙目标工程>
 本包与安卓原版独立；不要装入同一迁移项目或同一用户级技能目录。工具带齐自身所需模块、模板、代理及原编译程序，不依赖外部安卓目录。安装归属、升级冲突与既有用户修改保护继续生效。
 
 安装器仅对本包清单内、当前架构且哈希一致的原生程序逐文件移除下载隔离标记，记录处理前后哈希，失败按原事务回滚。原阶段包装器既有的 `xattr -dr` 调用仍保留；本轮没有修改它们或关闭系统 Gatekeeper。
+
+## 环境预检的网络适用性
+
+`hmos-env-doctor` 接受 `--network-mode required|not-required|unknown`。调用技能从已确认能力选择：需要网络权限时仍检查配置主清单缺声明并 FAIL；确认不需要时记不适用；省略参数保留 unknown/WARN，不当作权限验收。多HAP按显式产品关系核对共享声明；成员未知或跨产品覆盖混合保留 WARN；仅库有声明时提示依赖及合并未核实。诊断不向工程添加权限。详见 [原生体检说明](skills/hmos-env-doctor/references/native-preflight.md)。
 
 ## Release 输入
 

@@ -183,7 +183,7 @@ export class EventConstants {
 - [ ] 子组件接收模型实例用 `@Param`（不是 V1 `@ObjectLink`）
 - [ ] 构造函数使用 Partial + 默认值防御（防御网络数据缺字段）
 - [ ] HTTP 请求有 try-finally + destroy 清理
-- [ ] module.json5 声明了 INTERNET 权限
+- [ ] 涉及需 INTERNET 的联网调用时，核实应用最终权限声明（多 HAP/库合并按实际应用核对）；纯本地分支不适用；已有声明不删除
 - [ ] 文件上传（multipart）：选中文件**先落沙箱**（`fileIo.copyFile`），`multiFormDataList` 文件项用 `filePath`（沙箱路径）、文本项用 `data`（不把外部路径/uri 当值传）
 - [ ] 发给后端/落盘的序列化走 `toJson()`（或无装饰器纯 DTO）——不直接 `JSON.stringify` `@ObservedV2` 实例（`__ob_` 前缀陷阱）
 - [ ] async/await 正确使用，错误统一在 catch 中转换；**自定义错误类 `extends Error` + `super(message)`** 才能被 `throw`

@@ -561,7 +561,7 @@ try {
 { "name": "internet_permission_reason", "value": "Required for network access to backend API" }
 ```
 
-**为什么 Phase 0 必查**：本项与 I1 一样具有「编译 PASS + 联调全废」特征，但本项发生在更早阶段（请求根本未发出）。迁移启动时应该**先**确认 module.json5 有 INTERNET 权限再去 debug HttpClient 行为。
+**已确认需要网络时的 Phase 0 适用性**：本项与 I1 一样具有「编译 PASS + 联调全废」特征，但本项发生在更早阶段（请求根本未发出）。已确认需要 INTERNET 的迁移通过现有 hmos-env-doctor 入口传 `--network-mode required` 核对；多 HAP/库权限合并按实际应用核实，不据单个 entry 文件无条件补权限。纯本地应用不适用此网络排错项。
 
 ## Class I 通用原则
 
@@ -577,4 +577,4 @@ try {
 
 这 4 类陷阱的**共同症状**是「编译过 + HAP 跑起来 + 静态分析全过 + 但运行时所有请求都失败」。迁移联调出现「全部接口报网络异常 / 全部 JSON parse error / 全部超时」时，**先按 I4 → I1 → I3 → I2 顺序排查**，再谈后端 / 签名 / 业务逻辑。
 
-a2h-execute pipeline 集成建议：Stage 0 资源前置阶段同步检查 module.json5 INTERNET 权限；Stage 2 Base-3 Network 阶段按本手册 §I1 的 expectDataType + coerceToString + 空 body 守卫模板，避免每个 worker agent 自实现踩坑。
+a2h-execute pipeline 的网络能力适用说明：仅已确认需要网络的迁移在原 Stage 0 预检调用 hmos-env-doctor 时传 `--network-mode required`，不新增检查项或产物；Stage 2 Base-3 Network 存在实际网络能力时按本手册 §I1 的 expectDataType + coerceToString + 空 body 守卫模板实现。
