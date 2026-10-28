@@ -22,6 +22,26 @@ final class Collector: SyntaxVisitor {
         nodes.append(["kind": kind, "start_utf8": start.utf8Offset, "end_utf8": end.utf8Offset,
                       "line": location.line, "column": location.column, "value": value])
     }
+    // Additive syntax facts. These are parser spans, never name/type resolution.
+    func span(_ node: some SyntaxProtocol) -> [String: Any] {
+        let start = node.positionAfterSkippingLeadingTrivia
+        return ["start_utf8": start.utf8Offset,
+                "end_utf8": node.endPositionBeforeTrailingTrivia.utf8Offset,
+                "line": converter.location(for: start).line,
+                "text": node.trimmedDescription]
+    }
+    func owners(_ node: some SyntaxProtocol) -> [String] {
+        var result: [String] = []
+        var parent = Syntax(node).parent
+        while let current = parent {
+            if let type = current.as(StructDeclSyntax.self) { result.append(type.name.text) }
+            else if let type = current.as(ClassDeclSyntax.self) { result.append(type.name.text) }
+            else if let type = current.as(EnumDeclSyntax.self) { result.append(type.name.text) }
+            else if let type = current.as(ExtensionDeclSyntax.self) { result.append(type.extendedType.trimmedDescription) }
+            parent = current.parent
+        }
+        return result.reversed()
+    }
     override func visit(_ node: ImportDeclSyntax) -> SyntaxVisitorContinueKind {
         add("import", node, ["module": node.path.trimmedDescription]); return .visitChildren
     }
@@ -70,21 +90,56 @@ final class Collector: SyntaxVisitor {
         add("extension", node, ["type": node.extendedType.trimmedDescription]); return .visitChildren
     }
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
-        add("function", node, ["name": node.name.text, "signature": node.signature.trimmedDescription]); return .visitChildren
+        add("function", node, ["name": node.name.text, "signature": node.signature.trimmedDescription,
+            "owners": owners(node), "parameters": node.signature.parameterClause.parameters.map {
+                ["first_name": $0.firstName.text, "second_name": $0.secondName?.text ?? "",
+                 "type": $0.type.trimmedDescription, "default": $0.defaultValue?.value.trimmedDescription ?? ""]
+            }, "body": node.body.map { span($0) } ?? [:]]); return .visitChildren
+    }
+    override func visit(_ node: InitializerDeclSyntax) -> SyntaxVisitorContinueKind {
+        add("initializer", node, ["name": "init", "signature": node.signature.trimmedDescription,
+            "owners": owners(node), "parameters": node.signature.parameterClause.parameters.map {
+                ["first_name": $0.firstName.text, "second_name": $0.secondName?.text ?? "",
+                 "type": $0.type.trimmedDescription, "default": $0.defaultValue?.value.trimmedDescription ?? ""]
+            }, "body": node.body.map { span($0) } ?? [:]]); return .visitChildren
     }
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
         let bindings = node.bindings.map { binding -> [String: Any] in
             ["pattern": binding.pattern.trimmedDescription,
              "type": binding.typeAnnotation?.type.trimmedDescription ?? "",
-             "initializer": binding.initializer?.value.trimmedDescription ?? ""]
+             "initializer": binding.initializer?.value.trimmedDescription ?? "",
+             "accessor": binding.accessorBlock.map { span($0) } ?? [:],
+             "initializer_span": binding.initializer.map { span($0.value) } ?? [:]]
         }
         add("variable", node, ["specifier": node.bindingSpecifier.text, "bindings": bindings,
-                              "attributes": node.attributes.trimmedDescription]); return .visitChildren
+                              "owners": owners(node), "attributes": node.attributes.trimmedDescription]); return .visitChildren
     }
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
-        let arguments = node.arguments.map { ["label": $0.label?.text ?? "", "expression": $0.expression.trimmedDescription] }
-        add("call", node, ["callee": node.calledExpression.trimmedDescription, "arguments": arguments,
+        let arguments: [[String: Any]] = node.arguments.map {
+            ["label": $0.label?.text ?? "", "expression": $0.expression.trimmedDescription,
+             "span": span($0.expression), "is_closure": $0.expression.is(ClosureExprSyntax.self)]
+        }
+        var closures: [[String: Any]] = []
+        if let closure = node.trailingClosure {
+            closures.append(["label": "", "span": span(closure), "body": span(closure.statements)])
+        }
+        for closure in node.additionalTrailingClosures {
+            closures.append(["label": closure.label.text, "span": span(closure.closure),
+                             "body": span(closure.closure.statements)])
+        }
+        let member = node.calledExpression.as(MemberAccessExprSyntax.self)
+        let reference = node.calledExpression.as(DeclReferenceExprSyntax.self)
+        add("call", node, ["callee": node.calledExpression.trimmedDescription,
+                           "callee_name": member?.declName.baseName.text ?? reference?.baseName.text ?? "",
+                           "callee_name_span": member.map { span($0.declName) } ?? reference.map { span($0.baseName) } ?? [:],
+                           "callee_base": member?.base?.trimmedDescription ?? "",
+                           "owners": owners(node), "arguments": arguments,
+                           "trailing_closures": closures,
                            "has_trailing_closure": node.trailingClosure != nil]); return .visitChildren
+    }
+    override func visit(_ node: ClosureExprSyntax) -> SyntaxVisitorContinueKind {
+        add("closure", node, ["signature": node.signature?.trimmedDescription ?? "",
+                              "owners": owners(node), "body": span(node.statements)]); return .visitChildren
     }
     override func visit(_ node: AttributeSyntax) -> SyntaxVisitorContinueKind {
         add("attribute", node, ["name": node.attributeName.trimmedDescription]); return .visitChildren

@@ -47,7 +47,7 @@
   ],
   "validation": "Public workflow Markdown/TOML/YAML is checked separately from internal code, test fixtures and opaque binary content. This is not an assertion that every byte in the package lacks legacy platform strings.",
   "known_limits": [
-    "VERIFY router-verify native source scanner is not completed; not invoked or used as a prerequisite by this INIT/SPEC/PLAN/EXECUTE trial.",
+    "VERIFY native source routes use selected-product SwiftSyntax facts; HarmonyOS target uses the shared original 1.5.2 engine with SDK-proved static supplements. Tool tests do not establish application VERIFY completion; dynamic/unproved chains remain unknown.",
     "Legacy optional source scanners are not evidence of native coverage. Native source phases use Source, native graph and semantic analysis, not empty foreign scans.",
     "VERIFY/scenario/ad source-device drivers are not claimed native merely by revised instructions. Require an actually available native driver and real replay evidence; otherwise use existing DEFERRED semantics. Vendor snapshots and optional legacy source scanners were not made into Swift analyzers by text changes."
   ]

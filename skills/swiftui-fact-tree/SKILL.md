@@ -6,6 +6,9 @@ metadata:
   type: domain
 ---
 
+> **.33 共享事实输入**：源分析可用 runtime 的 `scripts/ios_visual.py facts` 生成当前 target/Release 语法脚手架与 native facts；随后仍须按本 skill 补页面/fragment 分类、行为、前置条件与功能账并过原数据闸。脚手架不是 runtime dump，也不是已验证的功能 oracle。详见 [原生视觉源流程](../arkts-visual-verify/references/native-xcode-source.md)。
+
+
 # SwiftUI Fact Tree
 
 按 [原生输入协议](../a2h-spec/references/native-input.md) 接原生源，保持 1.5.2 的七个生成阶段及原同构树 schema；先读 `references/fact-tree-schema.md` 与 `references/enrichment-parity-spec.md`。

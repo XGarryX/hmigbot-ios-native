@@ -1,3 +1,5 @@
+> **iOS .33 执行分支**：先读 [Xcode 原生源流程](native-xcode-source.md)，源端派发同时附 [native-source-batch-prompt](native-source-batch-prompt.md)。本文件的业务/账目/预算语义保留；旧 adb/Activity/uiautomator/pm clear 示例只属 Android 历史源分支。iOS 用本工程独占的 XCUITest session，原目标 HDC 与全部门禁不变。
+
 # Phase 2.5 — 功能点 grounding（iOS实测锚定 oracle，dual-oracle 上游）
 
 > 仅当 fact-tree 某 page 的 record 带 `functional_checks[]`（由 a2h-functional-merge 注入）时才跑。
@@ -8,7 +10,7 @@
 > **写回边界（铁律）**：只改 `functional_checks[].{expected_ios, ios_trusted, precondition}` 三字段——这是 a2h-functional-merge / grounding 自己 own 的字段。**绝不碰** toolkit/app-relationship-tree 已填的 navigation / reach_path / purpose / components 等。
 
 ## 触发时机
-Phase 2 per-page 循环里，**截图 + 存 dump 之后**（即 phase2-ios-batch-prompt.md Step 1.5 之后），对该 page：
+Phase 2 per-page 循环里，**截图 + 存 dump 之后**（即 native-source-batch-prompt.md Step 1.5 之后），对该 page：
 ```
 读 spec/toolkit-fact-tree.json 该 page record 的 functional_checks[]
   为空 → 跳过，进黑盒/下一页

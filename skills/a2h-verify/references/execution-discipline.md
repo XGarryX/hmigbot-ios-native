@@ -1,3 +1,5 @@
+> **iOS .33 设备分支**：§1.3中的历史 adb 源条件对应 [Xcode 源端预检与准备](../../arkts-visual-verify/references/native-xcode-source.md)。使用本工程原生 probe 与自有 source session，原HDC/编译/skill前置和合法状态保持；provider错误不是设备缺失，不能假DEFERRED。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # 执行铁律（无跳过原则）

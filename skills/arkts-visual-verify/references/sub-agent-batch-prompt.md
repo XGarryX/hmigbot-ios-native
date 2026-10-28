@@ -1,3 +1,5 @@
+> **iOS .33 执行分支**：先读 [Xcode 原生源流程](native-xcode-source.md)，源端派发同时附 [native-source-batch-prompt](native-source-batch-prompt.md)。本文件的业务/账目/预算语义保留；旧 adb/Activity/uiautomator/pm clear 示例只属 Android 历史源分支。iOS 用本工程独占的 XCUITest session，原目标 HDC 与全部门禁不变。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # Sub-agent Batch Prompt
@@ -50,6 +52,8 @@ nav_mode: {nav_mode}          # "xml" | "compose"，由主会话从 tree.source.
 
 batch_json: {batch_id, starting_page, scenario_chain, pages: [...]}
 具体结构看 spec/visual-verify/batches.json (本 batch 对应那段)
+
+iOS .48 目标代码定位：读取本 batch 行的 `file_resolved`；寄生页读取 `parent_file_resolved` 与 `parent_used`。`file_candidates` 只表示歧义候选，须结合实际代码核实；没有定位则保留未定位。`android_file` 保持原源字段，不当作 HMOS 路径。上述字段仅帮助定位代码，不能作为导航、到达或 PASS 证据；判定实现缺失仍按原 `resolve_hmos_impl.py` 核验。
 
 device_config:
   ios_serial: {ios_serial}
@@ -641,7 +645,7 @@ FOR EACH page IN batch_json.pages:
   # 设计变更（v3.11 / 2026-05-25 重构）：黑盒探索不再在 HMOS sub-agent 里跑。
   # 改为 Phase 2 dispatcher + sub-agent chunk 模式（主会话编排）：
   #   1. scripts/dispatch_phase2_batches.py 切 chunk + 输出计划 JSON
-  #   2. 主会话按 references/phase2-ios-batch-prompt.md 派 sub-agent 跑每 chunk
+  #   2. 主会话按 references/native-source-batch-prompt.md 派 sub-agent 跑每 chunk
   #   3. sub-agent 内 LLM-driven 真实点击导航 + 截图 + 黑盒发现写 manifest
   #   4. 主会话跑完所有 chunk 后再调 dispatch_phase2_batches.py（不加 --plan-only）
   #      聚合 manifest 反哺 fact-tree.pages[].screenshots.{trip}.reach_path

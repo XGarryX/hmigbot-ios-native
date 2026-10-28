@@ -1,3 +1,5 @@
+> **iOS .33 采集与配对**：执行及 wire 规则以 [native-xcode-source](native-xcode-source.md) 为准。source baseline 使用公开 XCTest PNG/native JSON/原生 XML，经 source placement 落入本文件的 iOS canonical 目录；下方 adb/uiautomator 源端动作仅为历史分支。若缩图，PNG 与 XML bounds 同步变换，raw 原件/hash 保留在工作证据目录；不在 baseline 白名单中新增 raw JSON。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # 输出目录与文件路径规范（visual-verify 视角）
@@ -112,7 +114,9 @@
 
 ### B.1 page_queue.json / batches.json entry 字段
 
-`page_queue.json.entries[]` / `batches.json.batches[].pages[]` 中每个 page 条目包含：
+iOS .45 在队列或批次同目录保存 `<输出文件名>.native-mapping.json` 静态定位旁路凭据。它区分原解析与规格合同探测，记录 Source、规格、完整 ETS 集、工具指纹及原 core 返回；主 JSON 的身份、顺序、分母、分组与门禁不变，只补已核实的定位字段。凭据随队列或批次重建；Source、规格或目标文件结构变化须从该准备断点重建，不代表运行期路由或设备通过。
+
+`page_queue.json.entries[]` / `batches.json.trips[].batches[].pages[]` (v4-batches/1; legacy flat: `batches.json.batches[].pages[]`) 中每个 page 条目包含：
 
 | 字段 | 说明 | 例 |
 |---|---|---|
@@ -129,7 +133,9 @@
 | `parent_used` | 解析时用的是哪个 parent name | `"SplashActivity"` |
 | `reach_path` | compute_reach_paths.py 产，导航 token 序列 | `["HomeActivity","tap","MineFragment","tap","AboutUsActivity"]` |
 
-`batches.json.batches[].pages[]` 额外字段：`page_id` / `reachability`
+批次额外字段：`page_id` / `reachability`（以实际原 core 输出为准）。
+
+批次按 `page_id`（旧形态按 `name`）连接队列。各趟保留自己的成员与顺序；`android_file` 是原源字段，不写入目标 ETS。只有已核实的 `file_resolved`、`parent_file_resolved`、`parent_used`、`file_candidates` 作为目标代码定位提示，不能代替到达、路由或行为证据。旁路凭据按趟记录匹配、未匹配和定位字段修改数。
 | `spec/visual-verify/report.md` | Phase 6.6 | humans | 每次 run 整体覆盖 | 自动覆盖；旧版不保留 | ⚠️ 可跟踪（人类速查用） |
 
 ### C. 单 run 临时（screenshots/）
@@ -177,8 +183,8 @@ spec/visual-verify/screenshots/
 
 | 路径 | 产出者 | 消费者 | 生命周期 | 清理时机 |
 |---|---|---|---|---|
-| `screenshots/ios/{trip_id}/{page_id}.png` | Phase 2 产 baseline（Step 4.1 缺失才补截：adb pull + resize） | Step 4.2 多模态 | 跨轮复用（iOS frozen） | run 结束**保留** |
-| `screenshots/ios/{trip_id}/{page_id}.ios.xml` | Step 4.1 截图后 uiautomator dump（**配对，每页至多一份**） | HMOS 结构 diff + Phase 2.5 功能 grounding | 同 png | 同 png |
+| `screenshots/ios/{trip_id}/{page_id}.png` | Phase 2 产 baseline（Step 4.1 缺失才补截：XCTest capture + source placement） | Step 4.2 多模态 | 跨轮复用（iOS frozen） | run 结束**保留** |
+| `screenshots/ios/{trip_id}/{page_id}.ios.xml` | Step 4.1 同次 XCTest snapshot + 原生 XML 桥接（**配对，每页至多一份**） | HMOS 结构 diff + Phase 2.5 功能 grounding | 同 png | 同 png |
 | `phase2_batches/{chunk_id}/grounding_dumps/{语义名}.ios.xml` | Phase 2.5 grounding 导航/实操途中留证 | grounding 现场追溯 | 随 chunk manifest | chunk 归档时一并留/清 |
 | `screenshots/harmony/round-{N}/{trip_id}/{page_id}.jpeg` | Step 4.1 (hdc + resize)　**或**　回放 `replay_place_artifacts.py` | Step 4.2 多模态 | 每轮独立 | 永久按轮归档 |
 | `screenshots/harmony/round-{N}/{trip_id}/{page_id}.hmos.json` | 同上（**与 jpeg 配对，缺一即闸红**） | 三分归因（判缺控件/没定位到/handler 空实现） | 同 jpeg | 同 jpeg |

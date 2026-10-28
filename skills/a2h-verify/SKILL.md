@@ -9,6 +9,9 @@ metadata:
   - migration
 ---
 
+> **.33 iOS 适配**：CHECK-6 使用 [原生路由输入](../arkts-router-verify/references/native-route-source.md)；CHECK-7 使用 [Xcode 源端流程](../arkts-visual-verify/references/native-xcode-source.md)。当前 source provider 使用工具独占的新 Simulator，不占用其他工程设备。适配器不可用是工具错误，不能谎报设备不存在或把缺产物视为 PASS；原回环、编译复检及合法状态不变。
+
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 > **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。

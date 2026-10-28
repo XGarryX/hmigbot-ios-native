@@ -1,3 +1,7 @@
+> **iOS .39 准备数据**：源码引用回填继续调用原匹配器，在私有输入镜像映射文件级 source_anchors，输出规范 ios_source_refs；保留原未匹配项。Step 1.1.6 对 iOS 使用：`python3 "$SKILLS_ROOT/arkts-visual-verify/scripts/extract_dialog_ids.py" --ios-root "$IOS_SOURCE_ROOT" --package "$IOS_BUNDLE_ID" --project-root "$PROJECT_ROOT" --out "$PROJECT_ROOT/spec/visual-verify/native_dialog_catalog.json"`。此文件是静态声明目录，`partial_unknowns` 必须传给行走者补查，不代表动作或验收通过；旧 dialog_id_catalog.json 留存但 iOS 分支不读。下文旧 Android catalog 命令仅属历史分支。
+
+> **iOS .33 执行分支**：先读 [Xcode 原生源流程](native-xcode-source.md)，源端派发同时附 [native-source-batch-prompt](native-source-batch-prompt.md)。本文件的业务/账目/预算语义保留；旧 adb/Activity/uiautomator/pm clear 示例只属 Android 历史源分支。iOS 用本工程独占的 XCUITest session，原目标 HDC 与全部门禁不变。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # Phase 1 — 准备
@@ -457,3 +461,5 @@ python3 -c "import os,sys;R=sys.argv[1];[os.makedirs(d,exist_ok=True) for t in (
 ```
 
 > **断点续跑规则**：同一全局轮内的本 skill 单 run，已有结论的页面直接跳过；进入新一轮则重置 queue 全跑（这是多轮修复循环的自身要求——每轮要观察 fixer 改动是否引发其它页回归，不论轮次由谁触发）。visual-fixer 的修复历史在 `docs/autofix-log/round-N/`，本 skill 不读不写。
+
+源端局部子任务的返回不代表整轮 visual skill 退出。round_budget 的 begin/next/end 和轮次生命周期由主会话统一执行；源树/准备/行走子任务只回传本段结果，不调用这些控制入口，也不自行标记阶段完成。

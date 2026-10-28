@@ -1,3 +1,7 @@
+> **可执行设备探针**：`probe_devices.py --project-root <本工程> --json [--serial <目标>]` 已有 iOS 分支。原0/10/20枚举保留，source_setup=pending表示须进入Phase1实际build/create/start；exit2工具错误不能当DEFERRED。旧CHECK-8 wire在本iOS契约对应CHECK-7 visual，当前输出明确映射。
+
+> **.33 可执行分支**：CHECK-6 的 iOS 源 producer/裁决/弹窗/薄壳入口见 [native-route-source](../../arkts-router-verify/references/native-route-source.md)。CHECK-7 的 Xcode 构建、独占 source Simulator、真实观察与 canonical 桥接见 [native-xcode-source](../../arkts-visual-verify/references/native-xcode-source.md)。本文件下方 adb 条件仅属历史 Android 分支；iOS 以真实 Xcode provider/source session 与目标 HDC 状态判前置，provider 错误不当作 DEFERRED。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # CHECK-6 / 8：路由跳转验证 + 视觉对齐（两段委托）

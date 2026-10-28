@@ -3,6 +3,8 @@ name: a2h-functional-merge
 description: 在 app-relationship-tree 跑完之后运行,把 A2H iOS测试工具 Stage1 的三样独特产物——功能点枚举(尤其 enum 驱动的动态工具)、预期结果(可视觉验证的判据)、功能点→iOS源码锚点——注入 fact-tree(spec/toolkit-fact-tree.json),让下游 arkts-visual-verify 能在单趟页面遍历里顺手做功能检查、产 feat 问题单。当用户说"把 A2H 的功能点/预期合进 fact-tree""让 visual-verify 能测功能不只是 UI""注入功能检查""A2H 产物融合 fact-tree""functional-merge""把功能清单挂到页面上"时触发。即使用户只说"把 A2H 的功能点接进来"或"让 fact-tree 带上功能维度",只要上下文是 A2H↔visual-verify 融合,也应触发。**只消费 A2H Stage1(functional_registry + test_intents),绝不跑 A2H 的执行阶段;只新增字段,绝不改 toolkit/art 已填的导航与结构。**
 ---
 
+> .36 原生功能合并按 [原生功能边界](../arkts-visual-verify/references/native-functional-boundary.md)，原 merge/fold 保留，观测按稳定键守护。
+
 > **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 
 > **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`, `scenario-builder`, `visual-fixer`, `visual-fixer-reviewer`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)

@@ -5,6 +5,8 @@ metadata:
   title: 自产功能点契约（registry + test_intents，脱钩 A2H 黑盒）
 ---
 
+> .36 SwiftUI/原生功能投影按 [原生功能边界](../arkts-visual-verify/references/native-functional-boundary.md)；分析键不是屏幕文字。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 > **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。

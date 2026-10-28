@@ -1,3 +1,5 @@
+> **iOS .33 执行分支**：先读 [Xcode 原生源流程](native-xcode-source.md)，源端派发同时附 [native-source-batch-prompt](native-source-batch-prompt.md)。本文件的业务/账目/预算语义保留；旧 adb/Activity/uiautomator/pm clear 示例只属 Android 历史源分支。iOS 用本工程独占的 XCUITest session，原目标 HDC 与全部门禁不变。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # Step 4.1 / 2.1.2 — 截图主流程 + capture_mode 判定
@@ -90,7 +92,7 @@ hdc shell rm "<HMOS_LAYOUT>"
 
 | 触发器 | 要重截？ | 怎么做 |
 |---|---|---|
-| iOS APK 改了（重新安装新版本） | ✅ | `run_phase2_ios_survey.py --invalidate-ios-cache` 全清后重跑 Phase 2 |
+| iOS App 重新构建为新版本 | ✅ | 保留旧 baseline 证据组，使受影响组失效，按 native-xcode-source.md 重跑 Phase 2 与 finalize |
 | scenario YAML 改了（登录流程变了，影响 trip_2 落地态） | ✅ | 同上（或只删受影响 trip 目录） |
 | iOS 模拟器换了（不同设备/不同镜像，分辨率可能差） | ✅ | 同上 |
 | 仅 HarmonyOS 代码改了（visual-fixer 改 .ets） | ❌ 不该重截 | 这正是 baseline 复用的价值——HMOS 改不影响 iOS |
@@ -101,7 +103,7 @@ hdc shell rm "<HMOS_LAYOUT>"
 
 | 用户说 | 主代理动作 |
 |---|---|
-| "重新截一遍 iOS" | `run_phase2_ios_survey.py --invalidate-ios-cache`（清空 screenshots/ios 后重跑 Phase 2） |
+| "重新截一遍 iOS" | 保留旧证据后使 baseline 组失效，按 native-xcode-source.md 重跑 Phase 2 与 finalize |
 | "只刷新 MainPage 这一页的 iOS" | 删 `screenshots/ios/{trip_id}/MainPage.png`（+配对 .ios.xml）后重跑 Phase 2 补图 |
 
 ---

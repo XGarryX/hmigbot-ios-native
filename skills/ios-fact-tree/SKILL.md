@@ -3,6 +3,11 @@ name: ios-fact-tree
 description: 从 SwiftUI、UIKit/Interface Builder 或混合 iOS 工程生成原格式 fact-tree，先读取选定 target/Release 上下文，再组织页面、导航、组件与系统接缝分析。
 ---
 
+> .36 功能自产/合并/折叠和事实树公共门控入口按 [原生功能边界](../arkts-visual-verify/references/native-functional-boundary.md) 执行，保留原二进制判据与功能分母。
+
+> **.33 原生入口识别**：`detect_arch.py` 读取真实 @main App/AppDelegate、声明的 scene/storyboard，区分 Widget 根；不以排序后的第一个 View 作为启动页。架构依据 UI 声明而非单独 import UIKit。未知/多入口明确列出；独立路由和 visual 源脚手架共享当前 Source 语法事实，旧 SPEC 图不充当独立 oracle。
+
+
 > **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 
 > **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`, `scenario-builder`, `visual-fixer`, `visual-fixer-reviewer`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)

@@ -1,6 +1,6 @@
 ---
 name: arkts-visual-verify
-description: 按页面粒度对 iOS 与 HarmonyOS 自动截图、真实点击遍历并做多模态 UI/功能对比。基于 fact-tree 分 batch 派子代理，将差异写入 spec/fix/round-N/ui 或 feat，再交 visual-fixer 修复；登录页自动调用 arkts-scenario-runner 到态。用户要求截图对比、视觉验证、检查 UI 一致性或全量迁移验收时触发；需 adb/hdc 与双端模拟器。
+description: 按页面粒度对 iOS 与 HarmonyOS 自动截图、真实点击遍历并做多模态 UI/功能对比。基于 fact-tree 分 batch 派子代理，将差异写入 spec/fix/round-N/ui 或 feat，再交 visual-fixer 修复；登录页自动调用 arkts-scenario-runner 到态。用户要求截图对比、视觉验证、检查 UI 一致性或全量迁移验收时触发；iOS 源需 Xcode/XCUITest，目标需 hdc 与设备。
 metadata:
   tags:
   - verification
@@ -33,13 +33,16 @@ metadata:
   - references/phase6-summary.md
   - references/phase7-stubborn-loop.md
   - references/phase2-edge-walk.md
-  - references/phase2-ios-batch-prompt.md
-  - references/ios-navigation-playbook.md
+  - references/native-source-batch-prompt.md
+  - references/native-xcode-source.md
   - references/architecture.md
   depends_on:
   - ios-fact-tree
   - arkts-scenario-runner
 ---
+
+> **iOS 源端执行入口（.33）**：进入 Phase 1/2 或派发任何源端采集任务前，先读 [Xcode 原生源端流程](references/native-xcode-source.md)，并把 [原生派发提示](references/native-source-batch-prompt.md) 传给源端子任务。iOS 源操作使用独立 Simulator 上的公开 XCUITest；下文 Android Activity、ADB、uiautomator、pm clear 等属于历史源分支，不能用于 iOS。目标 HDC、三账、canonical、到达/功能/证据/轮次及 fixer/reviewer 仍按原流程。
+
 
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
@@ -58,6 +61,8 @@ metadata:
 > **路径约定**：下文 `$SKILLS_ROOT` = 本 SKILL.md 所在目录的上一级（用户级安装=`~/.agents/skills`；项目级=`<project>/.agents/skills` 或 `<project>/skills`）。执行任何脚本前先设一次——bash: `SKILLS_ROOT="$(cd "$(dirname 本SKILL.md)/.." && pwd)"`；PowerShell: `$SKILLS_ROOT = Resolve-Path "<本SKILL.md所在目录>\.."`。命令示例中的行尾 `\` 是 bash 续行符——PowerShell 请合并成一行或改用反引号 `` ` `` 续行；`ENV=x python3 …` 这种 env 前缀写法 PowerShell 不支持，改 `$env:ENV="x"; python3 …` 或用脚本自带参数（如 `--trip`）。脚本一律 `python3 $SKILLS_ROOT/arkts-visual-verify/scripts/<name>.py`（Windows 读作 `python`）；Windows 前置见 [references/windows-setup.md](references/windows-setup.md)。
 
 # arkts-visual-verify — 按页面截图对比 + 产出 fix-markdown
+
+> iOS .45 页面/批次文件定位按 [原生源端流程](references/native-xcode-source.md) 读取当前规格与源码合同，原门禁先执行；[输出规约](references/output-layout.md) 定义静态映射旁路凭据。定位完成不代表路由或设备通过。
 
 <!-- PIPELINE_VERSION（④增量重验用，2026-07-12）：判定管线的语义版本号。**任一变更必须 bump**：
      本 SKILL/sub-agent-batch-prompt 的判定规则、multimodal/oracle 三源逻辑、R9 类新规则、
@@ -321,8 +326,8 @@ HMOS 与 iOS **100% 视觉一致**为唯一目标，差不多/平台差异 全�
 |---|---|
 | `dispatch_phase2_batches.py` | 切 chunk（5-10 page/chunk，自适应：≤30 records 切 8/chunk，>80 切 10）+ 输出 chunk 计划 JSON |
 | 主会话 | 读计划 → 对每 chunk 调用 `spawn_agent`（`agent_type="worker"`）派 sub-agent |
-| sub-agent | 按 `references/phase2-ios-batch-prompt.md` 跑一个 chunk：每 page 调 `capture_page_e2e.py` 一次打包（reset→dismiss→机械导航 reach_path 重放/chain_walk→截图+dump+签名），LLM 只按退出码路由异常（接管导航/自愈梯/BLOCKED）——2026-07-11 编排税优化，旧逐条编排废止 |
-| `references/ios-navigation-playbook.md` | 公共导航 playbook，sub-agent 必读 |
+| sub-agent | 按 `references/native-source-batch-prompt.md` 跑一个 chunk：每 page 调 `capture_page_e2e.py` 一次打包（reset→dismiss→机械导航 reach_path 重放/chain_walk→截图+dump+签名），LLM 只按退出码路由异常（接管导航/自愈梯/BLOCKED）——2026-07-11 编排税优化，旧逐条编排废止 |
+| `references/native-xcode-source.md` | 公共导航 playbook，sub-agent 必读 |
 | `check_ios_screenshot.py` | dispatcher 出口验收 gate + Phase 3.5 入口 gate（双保险） |
 
 **触发条件**（满足任一即跑，B 修复 2026-07-10——"缺图"只是三本账之一，只看它会漏 grounding/blackbox 欠账）：
@@ -384,7 +389,7 @@ python3 $SKILLS_ROOT/arkts-visual-verify/scripts/dispatch_phase2_batches.py --pl
 
 # 3. 对每个 chunk，主会话调用 `spawn_agent`（`agent_type="worker"`）**串行**派 sub-agent，
 #    每次派发后用 `wait_agent` 等到该任务 FINAL_ANSWER，再派下一个，
-#    prompt 渲染自 references/phase2-ios-batch-prompt.md，注入：
+#    prompt 渲染自 references/native-source-batch-prompt.md，注入：
 #    trip_id / chunk_id / chunk_pages / ios_serial / ios_pkg / launcher_activity
 #    ⚠️ chunk_pages 富化归主会话：_plan.json 里是纯 id 数组，渲染前须 python 读树把每页的
 #       fq_class/inbound_triggers/navigation_contract/preconditions 附上（sub-agent 铁律 R7 禁读全树）
@@ -397,7 +402,7 @@ python3 $SKILLS_ROOT/arkts-visual-verify/scripts/check_ios_screenshot.py
 # Exit 2 = 仍有缺图 → 主会话决定补图 / 升级用户
 ```
 
-**BLOCKED schema**（详 [`ios-navigation-playbook.md`](references/ios-navigation-playbook.md) §3.3）
+**BLOCKED schema**（详 [`native-xcode-source.md`](references/native-xcode-source.md) §3.3）
 
 每个失败 page 写 `spec/fix/baseline-blocked/BLOCKED_baseline_<page>_<trip>.md`，含 `reason` 枚举字段：
 
@@ -426,10 +431,10 @@ python3 $SKILLS_ROOT/arkts-visual-verify/scripts/check_ios_screenshot.py
 **Phase 2.5 — 功能点 grounding（条件触发，dual-oracle 上游）**：若 fact-tree 某 page 带 `functional_checks[]`（a2h-functional-merge 注入），填 `expected_ios` / `ios_trusted` / `precondition`，作为下游鸿蒙判定的可信真值。**边粒度主模式下本步已并入行走**（三账合一：与导航边重合的 check 由行走那一下 tap 顺路结账，原地类走固化执行器 `ground_page_checks.py` 机械批跑+一次批判，实测 11s/条 vs 逐条交错 35s/条，见 phase2-edge-walk.md §5）；仅页粒度兜底补采时才按 [`references/phase2.5-grounding.md`](references/phase2.5-grounding.md) 的逐条流程做。判定标准（结构指纹自验/事务型 verify_outcome/破坏性到弹窗即止）两模式共用，均以 phase2.5-grounding.md 为准。
 
 > **详见**
-> - [`references/phase2-ios-batch-prompt.md`](references/phase2-ios-batch-prompt.md) sub-agent prompt 模板
-> - [`references/ios-navigation-playbook.md`](references/ios-navigation-playbook.md) 公共导航 playbook
+> - [`references/native-source-batch-prompt.md`](references/native-source-batch-prompt.md) sub-agent prompt 模板
+> - [`references/native-xcode-source.md`](references/native-xcode-source.md) 公共导航 playbook
 > - [`scripts/dispatch_phase2_batches.py`](scripts/dispatch_phase2_batches.py) chunk 切分 + 计划输出
-> - [`scripts/run_phase2_ios_survey.py`](scripts/run_phase2_ios_survey.py) trip 编排外壳（v3.11 重构为 dispatcher 入口）
+> - iOS trip 编排使用 [`references/native-xcode-source.md`](references/native-xcode-source.md) 的原边行走与 batch prompt；`run_phase2_ios_survey.py` 仅作旧名称诊断，不是可执行 survey dispatcher。
 
 ### Phase 1 — 准备
 
@@ -750,7 +755,7 @@ hdc / adb 全部命令、坐标获取规范、5 条设备自动化铁律（含�
 
 ## 9. iOS 基线复用策略
 
-iOS 基线只在 Phase 2 截一次：`screenshots/ios/{trip_id}/{page_id}.png` 存在即跨 round 直接复用（同时跳过 iOS 源端 scenario 准备）；HarmonyOS 每轮重截。强制全量重截 = `run_phase2_ios_survey.py --invalidate-ios-cache`（清空 screenshots/ios）；单页重截 = 删该页 png 后重跑 Phase 2 补图。
+iOS 基线只在 Phase 2 采集，跨 round 复用冻结的成对图/树与 metadata；HarmonyOS 每轮重截。源版本变化或明确要求重采时，先保留旧证据，再使受影响的 baseline 组失效，按 [Xcode 源端流程](references/native-xcode-source.md) 重走 Phase 2 与 finalize。单页重采同样处理该页完整证据组，不能只覆盖 png 留下旧 XML/hash。`run_phase2_ios_survey.py --invalidate-ios-cache` 不是当前原生执行入口。
 
 ---
 

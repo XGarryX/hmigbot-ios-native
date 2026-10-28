@@ -1,3 +1,5 @@
+> **iOS .33 执行分支**：先读 [Xcode 原生源流程](native-xcode-source.md)，源端派发同时附 [native-source-batch-prompt](native-source-batch-prompt.md)。本文件的业务/账目/预算语义保留；旧 adb/Activity/uiautomator/pm clear 示例只属 Android 历史源分支。iOS 用本工程独占的 XCUITest session，原目标 HDC 与全部门禁不变。
+
 # Phase 4 回放计划编译器（鸿蒙一笔画·编译期规范，v2 2026-07-22）
 
 > ⚠️ **本文是设计规范(理想架构);实际怎么跑 + 脚本用法 + 血泪教训看 [phase4-replay-run.md](phase4-replay-run.md)**。

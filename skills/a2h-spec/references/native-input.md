@@ -1,3 +1,5 @@
+> **.33 VERIFY 源输入**：路由与视觉现有流程分别读取 [原生路由适配](../../arkts-router-verify/references/native-route-source.md) 和 [Xcode 源端流程](../../arkts-visual-verify/references/native-xcode-source.md)。这两个入口替换平台输入及内部旧 wire，不新增阶段、审批或必交件。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 # iOS 输入与 1.5.2 原合同
@@ -103,9 +105,9 @@ INIT/SPEC 范围分离是用户明确要求。默认不安装遥测 hooks、不�
 
 转换器以源 frame/约束/真实逐图 scale 为尺寸证据；不按默认倍率猜。原结构循环 pipeline 的所有 detector 保留，由 launcher 在前后检查原图标自愈是否可能按假设改写。有 would-fix 项先按源证据补齐；没有则照常执行原循环。只读 guard 不写目标代码或原状态账本，不是新增 SPEC 门。同行/同缩进 Image 修饰链可能被原审计误判，先保持尺寸值仅规范为更深缩进后续行，再复审，不以乱改尺寸洗掉提示。
 
-## 本轮 VERIFY 边界
+## VERIFY 原生输入与验证边界（.33）
 
-router-verify 的原编译导航扫描器尚未完成 Swift/Objective-C 原生输入适配；其内部身份字段与独立导航产物不属于本四文件图适配。SPEC/PLAN/EXECUTE 主线不调用该源扫描器或依赖其输出。本轮不运行 VERIFY，不宣称导航实测通过；正式运行 VERIFY 前需补齐原生扫描/观测输入并回归。目标构建与结构门并未豁免。
+路由读取独立的原生源码事实并交给原比较器；视觉使用 Xcode 官方能力做源端观察，目标侧沿用原 HDC。按 a2h-verify 的原顺序和回环执行。适配回归通过不代表项目路由或视觉已通过，项目仍须实际续跑。动态路由与 Objective-C 解析的不确定项见 [原生路由输入](../../arkts-router-verify/references/native-route-source.md)；Widget 视觉、物理 iOS 设备与签名环境的未验证边界见 [Xcode 源端流程](../../arkts-visual-verify/references/native-xcode-source.md)。不豁免目标构建与结构门，不自动重写已批准的规格。
 
 
 退出码约定沿用原程序：0=CONVERGED、1=CONTINUE、2=ESCALATED、3=参数/输入/IO错误（含原生图片保护）。3时立刻停止，不读旧result、不finalize或推进阶段，也不原地自动重试。先读取本次guard证据，按已授权源事实修正输入后才可显式重新调用。原detector仅icon自愈会改产品代码，其余只读；结构修复worker在两次loop调用之间执行，不在guard前后快照范围内。后续格式化若改变Image链排版可能误拦，保留正确尺寸值仅按原解析约定排版复审，不能更改值迎合提示。

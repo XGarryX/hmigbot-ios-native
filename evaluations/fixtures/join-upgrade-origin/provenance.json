@@ -1,0 +1,12 @@
+{
+  "scope": "Neutral regression oracle from published generic 1.5.2-ios.27; no app or host logs",
+  "files": {
+    "src/hmigbot_ios152/join_attempt.py": "c79587c0630d6f75cdc9ef5d96a545561042bd3029d4f3a2752c394ae913dd35",
+    "src/hmigbot_ios152/join_scope.py": "61c8ff5e94d8d9d2d14e9199ac2b763d38253f0ed4f3414b495b1965951e9dc9",
+    "scripts/join_attempt.py": "f75232613d2b8aae2a44587046f9a3faaea5cf0332d557bb1fa6f43a2593c47c",
+    "skills/a2h-join/scripts/join_gate.py": "5d14f437e1205d868f5f36ea464c9512b06b7a4716c9da8ab96a23beace3a52b",
+    "skills/a2h-join/scripts/audit_join_coverage.py": "431f68422a586d2fd9eeefb2ae3462a4b24b8ff9871e07d1a3a95325a0a0d2c7",
+    "src/hmigbot_ios/__init__.py": "e4fac95c6ec4085af5253a089f4206cc8e0985b71a49b7be3b970af2d22092a0",
+    "src/hmigbot_ios152/__init__.py": "d5ec44d86ad273f36e6a3895de3e510af171c842804c0851fbc84e50292f4f43"
+  }
+}

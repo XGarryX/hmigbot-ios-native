@@ -1,7 +1,10 @@
 ---
 name: arkts-router-verify
-description: 静态验证并自动修复 iOS→HarmonyOS 迁移的"页面路由跳转"。脚本各抽一张控件级导航图 (iOS 的 startActivity/companion/Jetpack-Navigation/XPopup 弹窗，HMOS 的 router/ Navigation pushPathByName/CustomDialog)， 以 spec 的 ui-manifest 做权威页面映射，逐页对账，检出四维度路由问题并改 HMOS 源码： ① 目标页面是否存在 ② 目标弹窗是否存在（弹窗是一等路由目的地，按 dialog_specs 抽取规格重建） ③ 跳转按钮/文字/菜单项是否存在 ④ 触发点是否绑定了路由跳转/弹窗打开。修完再复检出报告。 只要用户想"验证路由跳转/导航迁移对不对"、"检查跳转按钮有没有/绑没绑路由"、"页面跳转漏没漏"、 "route verify"、"迁移后导航验证"，即使只说"检查跳转"、"验证导航"、"路由对账"，都应触发本 skill。 纯 UI 视觉/控件属性验证不归本 skill（那是 arkts-visual-verify）。
+description: 静态验证并自动修复 iOS→HarmonyOS 迁移的"页面路由跳转"。脚本各抽一张控件级导航图 (iOS 的 SwiftUI 导航/状态弹层、UIKit/IB 路由，HMOS 的 router/ Navigation pushPathByName/CustomDialog)， 以 spec 的 ui-manifest 做权威页面映射，逐页对账，检出四维度路由问题并改 HMOS 源码： ① 目标页面是否存在 ② 目标弹窗是否存在（弹窗是一等路由目的地，按 dialog_specs 抽取规格重建） ③ 跳转按钮/文字/菜单项是否存在 ④ 触发点是否绑定了路由跳转/弹窗打开。修完再复检出报告。 只要用户想"验证路由跳转/导航迁移对不对"、"检查跳转按钮有没有/绑没绑路由"、"页面跳转漏没漏"、 "route verify"、"迁移后导航验证"，即使只说"检查跳转"、"验证导航"、"路由对账"，都应触发本 skill。 纯 UI 视觉/控件属性验证不归本 skill（那是 arkts-visual-verify）。
 ---
+
+> **iOS 路由执行入口（.35）**：先读 [原生路由适配](references/native-route-source.md)。源端使用当前选定 target/Release 的 SwiftSyntax 事实；下文 Intent、Jetpack、ViewBinding/XML 等仅描述原 Android 分支，不是 iOS 执行指令。原比较器、85% 方法裁决门与修复状态机继续使用。鸿蒙目标抽取及证据检查由两种源平台共用；不能用目标静态补充代替源裁决或真机验收。
+
 
 > **iOS 源输入适配**：执行源分析/源设备操作前，读 [原生输入协议](../a2h-spec/references/native-input.md)。它仅替换平台输入；原阶段、模板、规则、门禁、模式和 target 侧执行保持 1.5.2。
 

@@ -1,9 +1,11 @@
+> **iOS .33 执行分支**：先读 [Xcode 原生源流程](native-xcode-source.md)，源端派发同时附 [native-source-batch-prompt](native-source-batch-prompt.md)。本文件的业务/账目/预算语义保留；旧 adb/Activity/uiautomator/pm clear 示例只属 Android 历史源分支。iOS 用本工程独占的 XCUITest session，原目标 HDC 与全部门禁不变。
+
 > **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `a2h-spec/references/native-input.md`。
 
 你是**边粒度行走 sub-agent**,负责 chunk {{CHUNK_ID}}(计划步 {{STEP_RANGE}})。严格按 skill 规范执行,不许简化、不许跳步。
 
 ## 第一件事:读规范(必做,别凭记忆)
-`Read /Users/ventiu/Desktop/HUAWEI/codex_adapt/.agents/skills/arkts-visual-verify/references/phase2-edge-walk.md`
+`Read "$SCRIPTS/../references/phase2-edge-walk.md"`（先按 RUN_ENV 展开 SCRIPTS 并解析为本工程的绝对路径）
 **必须精读**:§4(行走循环/边失败归因协议/◀步用 walk_back_to)、§5(node_sweep 普查 + unplanned_destructive 当场处置 + 判读制)、§6(反哺铁律)、§7(已知坑)。§3 文末交接报告模板照填。
 
 ## 运行环境(本轮冻结,含 $EW/$PKG/$SERIAL/$TRIP/$TREE/$SCRIPTS 定义)

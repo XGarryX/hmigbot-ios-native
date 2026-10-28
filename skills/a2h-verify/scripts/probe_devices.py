@@ -1,3 +1,38 @@
+# Native iOS read-only device prerequisites; legacy source retains original launcher.
+from pathlib import Path as _Path
+import sys as _sys
+_here = _Path(__file__).resolve()
+for _parent in _here.parents:
+    _runtime = _parent / 'runtime.json'
+    if _runtime.is_file():
+        import json as _json
+        _root = (_parent / _json.loads(_runtime.read_text(encoding='utf-8'))['runtime_relative']).resolve()
+        if (_root/'src/hmigbot_ios152').is_dir():
+            _sys.path.insert(0,str(_root/'src'));break
+    if (_parent/'src/hmigbot_ios152').is_dir():
+        _sys.path.insert(0,str(_parent/'src'));break
+from hmigbot_ios152.source import config as _native_config
+import argparse as _argparse
+_probe_parser=_argparse.ArgumentParser(add_help=False,allow_abbrev=False)
+_probe_parser.add_argument('--project-root',type=_Path)
+_probe_args,_=_probe_parser.parse_known_args(_sys.argv[1:])
+_project=_probe_args.project_root
+if _project is None:
+    _project=next((p for p in (_Path.cwd(),*_Path.cwd().parents) if (p/'.migbot/config.json').is_file()),None)
+if _project is None:
+    _project=next((p for p in _here.parents if (p/'.hmigbot-ios/install.json').is_file()),_Path.cwd())
+try:
+    _cfg = _native_config(_project)
+except (OSError,ValueError) as _exc:
+    import json as _json
+    print(_json.dumps({'status':'error','error':'Invalid project configuration: '+str(_exc)}),file=_sys.stderr)
+    raise SystemExit(2)
+if _cfg.get('source_platform') == 'ios' or _cfg.get('ios'):
+    from hmigbot_ios152.native_verify_devices import main as _native_probe
+    _native_argv=_sys.argv[1:]
+    if _probe_args.project_root is None: _native_argv=['--project-root',str(_project),*_native_argv]
+    raise SystemExit(_native_probe(_native_argv))
+
 # AUTO-GENERATED launcher — the real implementation is compiled in ./bin/<platform>/.
 import os
 import platform

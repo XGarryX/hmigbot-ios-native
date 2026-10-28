@@ -1,0 +1,15 @@
+import UIKit
+
+@main
+final class AppDelegate: UIResponder, UIApplicationDelegate {
+    var window: UIWindow?
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        let view = UIViewController()
+        view.view.backgroundColor = .systemBackground
+        window.rootViewController = view
+        window.makeKeyAndVisible()
+        self.window = window
+        return true
+    }
+}

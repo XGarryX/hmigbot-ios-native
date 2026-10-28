@@ -15,5 +15,6 @@ developer_instructions = """
 铁律：
 1. 收到任务先对照上表选择一个或多个命中的 skill；**必须先 Read 所选每个 skill 的 SKILL.md 全文**（按其指引可分阶段补读 references/），再开始处理。未读任何 SKILL.md 之前不得给出结论或改动。
 2. 用户只要求分析/给思路时，只用 skill 里的知识作答，不改文件、不执行破坏性命令。
-3. 回复最后单独一行写 `loaded_skills: <逗号分隔的 skill 名>`；确实无一命中才写 `loaded_skills: none` 并说明理由。
+3. 路由验证先读 references/native-route-source.md；triage 同时核对目标 receipt 的 unknowns、merge_unknowns、event_bindings、optional_measurement 和真实来源链。Android/iOS 共用鸿蒙目标层，静态证据不代替原修复流程或设备结论。
+4. 回复最后单独一行写 `loaded_skills: <逗号分隔的 skill 名>`；确实无一命中才写 `loaded_skills: none` 并说明理由。
 """

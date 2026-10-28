@@ -150,13 +150,26 @@ def prepare_native_execution(workspace, relative, expected):
     return {'path':relative,'action':action,'before_sha256':expected,'after_sha256':after}
 
 
+def generated_runtime_stage(path):
+    """Original SPEC wrappers stage this data beside the binary at run time.
+
+    scripts/coverage-rules.json remains the authoritative distributed asset.
+    Do not turn a prior wrapper run into ownership of its private working copy.
+    """
+    parts = path.relative_to(ROOT).parts
+    return (len(parts) == 7 and parts[:4] == ('skills', 'a2h-spec', 'scripts', 'bin')
+            and parts[5:] == ('_entry.dist', 'coverage-rules.json'))
+
+
 def payload():
     files = {}
     for folder in ('.codex-plugin', 'skills', 'scripts', 'src', 'rules', 'schemas', 'providers', 'docs', 'evaluations', 'agents-codex', 'bin', 'policies', 'vendor'):
         for path in (ROOT / folder).rglob('*'):
-            if path.is_file() and not {'__pycache__', '.build', '.swiftpm'}.intersection(path.parts) and path.suffix != '.pyc':
+            if path.is_file() and path.name != '.DS_Store' and not {'__pycache__', '.build', '.swiftpm'}.intersection(path.parts) and path.suffix != '.pyc':
                 if path.is_symlink():
                     raise ValueError('Install source contains links')
+                if generated_runtime_stage(path):
+                    continue
                 files['.agents/hmigbot-runtime/' + path.relative_to(ROOT).as_posix()] = path
     for name in ('.gitattributes', '.gitignore', 'README.md', 'CHANGELOG.md', 'pyproject.toml', 'install.ps1', 'install.sh', 'uninstall.ps1', 'uninstall.sh', 'validate.sh'):
         files['.agents/hmigbot-runtime/' + name] = ROOT / name
@@ -164,13 +177,13 @@ def payload():
         if not skill.is_dir() or not (skill / 'SKILL.md').is_file():
             continue
         for file in skill.rglob('*'):
-            if file.is_file() and '__pycache__' not in file.parts:
+            if file.is_file() and file.name != '.DS_Store' and '__pycache__' not in file.parts and not generated_runtime_stage(file):
                 files['.agents/skills/' + skill.name + '/' + file.relative_to(skill).as_posix()] = file
         files[f'.agents/skills/{skill.name}/runtime.json'] = b'{"runtime_relative":"../../hmigbot-runtime"}\n'
     for role in (ROOT / 'agents-codex').glob('*.toml'):
         files['.codex/agents/' + role.name] = role
     for path in (ROOT / 'bin').iterdir():
-        if path.is_file(): files['.migbot/bin/' + path.name] = path
+        if path.is_file() and path.name != '.DS_Store': files['.migbot/bin/' + path.name] = path
     os_name = {'Windows': 'windows', 'Darwin': 'darwin', 'Linux': 'linux'}.get(platform.system())
     arch = 'arm64' if platform.machine().lower() in {'arm64', 'aarch64'} else 'amd64'
     suffix = '.exe' if os_name == 'windows' else ''
@@ -178,7 +191,7 @@ def payload():
     if not asset.is_file(): raise ValueError('Bundled runtime unavailable: ' + asset.name)
     files['.migbot/bin/a2h' + suffix] = asset
     for path in (ROOT / 'policies').glob('*'):
-        if path.is_file(): files['.migbot/policies/' + path.name] = path
+        if path.is_file() and path.name != '.DS_Store': files['.migbot/policies/' + path.name] = path
     return files
 
 

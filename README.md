@@ -1,6 +1,6 @@
 # HMigBot iOS 1.5.2 · Mac 原生输入版
 
-独立工具包，版本 `1.5.2-ios.32`，分发 ID `hmigbot-ios152`。以 HMigBot CodeX 1.5.2 的流程、模板、规则和门禁为基础，输入为原生 iOS 工程，目标为原生 HarmonyOS 工程。后续只维护 Mac，尽可能调用 Xcode / Apple Swift 官方能力。
+独立工具包，版本 `1.5.2-ios.48`，分发 ID `hmigbot-ios152`。以 HMigBot CodeX 1.5.2 的流程、模板、规则和门禁为基础，输入为原生 iOS 工程，目标为原生 HarmonyOS 工程。后续只维护 Mac，尽可能调用 Xcode / Apple Swift 官方能力。
 
 Mac 运行库的原始执行位由随包 `docs/macos-runtime-modes.json` 保留。安装和升级会修复同内容旧文件的错误执行位；制作分发包后可运行 `python3 -B scripts/check_runtime_permissions.py` 校验，`--fix` 仅恢复清单中内容 SHA 一致文件的执行位。
 
@@ -29,6 +29,8 @@ bash <本工具目录>/install.sh --target <鸿蒙目标工程>
 
 安装器仅对本包清单内、当前架构且哈希一致的原生程序逐文件移除下载隔离标记，记录处理前后哈希，失败按原事务回滚。原阶段包装器既有的 `xattr -dr` 调用仍保留；本轮没有修改它们或关闭系统 Gatekeeper。
 
+SPEC 包装器在 `_entry.dist` 生成的规则暂存副本不进入分发清单；权威文件仍是 `a2h-spec/scripts/coverage-rules.json`，安装器不认领或覆盖既有归属外副本。原包装器按 mtime 刷新暂存，若以后修改权威规则，应核对暂存 SHA，或显式使用 `--rules` 指向权威文件；本轮不改变该刷新策略。
+
 ## 环境预检的网络适用性
 
 `hmos-env-doctor` 接受 `--network-mode required|not-required|unknown`。调用技能从已确认能力选择：需要网络权限时仍检查配置主清单缺声明并 FAIL；确认不需要时记不适用；省略参数保留 unknown/WARN，不当作权限验收。多HAP按显式产品关系核对共享声明；成员未知或跨产品覆盖混合保留 WARN；仅库有声明时提示依赖及合并未核实。诊断不向工程添加权限。详见 [原生体检说明](skills/hmos-env-doctor/references/native-preflight.md)。
@@ -52,7 +54,7 @@ provider 自动从当前 Xcode 构建；通常不再手填 provider JSON。原�
 - 原有闭合 SwiftUI 降级器和 Objective-C 候选识别仍有受限实现，不宣称获得编译器符号语义；主 Swift 事实输入已走官方语法树。
 - 多架构、不同 target 条件、响应文件、桥接头和自定义 Clang 上下文超出当前捕获适配范围时明确报缺。不能由宿主 macOS 的模块可用性推定 iOS 条件。
 - 查询省略的 Swift flags，仅在真实 Release 编译参数与官方配置相符时按未设置处理；有冲突继续阻断。原始输出不补写通过值。
-- 原生 VERIFY 路由源扫描仍有历史缺口；工具验证不代表该阶段已通过，也不代表任一应用迁移完成。
+- 原生 VERIFY 的支持范围及未解决语义按实际源事实报告；工具验证不代表任一应用迁移完成。
 - 历史多平台文件本轮尚未全面裁剪；当前安装和执行依赖 Mac，不继续增加 Windows 兼容实现。
 
 版本 `.12` 的 644 项 Windows 回归为历史记录，不冒称本版 Mac 回归。当前验证以实际命令、报告和 Claude 依据所提交材料的文字复核为准；后者不替代测试。
@@ -74,3 +76,19 @@ FV 适配保留原后端测量与 canonical 结果各自的日志、退出码。
 冷启探针继续调用官方 HDC/aa/ps/hilog，验证每次远端状态标记，使用官方 aa 成功输出并核对完整进程名。明确锁屏错误 10106102 返回 3 并保留 `unverified-cold-start`；应用失败返回 1。crash、网络和附加文案仍用原 grep 判据在主机处理。设备不可观测不能证明启动或界面成功，原 verify 粘性债门控继续生效。
 
 冷启日志按官方 HiLog 默认级别列排除 D/I 级的宽泛 Fault 匹配；W/E/F 或未知格式仍阻断。AppRecovery 按完整标识符识别，配置方法名子串不表示崩溃。官方框架源码参考为 master，ROM 对应版本未证实；未知作用域/tag 仍可能保守报错。crash/网络仍用全局日志，不能解释成本应用专属证据。
+
+## 原生路由与视觉输入
+
+VERIFY 的 SwiftUI/UIKit/IB 路由与真实视觉源输入分别见 [路由适配](skills/arkts-router-verify/references/native-route-source.md) 和 [Xcode 源端流程](skills/arkts-visual-verify/references/native-xcode-source.md)。使用现有 Source/SwiftSyntax，补方法/闭包裁决、原生弹窗/薄壳源事实、真实 App/Widget 根识别；源码图不复用旧 SPEC 导航 oracle。只读输入镜像保留原比较器的历史字段与路径合同。
+
+视觉源 observer 随包分发 UI test 工程源码，以官方 xcodebuild、simctl、公开 XCTest 执行，创建并拥有独立 Simulator；支持真实层级/截图、唯一查询、点击、输入、滑动、深链、Home、长按及明确 SpringBoard scope。原 XML class 保留 XCUIElementType，identifier 不伪装成 Android resource。几何按同次观察实测点/像素，源落位缩图时同步 XML。
+
+Mac 原编译器的 Python 子进程兼容在本安装私有缓存中通过 Apple install_name_tool 改依赖名、ad-hoc 重签和解释器 shim 实现；分发的原二进制保持原字节。缓存身份含原 dist/public wrapper/适配模块/Apple 工具哈希，安装项目间独立。缓存与诊断是运行生成件，不是托管源文件；沿既有卸载策略保留未托管运行材料，确认不需诊断后可清理本项目 `.hmigbot-ios/cache/compiled-visual`。
+
+缓存仅接受随包 macOS arm64 原 dist SHA 清单；只处理已核对的私有副本下载隔离元数据，逐项验证签名，不改变全局安全设置。原生静态/动态 PageVariant producer、finalizer 与 round 聚合使用明确的可读适配；原 per-trip artifact/gap/evidence core、预算和门槛保留。已验中性合同范围分别记录，不声称与 opaque core 对所有输入等价。
+
+原 evidence core 沿用基于 mtime 的轮次时间窗口，既有状态还会影响封账上界。原生镜像保留文件与目录 stat，evidence 在修改 round 状态前先执行。该历史语义会受不保留 stat 的复制、checkout 或手工 touch 影响；续跑不得无故重建/touch 已有 round 目录或状态。
+
+本轮 VERIFY 资源输入按选定产品声明 membership 限定；以前阶段全根资源扫描产生的差异记为工具口径差异，不自动归责目标代码或改已批准 SPEC。工程图不等于构建打包证据；动态或未知项仍显式披露。物理 iOS 签名 runner、旧 SDK 查询降级运行及完整 Widget 流程不因原生 Simulator 测试通过而自动通过。
+
+iOS 适配维护者：Garry。原流程与原作者许可保留。

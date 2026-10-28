@@ -146,7 +146,7 @@ class Trace:
     invalid_lists: list = field(default_factory=list)
 
 
-def read_trace(path, *, raw=None, start_after=0, history=False):
+def read_trace(path, *, raw=None, start_after=0, history=False, enrollment_epochs=None):
     path = Path(path).resolve(strict=True)
     raw = path.read_bytes() if raw is None else raw
     if type(start_after) is not int or not 0 <= start_after <= len(raw) or start_after and raw[start_after-1:start_after] != b'\n':
@@ -165,6 +165,7 @@ def read_trace(path, *, raw=None, start_after=0, history=False):
         raise ScopeError('原生日志缺少 session_meta')
     scope = caller(meta)
     trace = Trace(path, meta, scope, source_sha256=hashlib.sha256(raw).hexdigest(), source_bytes=len(raw),source_data=raw)
+    if enrollment_epochs is not None:trace.enrollment_epochs=enrollment_epochs
     inherited=set()
     if meta.get('forked_from_id'):
         from .fork_context import inherited_context
@@ -242,7 +243,7 @@ def read_trace(path, *, raw=None, start_after=0, history=False):
             # The enrolling command is expected to finish just after its boundary.
             # Other historical tool calls cannot deliver late results into this run.
             from .join_attempt import enrollment_rows
-            enrollments={p.get('call_id') for p,_,end,_ in enrollment_rows(raw) if end==start_after}
+            enrollments={p.get('call_id') for p,_,end,_ in enrollment_rows(raw,epochs=enrollment_epochs or ()) if end==start_after}
             if cid not in enrollments:raise ScopeError('历史调用在新尝试后才返回，必须先回收旧任务')
         if payload.get('type') == 'custom_tool_call' and _name(payload) == 'exec' and 'join_gate.py' in str(payload.get('input', '')):
             trace.gates += 1
@@ -396,6 +397,8 @@ def gate(trace, project, point, no_ledger=False, check_identity=True):
     project = project.resolve(strict=True)
     if hasattr(trace,'inherited_context'):
         print('fork-context: '+json.dumps(trace.inherited_context,ensure_ascii=False,sort_keys=True))
+    if hasattr(trace,'tool_upgrade'):
+        print('tool-upgrade: '+json.dumps(trace.tool_upgrade,ensure_ascii=False,sort_keys=True))
     if trace.attempt:
         history=trace.attempt['history_summary']
         print(f"attempt {trace.attempt['attempt_id']} | 历史审计 exit {history['exit_code']} / 未收口 {history['unjoined']}；历史失败保留")
@@ -508,7 +511,7 @@ def audit(traces, ledger=None):
                 for trace in attempted:
                     count=row.get('source_bytes')
                     if type(count) is int and trace.attempt['start_bytes'] <= count <= trace.source_bytes and hashlib.sha256(trace.source_data[:count]).hexdigest()==row.get('source_sha256'):
-                        snapshots[trace.path]=read_trace(trace.path,raw=trace.source_data[:count],start_after=trace.attempt['start_bytes'])
+                        snapshots[trace.path]=read_trace(trace.path,raw=trace.source_data[:count],start_after=trace.attempt['start_bytes'],enrollment_epochs=getattr(trace,'enrollment_epochs',None))
                 if not snapshots:
                     fake.append([row.get('join_point',''),'SOURCE_SNAPSHOT_MISMATCH'])
                     continue

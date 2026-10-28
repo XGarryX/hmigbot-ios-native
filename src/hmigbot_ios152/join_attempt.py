@@ -190,7 +190,7 @@ def tool_sha():
 
 def load_ledger(path):return [json.loads(line) for line in Path(path).read_text(encoding='utf-8').splitlines() if line.strip()]
 
-def host_results(raw,call_id):
+def host_results(raw,call_id,*,_with_end=False):
     def objects(value):
         if isinstance(value,str):
             try:yield from objects(json.loads(value))
@@ -208,9 +208,9 @@ def host_results(raw,call_id):
     source=[(row.get('payload',{}),end) for row,end,_ in rows(raw) if row.get('type')=='response_item']
     results=[(p,end) for p,end in source if p.get('type') in ('function_call_output','custom_tool_call_output') and p.get('call_id')==call_id]
     require(len(results)<=1,'Enrollment has multiple original outputs')
-    if not results:return []
+    if not results:return ([],None) if _with_end else []
     original,original_end=results[0]; values=list(objects(original.get('output')))
-    if len(values)!=1 or type(values[0].get('exit_code')) is int:return values
+    if len(values)!=1 or type(values[0].get('exit_code')) is int:return (values,original_end) if _with_end else values
     # Follow only the original process session, through literal empty-stdin polls.
     # Neither stdout nor an unrelated session can supply an exit code.
     session=values[0]['session_id'];chunks=[values[0]['output']];pending=None;last_end=original_end
@@ -235,8 +235,10 @@ def host_results(raw,call_id):
             value=values[0]
             require(value.get('session_id',session)==session,'Enrollment process session changed')
             chunks.append(value['output']);pending=None;last_end=end
-            if type(value.get('exit_code')) is int:return [{'exit_code':value['exit_code'],'output':''.join(chunks)}]
-    return []
+            if type(value.get('exit_code')) is int:
+                result=[{'exit_code':value['exit_code'],'output':''.join(chunks)}]
+                return (result,end) if _with_end else result
+    return ([],None) if _with_end else []
 
 def stdout_objects(text):
     result=[]
@@ -426,21 +428,25 @@ def make_receipt(project,pristine_manifest,archive_manifest,out,*,pristine_sha25
     with out.open('xb') as stream:stream.write(encoded(receipt))
     return {'receipt':str(out),'receipt_sha256':digest(out),'history_exit_code':code}
 
-def validate_state(project,native,raw,state,*,finalized=True,check_tool=True,through=None,epochs=None):
+def validate_state(project,native,raw,state,*,finalized=True,check_tool=True,through=None,epochs=None,_return_binding=False):
     from .join_scope import _meta,read_trace,AGENT_OPERATIONS
     project=Path(project).resolve(strict=True);native=Path(native).resolve(strict=True)
     require(state.get('schema')==SCHEMA,'Invalid join-attempt schema')
-    if check_tool:require(state.get('tool_version')==__version__ and state.get('tool_sha256')==tool_sha(),'Join attempt tool changed')
     require(Path(state['project']).resolve()==project,'Attempt project mismatch')
     require(state['thread_id']==os.environ.get('CODEX_THREAD_ID')==_meta(native).get('id'),'Attempt thread mismatch')
     require(Path(state['rollout']).resolve(strict=True)==native,'Attempt native file changed')
+    binding=None
+    if check_tool:
+        from .join_upgrade import POINTER,validate_binding
+        if (project/POINTER).exists():binding=validate_binding(project,native,raw,state)
+        else:require(state.get('tool_version')==__version__ and state.get('tool_sha256')==tool_sha(),'Join attempt tool changed')
     receipt_path=Path(state['receipt']).resolve(strict=True)
     require(digest(receipt_path)==state['receipt_sha256'],'Recovery receipt changed')
     receipt=load(receipt_path)
     require(receipt.get('schema')==RECEIPT and receipt.get('tool_version')==state['tool_version'] and receipt.get('tool_sha256')==state['tool_sha256'],'Invalid recovery receipt')
     require(Path(receipt['project']).resolve()==project and receipt['thread_id']==state['thread_id'],'Recovery receipt belongs to another project or thread')
     require(Path(receipt['rollout']).resolve(strict=True)==native,'Recovery receipt log mismatch')
-    if epochs is None:epochs=enrollment_epochs(project,raw,receipt)
+    if epochs is None:epochs=binding['epochs'] if binding else enrollment_epochs(project,raw,receipt)
     for name in ['pristine_manifest','archive_manifest']:
         require(digest(receipt[name])==receipt[name+'_sha256'],'Recovery manifest changed: '+name)
     history=receipt['history']; snapshot=Path(history['snapshot']).read_bytes()
@@ -448,7 +454,7 @@ def validate_state(project,native,raw,state,*,finalized=True,check_tool=True,thr
     require(digest(history['audit'])==history['audit_sha256'],'Historical audit changed')
     require(not any(v['end_bytes']>history['bytes'] and (through is None or v['end_bytes']<=through) for v in foreign_enrollments(raw,epochs=epochs)),
             'Noncanonical enrollment after this recovery seal; preserve the failure and perform authorized recovery')
-    historical=verify_recovery(project,native,raw,receipt,check_install=check_tool,epochs=epochs)
+    historical=verify_recovery(project,native,raw,receipt,check_install=check_tool and binding is None,epochs=epochs)
     require(state['history_summary']=={'exit_code':history['exit_code'],'unjoined':historical['totals']['unjoined'],'audit':history['audit'],'audit_sha256':history['audit_sha256']},'Historical failure summary changed')
     previous=receipt.get('previous_attempt')
     older_end=0
@@ -466,7 +472,7 @@ def validate_state(project,native,raw,state,*,finalized=True,check_tool=True,thr
     idle_trace(prefix,read_trace(native,raw=prefix,history=True))
     entry=next(p for p,_,rowend,_ in enrollment_rows(raw,epochs=epochs) if rowend==end and p.get('call_id')==call_id)
     script,live=_enrollment_epoch(raw,end,epochs)
-    if check_tool:require(live,'Current enrollment is outside the current recovery epoch')
+    if check_tool and binding is None:require(live,'Current enrollment is outside the current recovery epoch')
     _,options=enrollment_command(entry,script=script,live=live)
     require(Path(options['--project']).resolve()==project and Path(options['--receipt']).resolve()==receipt_path,'Enrollment argv does not match its project and recovery receipt')
     require(options['--enrollment']==state['attempt_id'] and options['--receipt-sha256']==state['receipt_sha256'],'Enrollment argv identity mismatch')
@@ -478,7 +484,7 @@ def validate_state(project,native,raw,state,*,finalized=True,check_tool=True,thr
         if history['bytes']<rowend<end and p.get('type') in ('function_call','custom_tool_call') and str(p.get('name','')).rsplit('.',1)[-1] in AGENT_OPERATIONS - {'list_agents'}:
             raise ValueError('Agent work occurred between recovery seal and enrollment; seal again after authorized recovery')
     if finalized:successful_output(raw,call_id,state)
-    return state
+    return (state,binding) if _return_binding else state
 
 def begin_attempt(project,receipt_path,receipt_sha,enrollment):
     from .join_scope import current_rollout,read_trace,native_bytes
@@ -527,8 +533,9 @@ def scoped_trace(project,native):
         require(not legacy_active(path.parent.parent,raw),
                 'A recorded attempt lost its state; authorized recovery is required')
         return read_trace(native,raw=raw)
-    state=validate_state(project,native,raw,load(path))
-    trace=read_trace(native,raw=raw,start_after=state['start_bytes'])
+    state,binding=validate_state(project,native,raw,load(path),_return_binding=True)
+    trace=read_trace(native,raw=raw,start_after=state['start_bytes'],enrollment_epochs=binding['epochs'] if binding else None)
+    if binding:trace.tool_upgrade={'receipt':binding['receipt'],'receipt_sha256':binding['receipt_sha256']}
     trace.attempt=state
     return trace
 
@@ -538,9 +545,14 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);sub=parser.add_subparsers(dest='command',required=True)
     seal=sub.add_parser('seal');seal.add_argument('--project',required=True);seal.add_argument('--pristine-manifest',required=True);seal.add_argument('--pristine-sha256',required=True);seal.add_argument('--archive-manifest',required=True);seal.add_argument('--out',required=True)
     begin=sub.add_parser('begin');begin.add_argument('--project',required=True);begin.add_argument('--receipt',required=True);begin.add_argument('--receipt-sha256',required=True);begin.add_argument('--enrollment',required=True)
+    upgrade=sub.add_parser('upgrade')
+    for name in ('project','origin-package','package-manifest','package-sha256','evidence-root','upgrade'):upgrade.add_argument('--'+name,required=True)
     args=parser.parse_args(argv)
     try:
-        if args.command=='seal':result=make_receipt(args.project,args.pristine_manifest,args.archive_manifest,args.out,pristine_sha256=args.pristine_sha256)
+        if args.command=='upgrade':
+            from .join_upgrade import upgrade as perform_upgrade
+            result=perform_upgrade(args.project,args.origin_package,args.package_manifest,args.package_sha256,args.evidence_root,args.upgrade)
+        elif args.command=='seal':result=make_receipt(args.project,args.pristine_manifest,args.archive_manifest,args.out,pristine_sha256=args.pristine_sha256)
         else:result=begin_attempt(args.project,args.receipt,args.receipt_sha256,args.enrollment)
         print(json.dumps(result,ensure_ascii=False));return 0
     except (ValueError,OSError,KeyError,TypeError) as exc:
