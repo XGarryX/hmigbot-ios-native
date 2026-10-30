@@ -18,6 +18,7 @@ AVAILABLE = "available"
 PARTIAL = "partial"
 UNAVAILABLE = "unavailable"
 UNVERIFIED = "unverified"
+RELEASE_PROFILE = "macos-arm64"
 
 
 def normalize_host_os(value: str | None) -> str:
@@ -29,6 +30,21 @@ def normalize_host_os(value: str | None) -> str:
     if value in {"linux", "linux2"}:
         return "linux"
     return value or "unknown"
+
+
+def supported_host(*, host_os=None, machine=None):
+    return (normalize_host_os(host_os or _platform.system()) == 'macos' and
+            (machine or _platform.machine()).lower() in {'arm64', 'aarch64'})
+
+
+def require_supported_host(*, host_os=None, machine=None):
+    """Fail before runtime execution or managed writes on deferred platforms."""
+    if not supported_host(host_os=host_os, machine=machine):
+        from .core import MigrationError
+        raise MigrationError('Unsupported host for release ' + RELEASE_PROFILE +
+                             '; use macOS Apple Silicon. Intel Mac, Windows and Linux support is deferred; '
+                             'see PLATFORM-ROADMAP.md')
+    return RELEASE_PROFILE
 
 
 def _tool(name: str, *, aliases: tuple[str, ...] = (), lookup: Callable[[str], str | None] | None = None) -> dict:
@@ -46,55 +62,59 @@ def detect_host_profile(*, host_os: str | None = None, machine: str | None = Non
     """Detect the host and select source/target providers without mutation."""
     env = dict(os.environ if environ is None else environ)
     os_name = normalize_host_os(host_os or _platform.system())
+    architecture = machine or _platform.machine()
+    supported = supported_host(host_os=os_name, machine=architecture)
     xcodebuild = _tool("xcodebuild", lookup=lookup)
     xcrun = _tool("xcrun", lookup=lookup)
     swift = _tool("swift", lookup=lookup)
-    native_xcode = os_name == "macos" and xcodebuild["status"] == AVAILABLE and xcrun["status"] == AVAILABLE
+    native_xcode = supported and xcodebuild["status"] == AVAILABLE and xcrun["status"] == AVAILABLE
 
     if native_xcode:
         source_provider, source_mode = "macos_xcode", "native"
         membership, compiler, ios_build, ios_runtime = AVAILABLE, AVAILABLE, AVAILABLE, UNVERIFIED
-    elif os_name == "windows":
-        source_provider, source_mode = "windows_static", "static"
-        membership, compiler, ios_build, ios_runtime = PARTIAL, UNAVAILABLE, UNAVAILABLE, UNAVAILABLE
-    elif os_name == "macos":
+    elif supported:
         source_provider, source_mode = "macos_static_fallback", "static_fallback"
         membership, compiler, ios_build, ios_runtime = PARTIAL, UNAVAILABLE, UNAVAILABLE, UNAVAILABLE
     else:
-        source_provider, source_mode = "portable_static", "static"
-        membership, compiler, ios_build, ios_runtime = PARTIAL, UNAVAILABLE, UNAVAILABLE, UNAVAILABLE
+        source_provider, source_mode = "unavailable", "unsupported_host"
+        membership, compiler, ios_build, ios_runtime = UNAVAILABLE, UNAVAILABLE, UNAVAILABLE, UNAVAILABLE
 
-    hvigor = _tool("hvigorw", aliases=("hvigorw.bat",), lookup=lookup)
+    hvigor = _tool("hvigorw", lookup=lookup)
     node = _tool("node", lookup=lookup)
     ohpm = _tool("ohpm", lookup=lookup)
     hdc = _tool("hdc", lookup=lookup)
-    harmony_build = AVAILABLE if hvigor["status"] == AVAILABLE and node["status"] == AVAILABLE else UNAVAILABLE
-    cloud_allowed = env.get("HMIGBOT_ALLOW_CLOUD_PROVIDER", "1").lower() not in {"0", "false", "no"}
+    harmony_build = AVAILABLE if supported and hvigor["status"] == AVAILABLE and node["status"] == AVAILABLE else UNAVAILABLE
+    cloud_allowed = supported and env.get("HMIGBOT_ALLOW_CLOUD_PROVIDER", "1").lower() not in {"0", "false", "no"}
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "host": {"os": os_name, "arch": machine or _platform.machine(), "python": sys.version.split()[0]},
-        "source": {"platform": "ios", "provider": source_provider, "mode": source_mode},
-        "target": {"platform": "harmonyos", "provider": "local_harmony", "mode": "local"},
+        "host": {"os": os_name, "arch": architecture, "python": sys.version.split()[0],
+                 "release_profile": RELEASE_PROFILE, "supported": supported,
+                 "status": "supported" if supported else "unsupported"},
+        "source": {"platform": "ios", "provider": source_provider, "mode": source_mode,
+                   "status": "discovered" if supported else "deferred"},
+        "target": {"platform": "harmonyos", "provider": "local_harmony" if supported else "unavailable",
+                   "mode": "local" if supported else "unsupported_host"},
         "tools": {"xcodebuild": xcodebuild, "xcrun": xcrun, "swift": swift,
                   "hvigorw": hvigor, "node": node, "ohpm": ohpm, "hdc": hdc},
         "capabilities": {
-            "ios.static_analysis": AVAILABLE,
+            "ios.static_analysis": AVAILABLE if supported else UNAVAILABLE,
             "ios.xcode_project_membership": membership,
             "ios.swift_compiler_context": compiler,
             "ios.build": ios_build,
             "ios.runtime": ios_runtime,
             "harmony.build": harmony_build,
-            "harmony.runtime": UNVERIFIED,
-            "harmony.device": UNVERIFIED if hdc["status"] == AVAILABLE else UNAVAILABLE,
+            "harmony.runtime": UNVERIFIED if supported else UNAVAILABLE,
+            "harmony.device": UNVERIFIED if supported and hdc["status"] == AVAILABLE else UNAVAILABLE,
             "cloud.macos_build": UNVERIFIED if cloud_allowed else UNAVAILABLE,
         },
         "selection": {
             "source_reason": ("macOS with xcodebuild and xcrun" if native_xcode else
-                              "Windows static source provider" if os_name == "windows" else
+                              "Host deferred by macos-arm64 release profile" if not supported else
                               "Apple tools unavailable; static fallback"),
             "cloud_provider_allowed": cloud_allowed,
             "evidence_policy": "availability is discovery only; execution requires provider evidence",
+            "platform_roadmap": "PLATFORM-ROADMAP.md",
         },
     }
 
@@ -102,6 +122,9 @@ def detect_host_profile(*, host_os: str | None = None, machine: str | None = Non
 def provider_for(profile: Mapping, capability: str) -> str:
     source = profile.get("source") if isinstance(profile, Mapping) else None
     target = profile.get("target") if isinstance(profile, Mapping) else None
+    host = profile.get('host') if isinstance(profile, Mapping) else None
+    if isinstance(host, Mapping) and host.get('supported') is False:
+        return 'unavailable'
     if capability.startswith("ios."):
         return str(source.get("provider")) if isinstance(source, Mapping) else "unavailable"
     if capability.startswith("harmony."):

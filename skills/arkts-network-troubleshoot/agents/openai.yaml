@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-network-troubleshoot
-  short_description: 对照 iOS 的真实服务契约排查鸿蒙网络行为差异，检查请求/响应、TLS、鉴权、编码、缓存、取消与错误，并用独立契约证据验…
-  default_prompt: 请使用 $arkts-network-troubleshoot，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

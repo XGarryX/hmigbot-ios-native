@@ -1,4 +1,2 @@
-interface:
-  display_name: ios-resources-convert
-  short_description: 在 a2h-execute Stage 0 转换 iOS Asset Catalog、图片/颜色变体、字符串/复数、字体与…
-  default_prompt: 请使用 $ios-resources-convert，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

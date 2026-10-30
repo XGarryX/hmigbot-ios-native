@@ -7,7 +7,7 @@ import sys
 import os
 
 from .runtime_timeouts import timeout_for
-from .scheduler_windows_runtime import run as run_owned_process
+from .process_runtime import run as run_owned_process
 
 ROOT = Path(__file__).resolve().parents[2]
 

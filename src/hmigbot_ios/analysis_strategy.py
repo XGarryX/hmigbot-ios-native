@@ -2,6 +2,7 @@
 from pathlib import Path, PurePosixPath
 import re
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
 from .xcode import project_inventory
 
@@ -17,7 +18,7 @@ def configuration(project, path=None):
             raise MigrationError('Analysis configuration is missing')
         return {'schema_version': 1, 'mode': 'auto'}, None
     value = read_json(path)
-    allowed = {'schema_version', 'mode', 'selection', 'evidence', 'mcp_server',
+    allowed = {'schema_version', 'mode', 'selection', 'evidence', 'mcp_server', 'mcp', 'ui_capture',
                'require_official', 'official_skills', 'timeout_seconds'}
     if (not isinstance(value, dict) or value.get('schema_version') != 1
             or set(value) - allowed or value.get('mode', 'auto') not in MODES):
@@ -38,6 +39,11 @@ def configuration(project, path=None):
             raise MigrationError('Analysis ' + key + ' must be boolean')
     if 'mcp_server' in value and (not isinstance(value['mcp_server'], str) or not value['mcp_server'].strip()):
         raise MigrationError('Analysis mcp_server must be a nonempty configuration path')
+    if 'mcp' in value and (not isinstance(value['mcp'], str) or value['mcp'] not in {'ask', 'enable', 'skip'}):
+        raise MigrationError('Analysis mcp must be ask, enable or skip')
+    if 'ui_capture' in value:
+        from .source_ui_capture import settings
+        settings(project,value)
     timeout = value.get('timeout_seconds', 600)
     if type(timeout) is not int or not 1 <= timeout <= 3600:
         raise MigrationError('Analysis timeout must be 1..3600 seconds')
@@ -53,9 +59,9 @@ def resolve_path(project, value):
 
 
 def inspect_source(source):
-    snap = snapshot(source)
+    snap = source_snapshot(source)
     inventory, issues = project_inventory(source, snap['files'])
-    tokens, c_conditionals = set(), []
+    tokens, c_conditionals, swift_conditionals = set(), [], []
     languages = {}
     from .swiftui import tokenize
     for entry in snap['files']:
@@ -63,13 +69,26 @@ def inspect_source(source):
         languages.setdefault(suffix, []).append(entry['path'])
         if suffix in C_SOURCE | {'.swift', '.h'}:
             text = (source / entry['path']).read_text(encoding='utf-8-sig')
+            if suffix == '.swift':
+                # Discovery hints only: do not run the closed Python grammar
+                # before choosing the official parser (legal Swift may exceed it).
+                tokens.update(re.findall(r'[^\W\d]\w*', text))
+                if re.search(r'^\s*#\s*if\b', text, re.M):
+                    from .swift_native import parse_sources
+                    parsed = parse_sources({entry['path']: text})[entry['path']]
+                    if any(node['kind'] == 'conditional_compilation' for node in parsed['nodes']):
+                        swift_conditionals.append(entry['path'])
+                continue
             lexed = tokenize(text, skip_pragma_marks=suffix != '.swift')
             tokens.update(t.value for t in lexed if t.kind != 'string')
-            if suffix in C_SOURCE | {'.h'} and any(t.value == '#' for t in lexed):
-                if re.search(r'^\s*#\s*(if|ifdef|ifndef|elif)\b', text, re.M):
+            if suffix in C_SOURCE | {'.h'}:
+                directive_lines = {t.line for t in lexed if t.value == '#'}
+                if any(number in directive_lines and re.match(r'^\s*#\s*(if|ifdef|ifndef|elif)\b', line)
+                       for number, line in enumerate(text.splitlines(), 1)):
                     c_conditionals.append(entry['path'])
     return {'snapshot': snap, 'projects': inventory['projects'], 'issues': issues,
-            'languages': languages, 'tokens': sorted(tokens), 'c_conditionals': c_conditionals}
+            'languages': languages, 'tokens': sorted(tokens), 'c_conditionals': c_conditionals,
+            'swift_conditionals': swift_conditionals}
 
 
 def _selection(source, inventory, supplied):
@@ -133,6 +152,8 @@ def _evidence(source, project, cfg):
             checked = membership(source, doc, capture=bundle / 'artifacts')
             if checked['membership_status'] != 'complete':
                 raise MigrationError('Incomplete compiler membership')
+            from .native_product_scope import validate_scope
+            validate_scope(source, bundle / 'artifacts', doc)
             actual = doc['selection']
             settings_rows = read_json(settings)
             if not isinstance(settings_rows, list):
@@ -253,7 +274,7 @@ def plan(source, project, cfg, host, *, explicit_providers=None, variant=None):
         choose('swift_syntax', 'swift_official_libraries', 'Swift source and Swift toolchain present')
     if any(Path(f['path']).name == 'Package.swift' for f in inventory['snapshot']['files']) and host['tools']['swift']['status'] == 'available' and mode != 'static':
         steps.append('manifest-evaluation')
-    steps += ['facts', 'literals', 'official-mcp-evidence', 'expertise-plan', 'spec-scaffold']
+    steps += ['facts', 'literals', 'official-mcp-evidence', 'expertise-plan', 'source-ui', 'spec-scaffold']
     return {'schema_version': 1, 'kind': 'source-analysis-execution-plan',
             'source_sha256': inventory['snapshot']['sha256'], 'mode': mode, 'backend': backend,
             'selection': selection, 'evidence': evidence, 'rejected_evidence': rejected,

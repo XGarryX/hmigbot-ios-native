@@ -23,3 +23,10 @@
 - https://www.swift.org/documentation/source-code/
 
 0.13.0 的自动选择、逐步执行与权限边界见 [自动编排协议](auto-orchestration.md)。官方技能与只读 MCP 优先，实际不可用时显式降级；设备远程控制不在默认调用范围。
+
+
+## 0.13.1 实际消费与保留边界
+
+SwiftParser/SwiftSyntax 产物在 facts 提取前采集并固定；Swift 词项、字符串/正则边界、声明及继承结构、字符串与数字静态解码被原事实/字面量/候选/专业审阅/Preview 门禁消费者实际读取。语法错误阻断该原生产物的发布，不能回退 Python 词法后宣告原生通过。Python 仍把语法信息映射为迁移信号和义务，symbol_binding 保持 unresolved；语法库不能证明跨模块调用绑定、宏展开或运行行为。明确 static 模式与旧无 lexical 协议的外部 Provider 维持兼容备用，收据明确 Python fallback，不算官方解析。
+
+官方 skill 资料加载与实际应用分开：Apple 条目的 expertise-review 每条观察必须带 official_basis（path、sha256、section、application）并绑定真实源行。没有覆盖主题的官方 skill、MCP 未授权、缺少所选构建上下文都逐项保留缺失原因。Xcode MCP 不可用时同类确定性工程读取使用已授权的官方 CLI；不自行启用全局 MCP 或操作界面。

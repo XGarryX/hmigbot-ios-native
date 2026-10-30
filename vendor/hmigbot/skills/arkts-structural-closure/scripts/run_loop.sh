@@ -39,30 +39,18 @@ maybe_native() { case "$1" in /*) winpath "$1" ;; *) printf '%s' "$1" ;; esac; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STRUCTURAL_LOOP="$(maybe_native "$SCRIPT_DIR/structural_loop.py")"
 
-# ─── Python 解释器解析 ───────────────────────────────────────────────────────
-# 本脚本此前硬依赖 PATH 上的 `python3`。但把 skill 编译成 Nuitka standalone 的
-# 初衷正是摆脱用户环境的 Python 依赖 —— 没装 python3 的机器上二进制齐备却跑不起来。
-# 故优先探测同目录下的编译产物 `_entry.bin`（可直接跑子命令），再回退系统解释器。
-ENTRY_BIN=""
-for _cand in "$SCRIPT_DIR/bin"/*/_entry.dist/_entry.bin "$SCRIPT_DIR/_entry.dist/_entry.bin"; do
-    [[ -x "$_cand" ]] && { ENTRY_BIN="$_cand"; break; }
-done
+# Native input guard must run even when an original standalone binary is present.
 PY=""
 for _p in python3 python; do
     command -v "$_p" >/dev/null 2>&1 && { PY="$_p"; break; }
 done
-if [[ -z "$ENTRY_BIN" && -z "$PY" ]]; then
-    echo "error: neither a compiled _entry.bin nor python3/python was found" >&2
+if [[ -z "$PY" ]]; then
+    echo "error: Python is required for the native source-input guard" >&2
     exit 3
 fi
-
-# 跑 structural_loop：有二进制走子命令自调，否则用系统解释器跑 .py
+ENTRY_BIN=""
 run_structural_loop() {
-    if [[ -n "$ENTRY_BIN" ]]; then
-        "$ENTRY_BIN" structural_loop "$@"
-    else
-        "$PY" "$STRUCTURAL_LOOP" "$@"
-    fi
+    "$PY" "$STRUCTURAL_LOOP" "$@"
 }
 
 MODE=""
@@ -175,6 +163,13 @@ set +e
 run_structural_loop "${LOOP_ARGS[@]}"
 LOOP_EXIT=$?
 set -e
+
+# Input/IO failure is not the CONTINUE (1) or ESCALATED (2) protocol.
+# In particular, never consume a prior CONVERGED result after a native guard stop.
+if [[ "$LOOP_EXIT" -eq 3 ]]; then
+    echo "[run_loop.sh] STOP_NATIVE_INPUT_OR_IO: no automatic retry, finalize, or stage advance. Inspect the current error/guard evidence; correct the input before explicitly invoking again." >&2
+    exit 3
+fi
 
 # ─── Echo verdict line on stderr for LLM visibility ──────────────────────────
 if [[ -f "$RESULT_FILE" ]]; then

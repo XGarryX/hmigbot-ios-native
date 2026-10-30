@@ -10,16 +10,12 @@ a2h-execute 三阶段各产一类 brief，统一落 `spec/execution/briefs/`：
 | brief | 产出时机 | SKILL.md 章节 |
 |---|---|---|
 | Batch brief | Stage 1 每个 Batch 结算后（批内无编译，统一编译在 execute §3d 收口） | §3b |
-| Base Task brief | Stage 2每个实际Base任务完成后（含非整数编号） | §4e |
+| Base Task brief | Stage 2 每个 Base 任务（Base-1..7）完成后 | §4e |
 | Group brief | Stage 3 每个 parallel_group 收尾（§5e）后——组粒度单文件，per-slice 小节 | §5e |
 
 ---
 
 ## 0. 跨 brief 通用：`loops` 段 + `final_state`（Phase 2 引入）
-
-profile 2 补充结构化小节 `input_consumption`（plan_item_refs、consumed_refs、unread_refs及受影响AC）、`contract_conflicts`（两端指针、源证据、AC）与 `validation_axes`（generated/compile/structural/behavior/visual的真实结论及证据路径）。worker返回值供closer汇总；未读/冲突影响AC不得记impl_claims或PASS。原writeback schema字段不扩写这些内容，放入brief.content即可，控制账本作者与落盘手不变。
-
-旧 `verified/pages_verified/ui_manifest.verified/feature verified` 是编译与结构流程兼容状态，不能推导独立行为或视觉通过。`validation_axes` 未执行项填not_run，输入/代码已变的旧证据填stale；PASS只覆盖本模式真实履行的义务。Batch不跑loops，不套用下一段双loop条件。
 
 每个 brief 必含 `final_state` + `loops` 两个 top-level 字段，由 [`arkts-structural-closure`](../../arkts-structural-closure/SKILL.md) skill 的运行结果填入（含 compile_loop + structural_loop 两部分）。
 
@@ -28,11 +24,14 @@ profile 2 补充结构化小节 `input_consumption`（plan_item_refs、consumed_
 | 值 | 含义 | 下游影响 |
 |---|---|---|
 | `PASS` | compile + structural 两个 loop 都 CONVERGED | 正常进入下一单元 |
+| `GENERATED_PENDING_COMPILE` | 冻结 Stage 3 pilot 的接线/资源生成已收口，编译未运行 | 只释放已核验稳定输入；集中 build 及原 FV 仍必需，不算编译/阶段 PASS |
 | `ESCALATED` | structural_loop 返回 STALLED / EXHAUSTED | 标记 + pipeline 继续；§5f 末尾若 ESCALATED 总数 > 10% → 阻断进 a2h-verify |
 | `ROLLED_BACK` | structural_loop 返回 REGRESSED | git stash 本单元改动；阻断所有 `depends_on` 本单元的下游 |
 | `BLOCKED` | placeholder / source-notes / deferred_items 校验 FAIL（不走 loop） | Slice 标 BLOCKED，要求人工补 plan |
 
 **`loops` 段格式**（YAML，由 `structural_loop.py finalize` + 子代理 `hmos-builder` 收尾时输出）：
+
+仅冻结 `compile_policy: stage3-pilot` 时，group brief 可用 `final_state: GENERATED_PENDING_COMPILE` 与 `build_status: deferred-to-stage3-gate`；`loops.compile` 必为 `iterations: 0`、`converged: false`、`final_errors: null`。结构检查照原门运行并保留真实结果。历史 brief 不因后续集中编译而改写；独立当前 Stage3 build 证明由实际 FV 入口消费。详见 [依赖调度](dependency-dispatch.md)。
 
 ```yaml
 loops:
@@ -167,7 +166,7 @@ escalation:
 - step_3d_wiring: wired_files / integration_points_done: n/n / resolved_fwd_refs（本 slice）
 - cross_slice_edits: | file | handler | 原 owning_slice | 落地 evidence | 表（有则填）
 - unresolved_placeholders: [...]（本 slice 前缀 grep registry 的残余）
-- pages_verified: [...]（旧字段，表示结构收口页，供 CHECK-5；行为/视觉见validation_axes）
+- pages_verified: [...]（供 a2h-verify CHECK-5 核验）
 
 ### deferred_items
 | 描述 | owner_skill | 闭环条件 | status |
@@ -195,7 +194,7 @@ escalation:
     "resolve": ["P-S1-001", "P-S2-001"],  // kind=forward-ref → 删行（收组清行，历史留 brief）；其他 kind → status→resolved
     "retag": [{"pid": "P-S6-004", "column": "resolve_by", "value": "D-003（忠实占位·永久保留）"}]
   },
-  "ui_manifest": {"converted": ["page_0040"], "verified": ["page_0001", "page_0002"]}, // 键 = 原生稳定page_id；表头为序号
+  "ui_manifest": {"converted": ["page_0040"], "verified": ["page_0001", "page_0002"]},   // 键 = 序号
   "feature_index": {"implemented": ["F001"]},                             // 键 = F-ID
   "impl_claims": {                        // AC 级认领（modes: group/final；batch 无 AC 归属不产）
     "claims": [{"requirement_id": "F001-AC01", "packet_id": "slice-03-F001",
@@ -209,8 +208,13 @@ escalation:
 
 各段可省（mode=base 通常仅 `brief`）；`ui_manifest.verified` / `feature_index.implemented` 只在双前置成立（编译 PASS ∧ 结构 CONVERGED）时记入；defer 末组（`structural_verdict: deferred-to-FV`）不记这两段，由 mode=final 的 manifest 补翻。`impl_claims` 同守双前置；`requirement_ids`/`requirement_digests` **抄自 plan-coverage.json 对应 packet，不由 LLM 手写**；落盘幂等键 = `(requirement_id, packet_id, attempt)`（apply_writeback.py §5，重跑 apply 不重复）。
 
-原生写回要求UI核心九列表首头为`序号`，其值始终为`page_####`，不转为四位短编号、不改源身份与其余八列。catalog读者兼容旧`page_id`头，但旧头执行写回会明确拒绝：先经受审baseline格式迁移、源/计划核验及重新冻结，禁止临时改活动表头。
+统一输入使用 git 当前模板的 `序号` 列和稳定 `page_####` ID；manifest 不接受裸数字序号。execution-contract 在启动前校验该合同。旧冻结表头需按原受审更新/replan 恢复，执行器不暗改 baseline。
 
-自有wrapper先只读核验完整核心表、唯一稳定ID、请求列/状态、brief路径和claims形状，再调用未修改的原helper；原helper仍是索引、registry、claims和brief的唯一实际写者。未知UI/feature/retag编号、重复请求、缺列或无效状态在原helper调用前退出，故不先落brief。`registry.resolve`保留原定义：已不存在的forward-ref行是重放no-op，不能据此声称本次新解决了一个问题。合法状态与claims重放仍幂等。wrapper保留原stdout和巡检派发文本；任何warn、非零退出或回读状态/非进度内容不符都不是完成。原helper异常中途已写内容须保留并核实，不能把exit 0或brief存在单独当作批次成功。
 
-DevEco只读布局围栏另仅识别四个明确IDE生成元数据：`.idea/.deveco/cxx/.clang-format`、`.idea/.deveco/module/entry.cache.json`、`.idea/.deveco/project.cache.json`、`.idea/.gitignore`。这些仍进入原始/source快照；其他.idea文件、产品代码、资源与构建配置仍受ownership校验。
+### ios.32 显式终态与登记表修复（当前统一写回链）
+
+`mode=final` 可提交 `feature_index.verified: ["F001"]`，仅已 implemented/verified 的真实 F-ID 可晋级，不能与 implemented 重复、不能 pending 直升或逆向降级。该字段表示现有 final 收尾协议状态，不自动建立业务/设备验证结论；indexed receipt 的 behavior_verified 仍为 false。调用方必须满足原编译/结构及已选验收前置。
+
+历史登记表出现合法六列孤立行组时，可显式提交 `registry.ensure_table_headers: true`。只补相同表头/分隔行，不改登记数据；配合 resolve/retag 时仍核唯一 P-ID 和严格回读。未声明时不自动修复；不同 schema、重复ID、路径链接、越权字段和真实缺失继续拒绝。对已拆成行组的登记表继续使用该显式协议，不能将其当作任意 Markdown 格式重写授权。
+
+这两个开放适配器来自 Garry 1.5.2-ios.32；原编译 writer 仍在单一链内实际 dry-run/apply。Mac ARM 才执行，Intel/Windows 记 deferred；入口不自动 xattr。dry-run 不写真实工程，失败保留原始引擎输出；仅预期原引擎调用顺序且无 warning、严格回读相符时才落成功收据。

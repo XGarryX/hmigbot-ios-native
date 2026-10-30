@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-immersive-safearea
-  short_description: 在 ArkTS / HarmonyOS 项目中同时实现"沉浸式背景延伸到全屏"和"前景内容避开状态栏/导航条/挖孔区"的标…
-  default_prompt: 请使用 $arkts-immersive-safearea，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

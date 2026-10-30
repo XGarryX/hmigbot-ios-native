@@ -1,4 +1,4 @@
-# `spec/verify/ut/round-N/ut/<id>.md` 文件模板
+# `spec/fix/round-N/ut/<id>.md` 文件模板
 
 `arkts-ut-verifier` 的 execute 步骤写每个失败问题文件时，照此骨架填空。`{...}` 是占位符。Schema 完整定义见 `fix-file-schema.md`。
 
@@ -51,7 +51,7 @@ disposition_set_at_round: null
 
 ## 填法示例：单元测试 RED
 
-`spec/verify/ut/round-0/ut/F010_AC03_deleteFiles_useRecycleBin.md`
+`spec/fix/round-0/ut/F010_AC03_deleteFiles_useRecycleBin.md`
 
 ```markdown
 ---

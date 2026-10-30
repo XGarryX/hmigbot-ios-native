@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 
 from .artifact_contract import markdown_tables, validate_json
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
 from .native_contract import source_truth, validate_literal_exclusion
 from .native_semantics import COMMON, PAGE, FEATURE, SWIFTUI, UIKIT, SWIFT, OBJC, required_facts, validate_native_payload
@@ -21,7 +22,7 @@ def _inventory(project):
     source, project = context(Path(project))
     base = project / 'spec/baseline'
     index = read_json(base / 'ios-source-index.json')
-    current = snapshot(source)
+    current = source_snapshot(source)
     if index.get('source_sha256') != current['sha256'] or index.get('files') != current['files']:
         raise MigrationError('Authoring needs a current reviewed source index; use facts/source-refresh and re-review, never delete the index')
     known = {f['path']: f for f in current['files']}
@@ -95,8 +96,19 @@ def _inventory(project):
     if (base / 'ios-responsibility.json').exists():
         from .ios_harness import responsibility
         inputs.update(responsibility(project, source=source).frozen_inputs())
+    from .source_ui_capture import authoring_observations
+    runtime,ui_inputs,ui_gaps=authoring_observations(project,source,list(documents.values()))
+    inputs.update(ui_inputs)
+    for ident,document in documents.items():
+        document['runtime_observations']=runtime.get(ident,[])
+        document['runtime_review']='read_original_images_and_hierarchy' if runtime.get(ident) else 'not_observed'
+        if document['kind']=='page':
+            meta=base/'ui-snapshots'/ident/'meta.json'
+            if meta.is_file():
+                inputs[meta.relative_to(project).as_posix()]=digest(meta.read_bytes())
     inventory = {'source_sha256': current['sha256'], 'inputs': inputs,
                  'documents': list(documents.values()), 'acceptance': acs,
+                 'runtime_observation_gaps':ui_gaps,
                  'unaccounted_sources': sorted(p for p in known if Path(p).suffix.lower() in CODE and p not in owned),
                  'conditional_dimensions': {'swift': sorted(SWIFT), 'objc/objcxx': sorted(OBJC),
                                             'swiftui_page': sorted(SWIFTUI), 'uikit/ib_page': sorted(UIKIT)}}
@@ -223,6 +235,20 @@ def render(project, request):
         else:
             lines[n] = lines[n].rstrip('\r\n') + ' `' + token + '`\n'
         files[path] = ''.join(lines)
+    from .source_ui_capture import render_page
+    for doc in inventory['documents']:
+        observed=doc.get('runtime_observations',[])
+        if doc['kind']!='page' or not observed:continue
+        path=doc['spec']
+        files[path]=render_page(files.get(path,safe_child(project,path).read_text(encoding='utf-8-sig')),observed)
+        meta_path='spec/baseline/ui-snapshots/'+doc['id']+'/meta.json'
+        if (project/meta_path).is_file():
+            metadata=read_json(project/meta_path)
+            if metadata.get('page_id')!=doc['id']:
+                raise MigrationError('Source UI metadata belongs to a different page')
+            metadata.update(runtime='captured',screenshot=observed[0]['screenshot']['path'])
+            metadata.setdefault('extensions',{})['native_ui_observations']=observed
+            files[meta_path]=metadata
     input_hashes = dict(inventory['inputs'])
     candidate_hashes = {'native_semantics': digest(json_bytes(semantics))}
     if projection is not None:
@@ -239,7 +265,7 @@ def render(project, request):
     for relative, expected_hash in input_hashes.items():
         if digest(safe_child(project, relative).read_bytes()) != expected_hash:
             raise MigrationError('Authoring input changed during rendering: ' + relative)
-    if snapshot(source)['sha256'] != inventory['source_sha256']:
+    if source_snapshot(source)['sha256'] != inventory['source_sha256']:
         raise MigrationError('Authoring source changed during rendering')
     return {'schema_version': 1, 'status': 'candidate', 'inventory_sha256': request['inventory_sha256'],
             'source_sha256': inventory['source_sha256'], 'files': files,

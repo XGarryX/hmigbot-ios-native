@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-feature-coverage-auditor
-  short_description: 核对 iOS 源行为、入口、数据流和平台接缝在 HMigBot 功能 spec/AC 中的覆盖；使用真实目标与模块范围，不…
-  default_prompt: 请使用 $arkts-feature-coverage-auditor，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

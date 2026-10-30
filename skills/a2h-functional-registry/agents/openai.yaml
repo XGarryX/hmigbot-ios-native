@@ -1,4 +1,2 @@
-interface:
-  display_name: a2h-functional-registry
-  short_description: 在原 a2h baseline 中维护 iOS 功能及入口/状态/事件/副作用的证据登记，用稳定 ID 防止重复或遗漏；不…
-  default_prompt: 请使用 $a2h-functional-registry，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

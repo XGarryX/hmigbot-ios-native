@@ -1,12 +1,12 @@
-"""Adapt real scoped rollout evidence for the unchanged bundled join gate."""
 from pathlib import Path
 import json, sys
 here = Path(__file__).resolve()
 skill = next(p for p in here.parents if (p / 'SKILL.md').is_file())
-runtime = skill / 'runtime.json'
-root = (skill / json.loads(runtime.read_text())['runtime_relative']).resolve() if runtime.exists() else skill.parents[1]
-helper = root / 'vendor/hmigbot' / 'skills/a2h-join/scripts/join_gate.py'
-if not helper.is_file(): raise SystemExit('Bundled helper missing; reinstall the complete plugin')
+config = skill / 'runtime.json'
+root = (skill / json.loads(config.read_text())['runtime_relative']).resolve() if config.exists() else skill.parents[1]
 sys.path.insert(0, str(root / 'src'))
-from hmigbot_ios.join_rollout import main
-raise SystemExit(main(sys.argv[1:], helper=helper, root=root))
+from hmigbot_ios.host_join import maybe_main
+code = maybe_main('join_gate', sys.argv[1:])
+if code is not None: raise SystemExit(code)
+from hmigbot_ios.portable_helper import run
+raise SystemExit(run(root / 'vendor/hmigbot/skills/a2h-join/scripts/join_gate.py', sys.argv[1:]).returncode)

@@ -3,7 +3,11 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import stat
+import sys
 import zipfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
+from hmigbot_ios.payload_layout import exclusion, release_profile
 
 EXCLUDED_DIRS = {'.git', '__pycache__', '.pytest_cache', '.venv', 'node_modules',
                  '.build', '.swiftpm', 'build', 'dist', 'work', '.hmigbot-ios',
@@ -30,7 +34,7 @@ def inventory(root):
     def visit(directory):
         for path in sorted(directory.iterdir()):
             relative = path.relative_to(root).as_posix()
-            reason = excluded(path)
+            reason = exclusion(relative, directory=path.is_dir()) or excluded(path)
             if reason:
                 exclusions.append({'path': relative, 'reason': reason})
                 continue
@@ -55,7 +59,8 @@ def inventory(root):
     stamp = list(root_info.date_time)
     stamp[-1] &= ~1
     root_record = {'mode': oct(stat.S_IMODE(root.stat().st_mode)), 'zip_date_time': stamp}
-    return {'source_root_name': root.name, 'root_metadata': root_record, 'files': files, 'directories': directories,
+    return {'source_root_name': root.name, 'release_profile': release_profile(),
+            'root_metadata': root_record, 'files': files, 'directories': directories,
             'excluded': exclusions}
 
 
@@ -84,7 +89,7 @@ def build_package(root, output):
         raise ValueError('Source changed during packaging; archive has no completion sidecars')
     checksum = sha(output)
     manifest = {'schema_version': 1, **before, 'archive_sha256': checksum,
-                'scope': 'Source files, directories, modes and ZIP-resolution mtimes. Local state/cache exclusions are listed. Filesystem ownership and extended attributes are outside ZIP scope.'}
+                'scope': 'Selected conversion-tool release files, directories, modes and ZIP-resolution mtimes. Every excluded source path is disclosed. Filesystem ownership and extended attributes are outside ZIP scope.'}
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     sums.write_text(checksum + '  ' + output.name + '\n', encoding='utf-8')
     report = verify_package(output, root)
@@ -101,6 +106,8 @@ def verify_package(package, source=None):
     if not prefix or PurePosixPath(prefix).name != prefix or '\\' in prefix or ':' in prefix or prefix in {'.', '..'}:
         raise ValueError('Invalid source root in package manifest')
     differences = []
+    if manifest.get('release_profile', {}).get('id') != release_profile()['id']:
+        differences.append({'rule': 'release-profile-missing-or-unsupported'})
     checksum = sha(package)
     if checksum != manifest['archive_sha256'] or checksum != sums.read_text(encoding='utf-8').split()[0]:
         differences.append({'rule': 'archive-checksum'})
@@ -109,6 +116,10 @@ def verify_package(package, source=None):
         if record['path'] in expected:
             raise ValueError('Duplicate manifest path')
         expected[record['path']] = {**record, 'kind': 'directory'}
+    for relative, record in expected.items():
+        reason = exclusion(relative, directory=record['kind'] == 'directory')
+        if reason:
+            differences.append({'rule': 'outside-release-profile', 'path': relative, 'reason': reason})
     if len(expected) != len(manifest['files']) + len(manifest['directories']):
         raise ValueError('Duplicate manifest path')
     observed, seen, roots = {}, set(), []
@@ -152,6 +163,7 @@ def verify_package(package, source=None):
                 if old.get(path) != new.get(path):
                     differences.append({'rule': 'source-mismatch', 'path': path})
     return {'status': 'failed' if differences else 'passed', 'archive_sha256': checksum,
-            'source_root_name': prefix, 'files': len(manifest['files']),
+            'source_root_name': prefix, 'release_profile': manifest.get('release_profile'),
+            'files': len(manifest['files']),
             'directories': len(manifest['directories']), 'excluded': manifest['excluded'],
             'source_compared': source is not None, 'differences': differences}

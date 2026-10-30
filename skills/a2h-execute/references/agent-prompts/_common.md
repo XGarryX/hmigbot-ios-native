@@ -73,19 +73,25 @@ static setDebug(value: boolean): void { ... }
 
 ## 单写者纪律（全 Stage 无条件；Stage 3 任意组大小含 size-1 组）
 
-Stage 1 converter 同样只写自身页面文件，享受同样两项 append-only 例外；batch-closer 对资源仅残量兜底。
+Stage 1 converter 只写自身页面和任务独占资源增量；公共资源由声明的唯一 closer 合并，不能靠先 Read 再写共享 JSON 避免竞态。
 
 Stage 3 一律以 parallel_group 为粒度执行，`5-step3b-vm.md` / `6-step3c-data.md`（§4/§5/§6）的 slice worker **只写自身 page / VM / repository 文件**，**禁止编辑共享文件**（包含但不限于 `spec/baseline/plans/feature-plan.md`）。`7-step3d-wiring.md`（§7）Step 3d 的**跨文件接线**一律移交 **`8-group-closer.md`（§8）group-closer** 统一单写；slice worker 只接自身页内的 VM/handler。
 
-**仅两项 append-only 例外**（其余共享文件仍绝对禁碰）：
-1. `spec/placeholder-registry.md` 的 **P-ID 登记行 append**（§2.1c 发号协议——登记即占号）；
-2. **共享资源 JSON 直写**（见下方资源直写纪律）。
+**仅保留 P-ID 登记例外**：`spec/placeholder-registry.md` 的登记行 append 按 §2.1c 原发号协议执行。资源 JSON 不再是 worker 的共享写入例外；资源新增必须交任务增量，唯一 closer 核对后统一合并。
 
 **plan 产物只读**：feature-plan.md 索引与 `plans/slices/` 文件生成后只读——任何 agent 不得回填 checkbox / evidence / 状态（完成性 = verify_slice_wiring 机械判定 + brief 记录）。**拆分越界禁令**：按依赖断面拆分派发的 worker（§5a 安全阀）只写划给自己的文件集，禁碰兄弟 worker 文件。
 
-## 资源直写纪律（converter / worker）
+## 资源增量与单写合并（converter / worker / closer）
 
-共享资源 JSON（`color/string/float.json` 等）允许直写，仅限：写前 Read 最新文件、只 append 缺失键（禁重排 / 重写 / 删除既有条目）；键已存在即复用。冲突由 closer 编译门自曝。
+按[资源增量协议](../resource-deltas.md)执行，实际命令为 `<runtime>/scripts/a2h_ios.py resource-delta`（独立脚本 `scripts/resource_merge.py` 同一实现）。
+
+1. **派发前由主线程 init**：固定 `scope_id`、唯一 `closer_id`、预期任务/尝试、任务到当前 `plan_item_ids` 的映射，以及本批/组可新增的资源文件及类型。必须绑定当前 `task-deltas-v1` 执行合同，不能让 worker 自报一份可随时缩小的任务清单。重派或改变输入使用新作用域，不覆盖旧 scope。
+2. **每个任务只提交自己新增的资源**：先写任务自己的 delta 输入，内容为 `{"resources":[{"path":"<模块>/src/main/resources/<限定目录>/element/<文件>.json","type":"string","entries":[{"name":"<资源名>","value":"<实际值>"}]}]}`，再 `submit --scope <scope> --task <已登记任务> --attempt <当前尝试> --input <delta.json>`。不得直接编辑共享资源；没有新增也提交 `{"resources":[]}`，缺提交不能收口。
+3. **closer 只在全部提交后合并**：`check` 是只读预检；`merge --scope <scope> --closer <已登记收尾者>` 才统一写资源。同一资源名同内容复用，异值/异元数据报来源冲突；旧键保留，跨文件同名也检查。closer 的 sweep 新发现资源也必须在 init 中预登记为一个任务，再走相同 submit，不能补漏直写。
+4. **收据约束后续写回**：合并成功后保留 `merge-receipt.json`；主线程 `apply_writeback.py` 使用 `--resource-scope <scope> --resource-closer <closer>`，核对本批/组计划范围及当前资源后像后才走原写回链。合并后继续改资源会使收据失效，不能以旧收据推进。
+5. **中断恢复**：跨文件写入先留下 `spec/execution/resource-deltas/pending.json`；存在它时停止新合并，按原 scope/closer 显式 `recover`。恢复只接受原前像或已写后像，不覆盖第三方改动。输入过期、同名异值及需改已有资源的情况先回原责任者处理，再经明确的新作用域核验；禁止删除失败记录或重写旧摘要消除冲突。
+
+该协议协调遵守它的本地写者，不是对任意外部进程的权限隔离；merge 完成也不代表编译、视觉或业务验收通过。
 
 ## 返回报告信封契约（所有 agent）
 
@@ -98,7 +104,7 @@ Stage 3 一律以 parallel_group 为粒度执行，`5-step3b-vm.md` / `6-step3c-
 
 作者性读取不受限（spec / anchors 源码 / 快照 / 自己要改的文件）。校验性读取一律 grep 定位 + 窗口读：
 - 查页面状态 / 复用组件：grep ui-manifest 对应行（禁整读、禁扫 components/ 目录）
-- **白名单例外（设计令牌）**：`ui-manifest.md` 的 `## 全局约定` 节**允许整节读**（`sed -n '/^## 全局约定/,/^## /p'`，通常 ≤20 行），任何产出 UI 代码的 agent（converter / Step 3a / fixer）**必须**在写样式前读取本节。理由：设计令牌（主色 / 主题 / 排版 / 图标方案）是 iOS 侧样式真值的唯一落点，被 grep-first 挡在生成现场之外会导致主题色、字号、间距整体丢失，或诱发自创平行令牌体系（历史事故：DiceRoller 主题紫全丢、AIPPT 自创 `DesignTokens.ets` 架空 `float.json`）
+- **白名单例外（设计令牌）**：`ui-manifest.md` 的 `## 全局约定` 节**允许整节读**（`sed -n '/^## 全局约定/,/^## /p'`，通常 ≤20 行），任何产出 UI 代码的 agent（converter / Step 3a / fixer）**必须**在写样式前读取本节。理由：设计令牌（主色 / 主题 / 排版 / 图标方案）是 iOS 源侧样式真值的唯一落点，被 grep-first 挡在生成现场之外会导致主题色、字号、间距整体丢失，或诱发自创平行令牌体系（历史事故：DiceRoller 主题紫全丢、AIPPT 自创 `DesignTokens.ets` 架空 `float.json`）
 - 查占位：按本 slice 前缀 `grep "P-S{N}-"` registry
 - 定位 marker / handler / @Builder 槽位：grep 后 Read ±30 行窗口，禁整读 .ets
 
@@ -107,16 +113,8 @@ Stage 3 一律以 parallel_group 为粒度执行，`5-step3b-vm.md` / `6-step3c-
 feature spec `## 验收标准` 的 `###` 组标题（或单条 AC）尾部 `impl: <addendum>.md §<节>` = 该组实现细节的权威归宿（组级默认、单条覆盖、多目标逗号分隔；addendum 位于 feature spec 同目录）。worker 实现某 AC 组前：
 
 - 该组带 `impl:` 且目标 addendum 的 `consumed_at`（frontmatter，缺省按 a2h-spec C4-pre 第 5 项 slug 默认表：state-machine/races/lifecycle→3b，api/persistence→3c，mapping→随组）匹配本步骤 → **按标题 grep 目标 §节精读**（`grep -A 40 "<节标题>" <addendum 路径>`），随 spec / 源码一并纳入理解
-- **禁止整目录扫读 addenda**；单次精读预算 **≤3 节 / 总量 ≤150 行**。预算用于分批读取：超过则继续下一批精确节，或按AC/独占文件拆 task。`deferred_addenda` 记录未消费引用与受影响AC，并使这些AC保持未完成；不能只读前3节便关闭整个任务。closer 按该清单阻止受影响单元完成，不必为确认清单而整读所有业务spec。
+- **禁止整目录扫读 addenda**；每次派发精读 **≤3 节 / 总量 ≤150 行**，超出按 AC 组顺序取前 3、其余写入返回报告 `deferred_addenda` 字段
 - AC 断言本身以主文件为准（指针不转移断言）；无指针的组照旧只依据主文件
-
-## profile 2 实施输入与冲突回流
-
-冻结任务包含 `plan_item_refs/ac_ids/spec_refs/contract_refs`；实施worker按精确标题/动作ID读取本任务合同传递闭包（共享接口、状态/值域、立即效果与完成事件、范围决定及相关addenda），只读索引或页摘要不算消费。每次返回记录 `consumed_refs` 与 `unread_refs`（包含AC归属）；未读、过期、unknown或冲突影响的AC不能报完成。此记录进入原结果/brief，不新增控制账本写者。
-
-遇到 page/feature/共享合同/AC 对同一动作不一致，返回 `contract_conflicts`：两端路径#标题/ID、冲突点、source_anchor/fact ID、受影响AC及 `owner_stage: spec`。例如页面写“取消即清空”，服务写“回调后移除”，需要回源裁定；不能因页面更方便或合同文件更长就选一端。已批准ledger若明确覆盖该动作且输入版本一致，引用其D-ID执行；否则回Spec修正并重过门/replan。closer仍按finding指针定点读，不承担全量源行为重判。
-
-`generated/compile/structural/behavior/visual` 分开报告。沿用的 `verified/pages_verified` 字段只表示旧结构/编译流程完成，不能据此把 behavior/visual 标PASS；未执行为not_run，旧证据过期为stale。
 
 
 ## 策略决策 ≠ 免除装配义务（压舱条款，两次实录后 HARD）
@@ -125,7 +123,7 @@ ledger 里「显式失败 / 禁止伪成功 / fail-closed」类**错误处理策
 （失败时不许假装成功、不许静默吞错），**不得外延为架构级拒绝服务**：
 
 - **禁止**把「未配置/未 hydrate/未登录」实现成「守卫直接 throw、功能整片不可用」——
-  行为基线永远 = iOS 侧可观察行为（例：iOS 未登录时 token=空串**照样发请求**，
+  行为基线永远 = iOS 源侧可观察行为（例：iOS 未登录时 token=空串**照样发请求**，
   由服务端返回未登录态；那 HarmonyOS 也必须如此，而不是端上先抛"未配置"）。
 - 任何 fail-closed 守卫骨架（ready 标志 + 未就绪即 throw + 装配方法）**必须在启动组装根
   真实接线**（实例化 + 调装配方法 + 接到消费方）；写完守卫不装配 = P0
@@ -148,27 +146,31 @@ ledger 里「显式失败 / 禁止伪成功 / fail-closed」类**错误处理策
 
 ## 显隐绑定铁律（「我的」页四按钮消失事故后 HARD，CC/CX 同病实录）
 
+iOS 的条件显隐（SwiftUI 条件分支/hidden/opacity，UIKit isHidden/alpha 及真实状态绑定）
 迁移时三条硬规矩：
 
 1. **默认极性 = iOS默认**。条件渲染开关的初始值必须照抄iOS侧默认行为
-   （SwiftUI 条件分支、hidden/opacity/hit testing、UIKit isHidden/alpha 与 IB 初值分别核验；隐藏、透明和移除布局不是同一种状态）。
+   （以实际初始状态与条件表达式为准；hidden、透明和不在视图树中必须保留区别，不能从缺字段推定统一默认）。
    **禁止用 fail-closed 本能选 false**——绑定债两侧都可能欠，初始值忠实的欠了债
    用户看不出，反极性的欠一笔债就丢一块界面（showServiceCenter=false 实录）。
 2. **声明即接线**。声明了条件渲染开关（@Local/@State boolean + if 渲染），必须
    同步写赋值链（从模型/store/config 到组件）——binding_gate 的 dead-render-flag
    会把零赋值开关判 FAIL（默认 false）/ WARN（默认 true）。
-3. **逐条核销清单**。从本页 spec 及 `ios-semantics.json` 的 state_ownership、events、
-   binding_flow（适用时）读取源初值、条件和变化路径，逐项对账目标赋值链与显示结果。
-   将对应位置与差异写入 source-understanding/brief。目标 binding_gate 只能检目标形态，
-   不能替代这项原生源核对；缺实现记 findings。经决策批准删减的能力登记 P-ID 与 D-ID。
+3. **逐条核销清单**。`spec/baseline/ui/visibility-bindings.json`（spec 期从iOS源
+   抽取的显隐绑定真值账）里本页的 runtime-toggle 条目必须逐条有对应实现——
+   数据驱动名零出现 = binding-dropped FAIL。确属决策批准砍掉的（如 D-010 渠道
+   unavailable），登记 P-ID 留痕，不许静默丢。
 
 ## ArkUI 布局语义铁律（.align 误用事故后 HARD，60 处实锤）
 
-按目标布局语义实现，避免叠层图标误居中或按钮错位：
+`.align()` 只对齐**组件自身内容**，**不定位 Stack 子项**——iOS FrameLayout gravity
+直觉直接迁移是错的（实录：搜索图标叠在标题正中、「立即生成」按钮浮到卡片顶部遮内容，
+aippt_codex_v2 全 app 60 处）。FrameLayout gravity 的合法映射只有三种：
 
 1. 全部子项同向 → `Stack({ alignContent: Alignment.X })`
 2. 逐子项异向 → `RelativeContainer` + `alignRules`
 3. 标题栏左中右 → `Row` + 两端对称占位块（保持中间真居中）
 
 `.align()` 的唯一合法场景：子项已撑满（`layoutWeight(1)` / `height('100%')`）后
-读 arkts-component-builder 的布局参考（binding_gate 的 stack-align-misuse 会机械拦截部分误用）。
+钉自身内容。转换含 FrameLayout/层叠布局的页面前 **MUST `$arkts-ui-alignment`**
+读 references/layout-mapping.md（binding_gate 的 stack-align-misuse 会机械拦截误用）。

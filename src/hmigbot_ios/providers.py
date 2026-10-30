@@ -24,6 +24,9 @@ def swift_syntax(root, files, config_path):
     binary_sha = config.get('provider_binary_sha256')
     if binary_sha and digest(Path(config['command'][0]).read_bytes()) != binary_sha:
         raise MigrationError('Generated SwiftSyntax provider binary changed')
+    from .native_source_capture import current_swift_adapter
+    config, adapter_upgrade = current_swift_adapter(config_path, config)
+    binary_sha = config.get('provider_binary_sha256')
     try:
         version = subprocess.run(config['version_command'], capture_output=True, timeout=30, shell=False)
         if version.returncode or not version.stdout.strip():
@@ -55,6 +58,9 @@ def swift_syntax(root, files, config_path):
             raise MigrationError('Provider returned stale source hash')
         if not isinstance(file.get('nodes'), list) or type(file.get('parse_has_error')) is not bool:
             raise MigrationError('Provider omitted nodes or parse diagnostics')
+        if value.get('lexical_protocol_version') == 1 and not file['parse_has_error']:
+            from .swift_native import tokens_for
+            tokens_for(file, source['source'])
         for node in file['nodes']:
             if not isinstance(node, dict):
                 raise MigrationError('Provider nodes must be objects')
@@ -70,6 +76,10 @@ def swift_syntax(root, files, config_path):
         raise MigrationError('SwiftSyntax provider omitted source files')
     value['tool_version_output'] = version.stdout.decode('utf-8', errors='replace').strip()
     value['compiler_binding'] = 'unresolved'
+    if adapter_upgrade:
+        if value.get('lexical_protocol_version') != 1:
+            raise MigrationError('Upgraded local Swift adapter omitted its native lexical protocol')
+        value['adapter_upgrade'] = adapter_upgrade
     return value, issues
 
 

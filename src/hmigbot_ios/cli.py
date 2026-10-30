@@ -215,13 +215,17 @@ def dispatch(args):
                                 "report.md": render_report(report, plan).encode("utf-8")})
         return {"output": str(output), "inventory": report["inventory"], "tasks": len(plan["tasks"]),
                 "convertible_pages": sum(p["status"] == "convertible_subset" for p in report["pages"]),
-                "status": "analysis_complete", "migration_status": "not_verified"}
+                'weak_draft_pages': sum(p['status'] == 'weak_draft_subset' for p in report['pages']),
+                'parsing': report['parsing'],
+                "status": "analysis_failed" if report['parsing']['status'] == 'failed' else "analysis_complete",
+                "migration_status": "not_verified"}
     if command in {"generate", "scaffold"}:
         manifest = generate(args.source, args.output, sdk=args.sdk, min_sdk=args.min_sdk,
                             model_version=args.model_version, bundle_name=args.bundle_name, entry_view=getattr(args, 'entry_view', None),
                             resource_bundles=getattr(args, 'resource_bundle', []), scaffold_only=command == 'scaffold')
         return {"output": str(args.output.resolve()), "pages": len(manifest["generated_pages"]),
-                "status": manifest["status"], "app_migration": "incomplete", "target_build": "not_run"}
+                "status": manifest["status"], 'parsing': manifest['parsing'],
+                "app_migration": "incomplete", "target_build": "not_run"}
     if command == "verify":
         return verify(args.source.resolve(), args.target.resolve())
     if command == "build-target":
@@ -273,9 +277,13 @@ def dispatch(args):
 def main(argv=None):
     configure_utf8(sys.stdout, sys.stderr)
     try:
+        from .host import require_supported_host
+        require_supported_host()
         args = parser().parse_args(argv)
         result = dispatch(args)
         emit_json(result)
+        if result.get('status') == 'analysis_failed':
+            return 2
         if result.get("integrity_passed") is False or result.get("status") in {"unavailable", "build_failed", "capture_failed", "observations_differ", "stale_source", 'fail_with_errors', 'fail_unparsed', 'conflicting_build_evidence'}:
             return 3
         return 0

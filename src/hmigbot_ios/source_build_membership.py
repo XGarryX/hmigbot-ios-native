@@ -23,6 +23,7 @@ import platform
 import re
 
 from .contracts import require
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
 
 KIND = "source_build_membership"
@@ -343,7 +344,7 @@ def collect(source: Path, derived_data: Path, capture: Path, selection: dict,
     declared_architectures: set = set()
     selection = _selection(selection, declared_architectures)
     selected_targets = {item.casefold() for item in selection["targets"]}
-    current = snapshot(source)
+    current = source_snapshot(source)
     snap = {item["path"]: item for item in current["files"]}
     source_posix, derived_posix = source.as_posix(), derived_data.as_posix()
     from .core import trusted_system_alias
@@ -791,7 +792,7 @@ def validate(source: Path, document, *, capture: Path | None = None) -> dict:
     _capture_roots(document, source)
     _path_aliases(document)
     _names(document.get("architectures"), "Membership architectures")
-    current = snapshot(source)
+    current = source_snapshot(source)
     require(document.get("source_sha256") == current["sha256"],
             "Membership source fingerprint is stale or modified")
     snap = {item["path"]: item for item in current["files"]}
@@ -853,6 +854,9 @@ def validate(source: Path, document, *, capture: Path | None = None) -> dict:
         _count(counts.get(key), expected, "Membership count " + key)
     if capture is not None:
         _replay_membership(source, Path(capture).resolve(), document, snap, selected)
+        if (Path(capture) / 'target-scope.json').is_file():
+            from .native_product_scope import validate_scope
+            validate_scope(source, capture, document)
     return {"schema_version": SCHEMA_VERSION, "kind": KIND, "integrity_passed": True,
             "membership_status": status, "source_sha256": current["sha256"],
             "source_files": paths, "claim_validation": "not_performed",

@@ -1,5 +1,6 @@
 # Router-only Load-Content 桥模板
 
+> 适用场景：项目根页用 `windowStage.loadContent('pages/<RootPage>')` 加载，根页**没有 NavPathStack**，跨页跳转用 `router.pushUrl` / `router.replaceUrl`。典型形态：单 Activity Router-only 浏览器、阅读器等。
 >
 > 与 `direct-mount-bridge.md`（Navigation 直挂）的关系：互斥二选一。Step 2a Agent 在 §0 架构探测时根据 `windowStage.loadContent` 加载的根页是否有 `NavPathStack` 决定走哪条路径。
 

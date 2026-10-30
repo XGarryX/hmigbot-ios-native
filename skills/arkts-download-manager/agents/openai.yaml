@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-download-manager
-  short_description: 生成 ArkTS/HarmonyOS 文件下载代码。当用户需要实现大文件下载（request.agent）、下载进度追踪、…
-  default_prompt: 请使用 $arkts-download-manager，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

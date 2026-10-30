@@ -1,6 +1,6 @@
 ---
 name: arkts-component-builder
-description: "生成 ArkTS/HarmonyOS 声明式 UI 组件代码（V2 优先，API 12+）。当用户需要创建页面、编写组件、设计布局（Column/Row/Stack/Grid/List/Flex）、创建自定义组件、编写 ForEach/LazyForEach/Repeat 列表、处理响应式断点适配、实现卡片/列表/表单/弹窗等 UI 元素、或生成任何 .ets UI 代码时，务必触发此 skill。即使只说\"帮我写个页面\"\"做个界面\"也应触发。完整业务功能（搜索/登录/列表详情页）优先 arkts-pattern-library；页面导航/路由用 arkts-navigation-builder。"
+description: 生成 ArkTS/HarmonyOS 声明式 UI 组件代码（V2 优先，API 12+）。当用户需要创建页面、编写组件、设计布局（Column/Row/Stack/Grid/List/Flex）、创建自定义组件、编写 ForEach/LazyForEach/Repeat 列表、处理响应式断点适配、实现卡片/列表/表单/弹窗等 UI 元素、或生成任何 .ets UI 代码时，务必触发此 skill。即使只说"帮我写个页面""做个界面"也应触发。完整业务功能（搜索/登录/列表详情页）优先 arkts-pattern-library；页面导航/路由用 arkts-navigation-builder。
 metadata:
   type: domain
   domain: ui
@@ -10,13 +10,17 @@ metadata:
   - arkts-v2
   - declarative
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS Component Builder — UI 组件生成器（V2 优先）
 
 ## API 版本与项目策略
 
 本 skill 的代码模板基于 **API 12+（HarmonyOS 5.0.0+）和 ArkTS V2 装饰器体系**。
 
-> **项目锁 V2**：本项目所有新生成的 UI 组件代码使用 V2 装饰器（`@ComponentV2 / @Local / @Param / @Event / @Once / @Provider / @Consumer / @ObservedV2 / @Trace / @ReusableV2 / AppStorageV2 / PersistenceV2`）。`@Builder / @BuilderParam / @Styles / @Extend / @Entry` 在 V1/V2 通用，仍可使用。如需 V1 兼容写法查阅，参阅 `references/common-components.md / layout-patterns.md / responsive-design.md / media-app-components.md / component-lifecycle-patterns.md / prop-naming-rules.md` 等 V1 历史文档（已加 legacy 标识）。
+> **项目锁 V2**：本项目所有新生成的 UI 组件代码使用 V2 装饰器（`@ComponentV2 / @Local / @Param / @Event / @Once / @Provider / @Consumer / @ObservedV2 / @Trace / @ReusableV2 / AppStorageV2 / PersistenceV2`）。`@Builder / @BuilderParam / @Styles / @Extend / @Entry` 在 V1/V2 通用，仍可使用。如需 V1 兼容写法查阅，参阅 [common-components](references/common-components.md)、[layout-patterns](references/layout-patterns.md)、[responsive-design](references/responsive-design.md)、[media-app-components](references/media-app-components.md)、[component-lifecycle-patterns](references/component-lifecycle-patterns.md)、[prop-naming-rules](references/prop-naming-rules.md) 等 V1 历史文档（已加 legacy 标识）。
 
 V2 vs V1 关键差异（UI 视角）：
 
@@ -49,17 +53,29 @@ V2 vs V1 关键差异（UI 视角）：
 输出: ArkTS 组件代码（V2）
 适用: 新建轨、无 iOS 参考的组件
 
+### 模式 B: iOS 源码参照（精细迁移）
 
-### 模式 B: iOS 原生源码参照
+输入:
+  - ios_layout: 实际 SwiftUI/UIKit/Storyboard/XIB 结构来源；SwiftUI 不要求额外 XML 文件
+  - ios_class: 当前 Source 的 Swift/Objective-C 实现路径（保留输入名）
+  - design_tokens: 本轮已批准的共享样式与资源约定（可选）
 
-输入 source_anchors、page_spec、ios-semantics 对应 page ID 和资源映射。
-先读实际 Swift/Objective-C/IB 源码；按 ios-ui-to-arkui 的完整规程解析框架语义。
-SwiftUI 保存 body 组合、状态所有权、Binding、modifier 顺序、identity、task 和导航值；
-UIKit 保存 controller、约束、delegate、outlet/action、复用及生命周期。
-目标代码仍使用本技能下文的组件、布局、V2 约束与参考，不把源装饰器机械照搬。
-point/vp、字体、safe area 依设备条件校验；源初态与 Preview 假数据分开。
-转换需保持真实交互和反馈，业务部分由 owning_slice 完成并交 closer 接线。
-
+执行规则:
+  1. **先读后写**：通过选定 target/Release 的 Source 读取相关完整组件声明与依赖，核对 source_anchors；不能跳过源语义。
+  2. **提取属性**：提取真实组合/约束、modifier 次序、状态所有权、Binding、身份、尺寸、间距、颜色、文字与可见条件；静态未知值明确保留。
+  3. **组件映射**：按实际语义逐项映射，不把同名 API 当完整等价：
+     - ZStack / UIView 层叠 → Stack
+     - VStack / 纵向 UIStackView → Column；HStack / 横向 UIStackView → Row
+     - NSLayoutConstraint / alignmentGuide → 实际约束能表达的 RelativeContainer 或组合布局
+     - 横向 ScrollView / 实际横向 UICollectionView → List().listDirection(Axis.Horizontal)（仍是链式属性）
+     - List / UITableView / 实际纵向 UICollectionView → List + LazyForEach（V2 可用 Repeat）
+     - 原生卡片组合 → Column + borderRadius/shadow，值取真实来源
+     - Image / UIImageView → Image；Text / UILabel → Text
+     - ProgressView / UIProgressView / UIActivityIndicatorView → 对应 Progress 类型，保留确定/不确定状态
+     - refreshable / UIRefreshControl → Refresh，保留触发和完成/错误/取消
+  4. **尺寸转换**：源 points、约束与字体单位按实际设备/规格核对为目标 vp/fp；图片 pixels 与真实 scale 独立，不能以统一倍率推断布局。未知 bounds 不硬填。
+  5. **共享样式**：遵守本轮全局约定与 `$r` 资源绑定；不额外创造裸数字/裸颜色体系。
+  6. **交互保持**：真实 Button/action、手势、UIKit target-action/委托映射为目标事件，保留取消、重入与生命周期。
 
 ### SymbolGlyph 图标预验证
 
@@ -72,7 +88,7 @@ point/vp、字体、safe area 依设备条件校验；源初态与 Preview 假�
 
 适用: 精细迁移轨（轨道 0）的页面框架和组件生成
 
-触发判断: 当 task 包含 source_anchors 或 source_path 字段时，自动使用模式 B
+触发判断: 当 task 包含 ios_layout 或 ios_source 字段时，自动使用模式 B
 
 ---
 
@@ -284,7 +300,7 @@ Image($rawfile('images/banner.png'))
 | 8 | 自定义组件尾随闭包后直接链式 `.width()/.border()`（`Comp(){...}.width()`） | 报 `Cannot find name 'width'` / `Declaration or statement expected`；**外层套内置容器** `Column(){ Comp(){...} }.width()`，属性加在容器上（内置容器可链、自定义组件不可） |
 | 9 | 运行时按数据选排版：写成 `WrapBuilder` / 在 @Builder 里 `const wb=...` / 对方法调用结果 `.builder()` | 类型是 **`WrappedBuilder<[T]>`**（非 `WrapBuilder`）；选取放 @Builder **外**（数据装配时算好）落到数据字段或 `this` 成员，再用成员/循环变量调用 `row.wb.builder(row)`；禁 `this.pick(k).builder(...)`、禁 @Builder 内 `const` |
 | 10 | 自定义布局里把 `constraint.maxWidth` 当 number 直接算术 / 自写 `toPx(x:string\|number)` 转它 | 约束字段是 `Length`(含 `Resource`)；算术前 **`as number` 收窄**（`constraint.maxWidth as number`），别自写排除 Resource 的 toPx（报 `Type 'Resource' is not assignable to 'string \| number'`）；详见 `references/v2-layout-patterns.md` §7 |
-| 11 | 可滚动组件（List/Scroll/Grid/WaterFlow）嵌在外层滚/滑容器（Swiper/Tabs/父 Scroll/父 List）里，内层滚不动、手势被外层吃掉 | 内层想先响应就配 `.nestedScroll({ scrollForward: NestedScrollMode.SELF_FIRST, scrollBackward: NestedScrollMode.SELF_FIRST })`（必须按目标嵌套容器显式核验手势分发）；如 Swiper 内嵌横向 List 不配会翻页而非滚 List；四值/写法见 `references/v2-scroll-and-form-components.md` §3.5 |
+| 11 | 可滚动组件（List/Scroll/Grid/WaterFlow）嵌在外层滚/滑容器（Swiper/Tabs/父 Scroll/父 List）里，内层滚不动、手势被外层吃掉 | 内层想先响应就配 `.nestedScroll({ scrollForward: NestedScrollMode.SELF_FIRST, scrollBackward: NestedScrollMode.SELF_FIRST })`（HarmonyOS 不像 iOS 自动分发嵌套手势）；如 Swiper 内嵌横向 List 不配会翻页而非滚 List；四值/写法见 `references/v2-scroll-and-form-components.md` §3.5 |
 
 > **MUST**：每条「错误 vs 正确」完整代码见 `references/v2-codegen-patterns.md` §常见错误 / §wrapBuilder。
 
@@ -326,10 +342,11 @@ Agent 在与 linter 交互时必须遵守以下规则：
 
 1. **多调用方**：iOS 源项目中这个 View/布局是否被 **3 个以上**调用方使用？
 2. **纯数据配置**：各调用方对它的差异是否**仅限数据**（text、visibility、count），而非行为或状态？
-3. **无动态图标切换**：是否存在调用方特有的动态图标切换逻辑（例如媒体页有方向状态切换，而预览页不提供该行为）？
+3. **无动态图标切换**：是否存在调用方特有的动态图标切换逻辑（例如 实际分页播放器页的方向图标在 portrait/landscape/auto 间切换，而 实际预览页没有方向图标）？
 
 **任意一条不满足 → 不抽取共享组件**。改为各页面独立内联实现，在页面注释中标明源布局引用。
 
+**缘由**：内联优于一个需要 5+ 个 `@Param` flag（如 `isCurrentHidden`、`orientationMode`、`isOrientationLocked`）来控制行为差异的臃肿抽象。原生源的底部操作区不一定已封装为共享组件；不同 SwiftUI 页面或 UIKit 控制器可能拥有各自状态与图标切换逻辑，须读取真实引用和所有权，不能只因外观相同强合并。
 
 ---
 
@@ -461,3 +478,5 @@ Button('Play')
 - `references/prop-naming-rules.md` — V1 `@Prop / @State / @Link` 命名规则
 
 > 遇到版本兼容性或其他不确定的 ArkTS 知识点（如属性、语法、权限等），参阅 **arkts-knowledge-verifier** skill
+
+原生单位口径：源码 frame/约束的 point 数值以 1 point → 1 vp 作为布局基准，视口适配按本轮规格处理；字体 point 数值按目标 fp/动态字体策略核对。不得把 points 当 pixels 后再除设备密度。仅原始图片/截图 pixels 按真实逐图 scale 或观测坐标单位换算，不使用默认倍率。目标引擎常量不改，图片守卫仍拒收无源证据的尺寸自愈。

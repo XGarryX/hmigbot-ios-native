@@ -12,6 +12,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_json
 from .swiftui import tokenize
 from .harness_schema import validate as validate_schema
@@ -155,7 +156,7 @@ def _build(source, bundle, expected):
             'compiler/SDK changed since captured build')
     members = read_json(artifact('source-files.json')).get('source_files')
     require(isinstance(members, list) and len(set(members)) == len(members) and
-            set(members) <= {f['path'] for f in snapshot(source)['files']} and
+            set(members) <= {f['path'] for f in source_snapshot(source)['files']} and
             {r['source'] for r in rows} <= set(members), 'invalid source members')
     derived_members = {r['source'] for r in rows}
     for row in rows:
@@ -560,7 +561,7 @@ def capture(project, config_path, output):
                 value = digest(Path(p).read_bytes())
                 require(p not in inputs or inputs[p] == value, 'module changed during AST observation')
                 inputs[p] = value
-        require(snapshot(source)['sha256'] == original['source_sha256'], 'source changed during capture')
+        require(source_snapshot(source)['sha256'] == original['source_sha256'], 'source changed during capture')
         require(inputs == {p: digest(Path(p).read_bytes()) for p in inputs}, 'capture input changed before sealing')
         write_json(output / 'guards.json', guards)
         write_json(output / 'commands.json', records)
@@ -587,6 +588,9 @@ def validate(source, output, *, project=None):
         require(output.is_relative_to((project / 'spec/ref/ios-conditional-evidence').resolve()), 'capture outside pinned directory')
     require(not (output / 'failure.json').exists(), 'failed capture cannot be consumed')
     report = read_json(output / 'manifest.json')
+    if report.get('kind') == 'compiler_source_views':
+        from .conditional_views import validate as validate_views
+        return validate_views(source, output, project=project)
     validate_schema(report, 'conditionalManifest')
     require(isinstance(report, dict) and set(report) ==
             {'schema_version', 'kind', 'source_sha256', 'build_evidence', 'build_manifest_sha256',
@@ -687,6 +691,9 @@ def frozen_inputs(project, graph):
     require(checked['reference'] == ref, 'conditional evidence reference changed')
     output = Path(ref['path'])
     report = read_json(output / 'manifest.json')
+    if report.get('kind') == 'compiler_source_views':
+        from .conditional_views import frozen_inputs as view_inputs
+        return view_inputs(project, output)
     build = Path(report['build_evidence'])
     paths = [output / 'manifest.json', build / 'manifest.json']
     paths += [safe_child(output, p) for p in report['artifacts']]

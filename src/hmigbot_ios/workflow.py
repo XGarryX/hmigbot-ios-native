@@ -3,6 +3,7 @@ from pathlib import Path
 
 from . import __version__
 from .analyze import analyze, migration_plan, render_report
+from .core import source_snapshot
 from .core import SCHEMA, MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_new_tree
 from .contracts import validate_facts
 
@@ -113,7 +114,7 @@ def pipeline_status(run):
     metadata = read_json(run / 'run.json')
     source, target = Path(metadata['source_root']), run / 'target'
     result = {'schema_version': SCHEMA, 'stages': {}, 'migration_complete': False, 'gaps': []}
-    if snapshot(source)['sha256'] != metadata['source_sha256']:
+    if source_snapshot(source)['sha256'] != metadata['source_sha256']:
         return {**result, 'status': 'stale_source', 'gaps': ['Reinitialize after source changes']}
     facts = validate_facts(read_json(run / 'spec/facts.json'))
     if facts['source_snapshot']['sha256'] != metadata['source_sha256']:

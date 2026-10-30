@@ -30,17 +30,17 @@ entry/src/ohosTest/ets/test/tdd-ac-index.md
 | AC5 | 支持过滤：图片/视频/全部 | unit | pure_function | — | Medium.isImage / isVideo |
 
 ## F002 媒体查看器
-涉及页面：MediaViewerPage
+涉及页面：ViewPagerPage
 服务层：FavoritesRepository, MediaRepository
 
 | AC | 描述 | 类型 | 实现状态 | 运行结果 | 源码位置 |
 |----|------|------|---------|---------|---------|
-| AC1 | 左右滑动切换媒体 | ui | — | — | MediaViewerPage Swiper |
-| AC2 | 点击切换工具栏显隐 | ui | — | — | MediaViewerPage 沉浸式状态 |
+| AC1 | 左右滑动切换媒体 | ui | — | — | ViewPagerPage Swiper |
+| AC2 | 点击切换工具栏显隐 | ui | — | — | ViewPagerPage 沉浸式状态 |
 | AC3 | 获取相邻索引边界处理 | unit | pure_function | — | ViewerViewModel.getAdjacentIndex() |
 | AC4 | 收藏状态内存切换 | unit | pure_function | — | ViewerViewModel.toggleFavorite() |
 | AC5 | 收藏状态持久化 | unit | todo | — | FavoritesRepository.add() |
-| AC6 | 删除后自动切换到下一项 | ui | — | — | MediaViewerPage 删除回调 |
+| AC6 | 删除后自动切换到下一项 | ui | — | — | ViewPagerPage 删除回调 |
 
 ## F003 …
 …

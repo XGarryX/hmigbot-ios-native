@@ -1,6 +1,6 @@
 ---
 name: arkts-spec-evolver
-description: "增量 Spec 演进管理（V2 优先，API 12+）。当用户需要补全功能、修复 Bug、性能优化、审计 spec 与代码差距、或任何 \"spec 先行\" 的变更时触发，审计/回归扫描兼容 V2/V1 两套装饰器。即使用户只说\"这个功能缺失\"\"这个有 bug\"\"检查下还缺什么\"也应触发。不适用于 baseline 初始生成（由 a2h-spec 负责）。"
+description: 增量 Spec 演进管理（V2 优先，API 12+）。当用户需要补全功能、修复 Bug、性能优化、审计 spec 与代码差距、或任何 "spec 先行" 的变更时触发，审计/回归扫描兼容 V2/V1 两套装饰器。即使用户只说"这个功能缺失""这个有 bug""检查下还缺什么"也应触发。不适用于 baseline 初始生成（由 a2h-spec 负责）。
 metadata:
   type: domain
   domain: engineering
@@ -9,6 +9,8 @@ metadata:
   - incremental
   - migration
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
 
 
 # arkts-spec-evolver
@@ -273,6 +275,7 @@ execute → verify
 
 > **MUST**：增量 spec 的 frontmatter 字段与正文格式见 `references/spec-format-and-structure.md`。
 
+增量产出与 baseline 同格式、**不得回退**：feature spec 顶部 YAML 必带 `complexity` + `tier`(core/standard/peripheral) + `depth`(full/stub)；complex 的每条 AC 末尾附**二型锚点之一**——`源:<Swift/Objective-C 符号> → 标:<ArkTS 方法>`（parity）或 `决:<PD/D/G-ID> → 标:<ArkTS 方法>`（平台差异 AC，仅当 ID 存在于 decision-ledger 时合法；产生入口唯一 = `## 实现映射` HARD-DIV 行 4 件套协议，见 a2h-spec feature-spec-template §实现映射；**既有 `决:` 锚 AC 与 `〔superseded by …〕` 标注不得在增量演进中被剥除或"规范化"掉**）——并保留 `## 实现映射（Source→ArkTS）` 与 `## 服务层（ArkTS 目标接口）` 节；AC 数量遵守 a2h-spec 的 AC 预算（`score_complexity.py`，parity 与差异 AC 分账）与质量护栏（防凑数 / 三无 AC 禁止 / 同 `源` 符号去重 / 跨 feature 归 owner；护栏对两型锚 AC 同等适用）。
 
 ---
 

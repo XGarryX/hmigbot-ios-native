@@ -19,10 +19,11 @@ import subprocess
 import sys
 import tempfile
 
+from .core import source_snapshot
 from .core import io_path, snapshot, write_json
 from .native_structural_evidence import product_source_roots, SKIP, TEST_PARTS
 from .swiftui import tokenize
-from .scheduler_windows_runtime import run as run_owned_process
+from .process_runtime import run as run_owned_process
 from .runtime_timeouts import timeout_for, timeout_evidence
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -277,8 +278,10 @@ def classify_texts(project, raw):
     if config.get('source_platform') != 'ios' or not isinstance(source_root, str):
         return []
     source = io_path(source_root).resolve()
-    if not source.is_dir() or raw.get('source_sha256') != snapshot(source)['sha256']:
+    if not source.is_dir() or raw.get('source_sha256') != source_snapshot(source)['sha256']:
         return []
+    from .swift_native import project_syntax, source_tokens
+    syntax = project_syntax(project, source)
     scope_path = project / 'spec/baseline/ios-source-disposition.json'
     scope = json.loads(scope_path.read_text(encoding='utf-8-sig')) if scope_path.is_file() else {}
     approved = scope.get('files', []) if scope.get('source_sha256') == raw.get('source_sha256') else []
@@ -287,7 +290,7 @@ def classify_texts(project, raw):
     for path in _files(source):
         if path.suffix != '.swift':
             continue
-        tokens = tokenize(path.read_text(encoding='utf-8-sig'))
+        tokens = source_tokens(source, path.relative_to(source).as_posix(), syntax)
         for index, token in enumerate(tokens):
             if (token.kind != 'string' and not (index and tokens[index - 1].value in {'let', 'var'})
                     and not (index + 1 < len(tokens) and tokens[index + 1].value == ':')):
@@ -308,7 +311,7 @@ def classify_texts(project, raw):
                 continue
             if relative not in cache:
                 body = path.read_bytes()
-                tokens = tokenize(body.decode('utf-8-sig'))
+                tokens = source_tokens(source, relative, syntax)
                 cache[relative] = (body, tokens, _pairs(tokens))
             body, tokens, pairs = cache[relative]
             digest = _hash(body)
@@ -318,7 +321,7 @@ def classify_texts(project, raw):
             for position, token in enumerate(tokens):
                 if token.kind == 'string' and token.line == int(line):
                     try:
-                        value = json.loads(token.value)
+                        value = token.decoded_value if getattr(token, 'native_literal', False) else json.loads(token.value)
                     except ValueError:
                         continue
                     if value == item.get('value'):

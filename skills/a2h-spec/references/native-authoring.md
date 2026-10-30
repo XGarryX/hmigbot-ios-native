@@ -12,6 +12,8 @@ python <runtime>/scripts/a2h_ios.py spec-authoring --project <target> --output <
 
 读取 `documents` 与 `acceptance`，逐一核对真实入口和范围。工具枚举所有主页面/功能；feature addenda不新增native ID，但其AC仍进入清单并继承主功能源锚点。索引中声明却未写出的文档会被拒绝。`source_anchors` 给出当前文件摘要与行数，`required_common_facts` 和 `conditional_dimensions` 给出必需维度。索引不决定完整业务范围，遗漏入口仍需源覆盖审计。
 
+已选源端采集时，同时读取每页 runtime_observations 的原图、控件树、检查点、源码对应和配置缺口；相关实际文件已纳入 inventory 输入摘要。候选会将原生观察段写入该页，并更新既有规范 meta 的 runtime/screenshot/extensions。未捕获页面不继承首屏观测；生成候选不代表作者已看图，原作者必须实际审阅，不能由捕获状态反推源默认值或业务通过。
+
 把 `input_template` 保存为本轮输入。每个文档声明真实 `languages/frameworks`，按其条件维度补齐 `facts`。模板只写 unknown；原作者读源后填写 typed value、真实 fact_ids 和 evidence，或有据的 not_applicable。未知、缺件、NA矛盾、状态初值不一致和关联不到当前源事实的声明均不能生成候选。
 
 ## 字段和锚点单源

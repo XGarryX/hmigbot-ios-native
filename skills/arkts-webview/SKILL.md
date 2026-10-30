@@ -1,6 +1,6 @@
 ---
 name: arkts-webview
-description: "ArkTS/HarmonyOS WebView 开发技能（V2 优先，API 12+，兼容 V1）。覆盖 WebviewController API、CSS/JS 注入、多 WebView 分屏、页面模式（桌面/阅读/隐私）、字体样式控制、页内搜索、标签页管理、页面原地翻译、TTS 朗读等。当用户需要在 ArkTS 中用 Web 组件加载网页、注入脚本/样式、实现浏览器功能（前进后退/搜索/标签页/分屏）、控制字体/颜色/阅读模式、页面翻译或内容朗读时，务必触发此 skill。即使只说\"加个深色模式\"\"注入一段 CSS\"\"实现页内搜索\"\"翻译这个页面\"\"朗读页面内容\"也应触发。状态管理装饰器用法见 arkts-state-manager。"
+description: ArkTS/HarmonyOS WebView 开发技能（V2 优先，API 12+，兼容 V1）。覆盖 WebviewController API、CSS/JS 注入、多 WebView 分屏、页面模式（桌面/阅读/隐私）、字体样式控制、页内搜索、标签页管理、页面原地翻译、TTS 朗读等。当用户需要在 ArkTS 中用 Web 组件加载网页、注入脚本/样式、实现浏览器功能（前进后退/搜索/标签页/分屏）、控制字体/颜色/阅读模式、页面翻译或内容朗读时，务必触发此 skill。即使只说"加个深色模式""注入一段 CSS""实现页内搜索""翻译这个页面""朗读页面内容"也应触发。状态管理装饰器用法见 arkts-state-manager。
 metadata:
   type: domain
   domain: system
@@ -15,6 +15,10 @@ metadata:
   - tts
   - translate
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS WebView 开发指南
 
 本技能提供在 HarmonyOS ArkTS 中使用 `Web` 组件和 `WebviewController` 的通用模式。适用于任何需要嵌入 WebView 的应用，不限于浏览器。

@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-accessibility
-  short_description: ArkTS 无障碍/适老化场景下的根因定位与修复（V2 优先，兼容 V1）：焦点丢失或 tabIndex 顺序错乱、触达热…
-  default_prompt: 请使用 $arkts-accessibility，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

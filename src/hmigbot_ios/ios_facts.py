@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, snapshot, write_json
 from .swiftui import tokenize
 from .source_scope import import_token_lines, source_anchor_info, PLIST_SUFFIXES
@@ -38,11 +39,17 @@ def _identity_borrowed(values, index):
                 return True  # Incomplete receiver cannot establish an ordinary read.
             if closing == ']':
                 continue  # Include the subscript's receiver in the walk.
-        elif scan >= 0 and ('_' + values[scan]).isidentifier():
+        elif scan >= 0 and (('_' + values[scan]).isidentifier()
+                            or values[scan].startswith('$')
+                            and len(values[scan]) > 1
+                            and ('_' + values[scan][1:]).isidentifier()):
             scan -= 1
             # This lexer splits Unicode names into fragments. Treat adjacent
             # identifier fragments conservatively as one receiver; never swallow
             # an ownership prefix. This is lexical evidence, not Swift binding.
+            # SwiftSyntax keeps dollar identifiers ($0/$value) in one token;
+            # the legacy lexer can instead emit '$', '0'. Both receiver forms
+            # must preserve the same borrowing/call checks below and above.
             while (scan >= 0 and ('_' + values[scan]).isidentifier()
                    and values[scan] not in RULESET['identity_usage']['ownership_prefixes']):
                 scan -= 1
@@ -226,9 +233,9 @@ class _FileViews:
         return self._lines
 
 
-def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Path | None = None):
+def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Path | None = None, swift_syntax=None):
     """Repository scope is explicit; effective configuration remains unresolved without tools."""
-    snap = snapshot(source)
+    snap = source_snapshot(source)
     variant = variant or {'scope': 'repository', 'effective_build': 'unresolved'}
     if not isinstance(variant, dict) or variant.get('scope') not in {'repository', 'selected-build', 'project-targets'}:
         raise MigrationError('Variant must declare repository, selected-build or project-targets scope')
@@ -287,6 +294,9 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
                     conditional['expected_build'] != variant.get('expected_build') or
                     Path(read_json(Path(variant['conditional_evidence']) / 'manifest.json')['build_evidence']).resolve() != bundle.resolve()):
                 raise MigrationError('Conditional evidence does not match selected build')
+            # Textually included headers are product inputs only when a
+            # validated compiler view names them. Keep their per-unit regions.
+            additional_compiled_files.update(set(conditional.get('analysis_files', [])) - set(variant['source_files']))
         if variant.get('compilation_evidence_path'):
             if conditional is None:
                 raise MigrationError('Separate compilation evidence requires validated conditional context')
@@ -352,7 +362,12 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
 
     inputs = []
     objc_inputs = []
+    unresolved_conditions = {item['path'] for item in conditional.get('unknowns', [])} if conditional else set()
     for file in snap['files']:
+        if file['path'] in unresolved_conditions:
+            issues.append({'kind': 'conditional_compilation_unresolved', 'path': file['path'],
+                           'reason': 'Selected compiler context could not resolve this source view'})
+            continue
         views = conditional['observed'].get(file['path']) if conditional else None
         if views:
             groups = {}
@@ -372,7 +387,15 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
             continue  # Declared product membership; implicit headers remain conservatively included.
         if path.suffix in SOURCE_KINDS:
             text = file_views.text(file['path'], path, file['sha256'])
-            tokens = tokenize(text, skip_pragma_marks=path.suffix in {'.m', '.mm', '.h', '.c', '.cpp'})
+            native_swift = path.suffix == '.swift' and swift_syntax is not None
+            if native_swift:
+                from .swift_native import tokens_for
+                if file['path'] not in swift_syntax:
+                    raise MigrationError('SwiftSyntax lexical evidence omitted source: ' + file['path'])
+                # SwiftSyntax coordinates bind raw UTF-8, before newline/BOM adaptation.
+                tokens = tokens_for(swift_syntax[file['path']], file_views.raw(file['path'], path, file['sha256']).decode('utf-8'))
+            else:
+                tokens = tokenize(text, skip_pragma_marks=path.suffix in {'.m', '.mm', '.h', '.c', '.cpp'})
             if active_lines is not None:
                 tokens = [t for t in tokens if t.line in active_lines]
             if path.suffix in {'.m', '.mm', '.h'}:
@@ -496,10 +519,21 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
                     derived_owner, evidence='token_signal')
             if depth != 0:
                 issues.append({'rule': 'IOS.TOKEN_BALANCE', 'path': file['path'], 'message': 'Use a syntax provider; token scope is incomplete'})
-            if any(ord(t.value[0]) > 127 and t.kind != 'string' for t in tokens if t.value):
+            if not native_swift and any(ord(t.value[0]) > 127 and t.kind != 'string' for t in tokens if t.value):
                 issues.append({'rule': 'IOS.TOKEN_IDENTIFIER_UNRESOLVED', 'path': file['path'], 'message': 'Unicode identifiers require a syntax provider and explicit review'})
-            if active_lines is None and re.search(r'^\s*#\s*(if|ifdef|ifndef)', text, re.M):
-                issues.append({'rule': 'IOS.CONDITIONAL_BUILD', 'path': file['path'], 'message': 'Resolve active branches using selected configuration'})
+            if active_lines is None:
+                if path.suffix == '.swift':
+                    if native_swift:
+                        parsed = swift_syntax[file['path']]
+                    else:
+                        from .swift_native import parse_sources
+                        parsed = parse_sources({file['path']: text})[file['path']]
+                    has_conditional = any(node['kind'] == 'conditional_compilation' for node in parsed['nodes'])
+                else:
+                    has_conditional = bool(re.search(r'^\s*#\s*(if|ifdef|ifndef)', text, re.M))
+                if has_conditional:
+                    issues.append({'rule': 'IOS.CONDITIONAL_BUILD', 'path': file['path'],
+                                   'message': 'Resolve active branches using selected compiler configuration'})
         elif path.suffix in {'.storyboard', '.xib'}:
             text = file_views.text(file['path'], path, file['sha256'])
             if '<!DOCTYPE' in text or '<!ENTITY' in text:
@@ -542,12 +576,17 @@ def extract(source: Path, variant: dict | None = None, *, manifest_evidence: Pat
                              'effective_build': 'unresolved', 'runtime': 'unavailable'}}
     if project_context is not None:
         from .manifest_scope import classify
-        graph['dependency_scope'] = classify(source, snap, variant, project_context)
+        graph['dependency_scope'] = classify(source, snap, variant, project_context, swift_syntax=swift_syntax)
     if evidence_ref is not None:
         graph['manifest_evidence'] = evidence_ref
+    if swift_syntax is not None:
+        graph['capabilities']['syntax'] = 'SwiftSyntax_input_with_migration_signals'
+        graph['capabilities']['swift_syntax'] = 'SwiftParser/SwiftSyntax lexical input; migration signals remain unresolved'
+        graph['syntax_consumption'] = {'swift': 'SwiftSyntax', 'python_swift_lexer': False,
+            'files': sorted(swift_syntax), 'symbol_binding': 'unresolved'}
     if conditional is not None:
         graph['conditional_evidence'] = conditional['reference']
-        graph['capabilities']['conditional_compilation'] = 'clang_textual_observations'
+        graph['capabilities']['conditional_compilation'] = 'compiler_source_views' if conditional.get('analysis_files') else 'clang_textual_observations'
         # Module/PCH-only files and non-C inputs are NOT promoted by this capture.
     return graph
 
@@ -607,11 +646,20 @@ def refresh(project, source, variant=None, provider_plan=None, manifest_evidence
         manifest_evidence = Path(manifest_evidence).resolve()
         if not manifest_evidence.is_relative_to((project / 'spec/ref/ios-manifest-evidence').resolve()):
             raise MigrationError('Manifest evidence must be under project/spec/ref/ios-manifest-evidence for pinned consumption')
-    graph = extract(source, variant, manifest_evidence=manifest_evidence)
+    # Official parser artifacts must exist BEFORE fact extraction, rather than
+    # being attached after Python has already parsed the source.
+    artifacts, provider_issues = [], []
+    syntax = None
     if providers:
-        graph['provider_artifacts'], provider_issues = _capture_providers(project, source, graph, providers)
+        source_sha256 = source_snapshot(source)['sha256']
+        artifacts, provider_issues = _capture_providers(project, source, {'source_sha256': source_sha256}, providers)
+        from .swift_native import syntax_from_artifacts
+        syntax = syntax_from_artifacts(project, source, source_sha256, artifacts)
+    graph = extract(source, variant, manifest_evidence=manifest_evidence, swift_syntax=syntax)
+    if providers:
+        graph['provider_artifacts'] = artifacts
         graph['issues'].extend(provider_issues)
-    if snapshot(source)['sha256'] != graph['source_sha256']:
+    if source_snapshot(source)['sha256'] != graph['source_sha256']:
         raise MigrationError('Source changed while extracting; the previous baseline stays published and nothing new is written')
     base = project / 'spec/baseline'
     if (base / 'ios-facts.json').exists():
@@ -621,7 +669,7 @@ def refresh(project, source, variant=None, provider_plan=None, manifest_evidence
             write_json(archive / 'ios-facts.json', previous)
     write_json(base / 'ios-facts.json', graph)
     write_json(base / 'ios-obligations.json', obligations(graph))
-    if snapshot(source)['sha256'] != graph['source_sha256']:
+    if source_snapshot(source)['sha256'] != graph['source_sha256']:
         raise MigrationError('Source changed while extracting; retained graph is invalid until refreshed')
     return graph
 
@@ -644,7 +692,9 @@ def validate_graph(source, project):
             raise MigrationError('Manifest evidence reference escapes the pinned project evidence directory')
         if digest(evidence_path.read_bytes()) != manifest['report_sha256']:
             raise MigrationError('Manifest evaluation evidence changed')
-    current = extract(source, graph.get('variant'), manifest_evidence=evidence_path)
+    from .swift_native import syntax_from_artifacts
+    syntax = syntax_from_artifacts(project, source, graph['source_sha256'], graph.get('provider_artifacts', []))
+    current = extract(source, graph.get('variant'), manifest_evidence=evidence_path, swift_syntax=syntax)
     if graph.get('provider_artifacts'):
         from .core import safe_child
         from .provider_runs import retained_failures

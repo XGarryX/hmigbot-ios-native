@@ -1,15 +1,19 @@
 ---
 name: arkts-ui-alignment
-description: "将 iOS UI 设计迁移到 ArkTS/HarmonyOS 的等价实现。当用户需要匹配 iOS 原生界面 视觉效果、把 iOS 布局/控件映射到 ArkTS 等价物（含 SymbolGlyph 图标体系、颜色/间距/字号对齐）时触发。即使只说\"还原这个iOS界面\"\"图标怎么对应\"也应触发。不适用于 ArkTS 原创组件设计（用 arkts-component-builder）。"
+description: 将 iOS UI 设计迁移到 ArkTS/HarmonyOS 的等价实现。当用户需要匹配实际 iOS 原生或自定义视觉效果、把 iOS 布局/控件映射到 ArkTS 等价物（含 SymbolGlyph 图标体系、颜色/间距/字号对齐）时触发。即使只说"还原这个iOS界面""图标怎么对应"也应触发。不适用于 ArkTS 原创组件设计（用 arkts-component-builder）。
 metadata:
   type: domain
   domain: ui
   tags:
   - ui
-  - iOS-migration
+  - ios-migration
   - symbolglyph
   - material-design
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS UI Alignment — iOS UI 迁移对齐
 
 ## API 版本
@@ -46,26 +50,16 @@ struct Index {
 
 | iOS 元素 | ArkTS 组件 | 备注 |
 |-------------|-----------|------|
-| `BottomNavigationView` | 自定义 `Row` + `@Builder tabBarItem` | 不用 `Tabs` 在 Navigation 内部 |
-| `BottomSheetDialogScreen` | `NavDestination` (全屏) 或 `Sheet` | 视需求选择 |
-| `DrawerLayout` | `SideBarContainer` | 侧边栏 |
-| SwiftUI 分页 TabView / UIKit 分页容器 | `Swiper` 等目标容器 | 核对手势、选择和生命周期 |
-| `CoordinatorLayout` | `Stack` + 自定义手势 | 需手动实现 |
-| `CardView` | `Column` + `borderRadius` + `shadow` | 卡片 |
-| `FloatingActionButton` | `Button` + 绝对定位 | FAB |
-| `ProgressBar` (Linear) | `Progress({ type: ProgressType.Linear })` | 进度条 |
-| `ProgressBar` (Circular) | `Progress({ type: ProgressType.Ring })` | 进度环 |
-| `Toolbar` / `ActionBar` | `NavDestination` 标题栏 | 自动 |
-| `AlertDialog` | `getUIContext().getPromptAction().showDialog()` 或 CustomDialog | 弹窗（全局 `AlertDialog.show` 已废弃） |
-| `PopupMenu` | `Menu` + `MenuItem` | 菜单 |
-| `Snackbar` | `getUIContext().getPromptAction().showToast()` | 轻提示（全局 `promptAction.*` 已废弃） |
-| `EditText` | `TextInput` / `TextArea`(多行) | 输入框 |
-| `CheckBox` | `Checkbox` | 多选 |
-| `RadioButton` + `RadioGroup` | `Radio`(同 group) | 单选 |
-| `Switch` / `SwitchCompat` | `Toggle({ type: ToggleType.Switch })` | 开关 |
-| `SeekBar` | `Slider` | 滑块 |
-| `Spinner` | `Select` | 下拉选择 |
-| `SwipeRefreshLayout` | `Refresh` | 下拉刷新 |
+| SwiftUI TabView / UITabBarController | Tabs 或经批准的 tab shell | 保留独立栈、选中态与返回 |
+| sheet / UIKit present 模态 | bindSheet / 内容覆盖 / 自定义弹层候选 | 依实际展示/关闭行为选择 |
+| SwiftUI List / UITableView / UICollectionView | List / LazyForEach | 保留数据源与稳定身份 |
+| SwiftUI Grid / UIKit collection layout | Grid / 组合布局 | 依实际约束 |
+| SwiftUI Text / UILabel | Text / Span | 本地化、样式、截断 |
+| TextField / SecureField / UITextField | TextInput / TextArea | 绑定、焦点、提交、安全输入 |
+| Image / UIImageView | Image / 已批准符号替代 | 实际资源、布局与 scale |
+| Toggle / UISwitch | Toggle | 原状态与副作用 |
+| Slider / UISlider | Slider | 连续更新与提交分开 |
+| Menu / UIMenu | Menu / 自定义菜单 | 真实动作与状态 |
 
 > 详细映射 + 代码示例见 `references/layout-mapping.md`
 
@@ -178,7 +172,7 @@ Row() { ... }
 
 ## Tab 栏方案
 
-> **先分清两种 Tab，别一刀切**：下面"别把 `Tabs` 放进 `Navigation`"的告诫**只针对底部主导航 + Navigation 路由**这一种场景。**顶部分段切换（源页面的分段选择与分页容器，不在 Navigation 内）应直接用原生 `Tabs`**，不要手搓 `Row` 页签 + `Swiper` 同步（那是回避、还原度差）：
+> **先分清两种 Tab，别一刀切**：下面"别把 `Tabs` 放进 `Navigation`"的告诫**只针对底部主导航 + Navigation 路由**这一种场景。**顶部分段切换（iOS `TabLayout` + `ViewPager2`，不在 Navigation 内）应直接用原生 `Tabs`**，不要手搓 `Row` 页签 + `Swiper` 同步（那是回避、还原度差）：
 >
 > ```typescript
 > Tabs({ barPosition: BarPosition.Start, index: this.idx }) {

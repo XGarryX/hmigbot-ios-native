@@ -1,6 +1,6 @@
 # 权限请求与检查
 
-> abilityAccessCtrl 权限管理的完整使用模式，替代 iOS 各能力专用授权流程（逐项核验授权状态与回调）。
+> abilityAccessCtrl 权限管理的完整使用模式，替代 iOS 的 ActivityCompat.requestPermissions。
 
 ---
 

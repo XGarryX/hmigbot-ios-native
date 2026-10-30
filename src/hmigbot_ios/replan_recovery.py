@@ -265,11 +265,8 @@ def recover_blocked(project, review_path):
     # from this protocol. Later attempts require an explicit future protocol.
     _require(attempt == 1, 'receipt protocol cannot authenticate later attempts')
     definition = definitions[ident]
-    files = receipt.get('file_hashes')
-    _require(isinstance(files, dict) and set(receipt.get('files_touched', [])) == set(files), 'receipt file fields')
-    for path, expected in files.items():
-        _require(path in definition['ownership'] and digest(safe_child(project, path).read_bytes()) == expected,
-                 'receipt ownership/hash mismatch: ' + path)
+    from .receipt_outputs import validate_outputs
+    validate_outputs(project, receipt, definition, before=before)
     _require(set(receipt.get('ac_ids', [])) == set(definition.get('ac_ids', [])), 'receipt AC mismatch')
     if wave == 'domains':
         _require(set(ac_inventory(project)) == {a for t in definitions.values() for a in t.get('ac_ids', [])}, 'AC inventory changed')

@@ -1,6 +1,6 @@
 # RdbStore 与 DAO 完整模式
 
-> 本文件覆盖 HarmonyOS 关系型数据库（relationalStore）的完整使用模式，从初始化到 CRUD，用于实现已核验的源数据存储契约。
+> 本文件覆盖 HarmonyOS 关系型数据库（relationalStore）的完整使用模式，从初始化到 CRUD，替代 iOS Room 的全部功能。
 
 ---
 
@@ -72,7 +72,7 @@ const CREATE_MEDIA_TABLE = `CREATE TABLE IF NOT EXISTS media (
   media_store_id INTEGER NOT NULL DEFAULT 0
 )`
 
-// 唯一索引（按源数据模型的唯一性约束）
+// 唯一索引（替代 Room @Entity(indices)）
 const CREATE_MEDIA_INDEX =
   'CREATE UNIQUE INDEX IF NOT EXISTS idx_media_full_path ON media(full_path)'
 
@@ -81,13 +81,13 @@ const CREATE_PARENT_INDEX =
   'CREATE INDEX IF NOT EXISTS idx_media_parent ON media(parent_path)'
 ```
 
-**从源存储契约建立 SQL 规则**：
+**从 Room @Entity 转换规则**：
 
-| 源数据约束 | SQL 写法 |
+| Room 注解 | SQL 写法 |
 |----------|---------|
-| 自增主键 | `INTEGER PRIMARY KEY AUTOINCREMENT` |
-| 明确的存储字段名 | 直接用字段名 |
-| 源数据模型已声明 path 唯一约束 | `CREATE UNIQUE INDEX ...` |
+| `@PrimaryKey(autoGenerate = true)` | `INTEGER PRIMARY KEY AUTOINCREMENT` |
+| `@ColumnInfo(name = "xxx")` | 直接用字段名 |
+| `@Entity(indices = [@Index(value = ["path"], unique = true)])` | `CREATE UNIQUE INDEX ...` |
 | `@TypeConverter` | 手动在 DAO 中转换 |
 
 ---

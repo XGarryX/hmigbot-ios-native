@@ -1,3 +1,5 @@
+当前默认交界见 [执行交界合同](../skills/a2h-run/references/execution-boundary.md)：init/spec/plan 由 git 主导，从 execute 起使用 Garry indexed 阶段与七项验证。文中旧 v2 四拍/四项描述仅适用于原冻结合同兼容。
+
 # 原 a2h 流水线中的原生 iOS 路径
 
 入口为 [a2h-run](../skills/a2h-run/SKILL.md)。初始化使用 source_platform=ios 与真实源、目标目录。
@@ -11,6 +13,8 @@
 3. **execute**：资源前置 → UI 批次 → Base → Feature Slice → 组接线与最终结构闭包 → 编译；使用原 ArkTS 领域技能和唯一写入协议。
 4. **verify**：静态/身份、已选范围视觉与 UT；源 oracle 从 iOS 源码/独立测试/真实运行提取，保留原设计、生成、执行、修复步骤。
 5. **retrospect**：根据实际完成、失败和差异复盘，规则变更有证据和范围。原运行时阶段记录只作为恢复线索。
+
+0.13.5 的子任务收口按 [Join 规则](../skills/a2h-join/SKILL.md) 读取本轮可信宿主状态/原生终答，再验当前轮次产物。Execute 的 UI Batch 与 Slice Group 按 [资源增量协议](../skills/a2h-execute/references/resource-deltas.md) 在派发前登记完整任务；worker 提交增量，唯一 closer 统一合并，原 writeback 入口核验当前合并收据和计划归属。旧冻结合同变化按受审 replan 恢复。
 
 共同控制面为 spec/.a2h/open-findings.json；各检查只改自己的分区。
 requirements-index → plan-coverage → impl-claims → verification 保留独立真值与验收强度。

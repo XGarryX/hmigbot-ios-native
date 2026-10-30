@@ -12,6 +12,7 @@ import re
 import subprocess
 
 from .contracts import require, validate_file_map
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_new_tree
 
 
@@ -180,7 +181,7 @@ def capture(source: Path, config_path: Path, output: Path) -> dict:
             'Manifest evidence output must not overlap source')
     require(not output.exists() or (output.is_dir() and not any(output.iterdir())),
             f'Output must be absent or empty: {output}')
-    before = snapshot(source)
+    before = source_snapshot(source)
     host = {'system': platform.system(), 'release': platform.release(), 'machine': platform.machine()}
     files = {'artifacts/source.before.json': json_bytes(before)}
     report = {'schema_version': 1, 'kind': KIND, 'status': 'capture_failed',
@@ -220,7 +221,7 @@ def capture(source: Path, config_path: Path, output: Path) -> dict:
     except (MigrationError, OSError) as exc:
         report['failures'].append(str(exc))
     try:
-        after = snapshot(source)
+        after = source_snapshot(source)
         files['artifacts/source.after.json'] = json_bytes(after)
         report['source_after_sha256'] = after['sha256']
         report['source_changed'] = before != after
@@ -268,7 +269,7 @@ def validate(source: Path, evidence_path: Path) -> dict:
         require(isinstance(name, str) and name in files, 'Referenced manifest artifact is not fingerprinted')
         return safe_child(bundle, name)
 
-    current = snapshot(source)
+    current = source_snapshot(source)
     require(report.get('source_sha256') == current['sha256']
             and report.get('source_after_sha256') == current['sha256'],
             'Manifest evidence source fingerprint does not match current source')

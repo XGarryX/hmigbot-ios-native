@@ -73,6 +73,10 @@
             "behavior",
             "visual"
           ]
+        },
+        "deletions": {
+          "$ref": "#/$defs/hashes",
+          "description": "Explicit deletion intent: exact owned regular file paths and their pre-dispatch SHA-256; not a product approval."
         }
       },
       "additionalProperties": false
@@ -81,9 +85,24 @@
       "description": "Explicit author-adopted prompt consumers only; omitted scope keeps a decision global. Runtime also validates known IDs and at least one actual consumer.",
       "type": "object",
       "properties": {
-        "task_ids": {"type": "array", "items": {"type": "string"}},
-        "ac_ids": {"type": "array", "items": {"type": "string"}},
-        "fact_ids": {"type": "array", "items": {"type": "string"}}
+        "task_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ac_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       },
       "additionalProperties": false
     },
@@ -91,7 +110,9 @@
       "description": "Existing decision fields remain open for compatibility; prompt_scope controls inlining, never ownership or acceptance.",
       "type": "object",
       "properties": {
-        "prompt_scope": {"$ref": "#/$defs/promptScope"}
+        "prompt_scope": {
+          "$ref": "#/$defs/promptScope"
+        }
       },
       "additionalProperties": true
     },
@@ -248,6 +269,10 @@
           "items": {
             "type": "object"
           }
+        },
+        "deleted_files": {
+          "$ref": "#/$defs/hashes",
+          "description": "Physically absent planned paths and their pinned pre-dispatch SHA-256. file_hashes contains only existing written outputs."
         }
       },
       "additionalProperties": false
@@ -527,6 +552,36 @@
             },
             "behavior_verified": {
               "const": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "baseline": {
+          "type": "object",
+          "required": [
+            "status",
+            "missing_inputs",
+            "resume"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "not_established",
+                "pending_review",
+                "blocked"
+              ]
+            },
+            "missing_inputs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "resume": {
+              "type": "string"
+            },
+            "input_error": {
+              "type": "string"
             }
           },
           "additionalProperties": false

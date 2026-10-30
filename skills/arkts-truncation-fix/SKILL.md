@@ -1,6 +1,6 @@
 ---
 name: arkts-truncation-fix
-description: "修复 ArkTS/HarmonyOS 应用中 UI 内容截断、布局溢出、多设备适配不良等问题（V2 优先，API 12+）。当用户提到\"内容显示不全\"\"布局溢出\"\"折叠屏布局异常\"\"图片被裁切\"\"AlphabetIndexer 溢出\"\"列表显示不全\"\"多设备/响应式/断点适配\"\"hover 模式失败\"等，或只说\"界面显示有问题\"\"这个页面有 bug\"（截断/响应式/折叠屏方向）时触发。**沉浸式 / 安全区 / 状态栏遮挡 / setWindowLayoutFullScreen → arkts-immersive-safearea。** **纯文本字符级截断（Ellipsis 位置 / maxLines 不生效 / Flex 内 Text 被挤没 / 弹窗超屏 / RichEditor / TextInput）→ arkts-text-truncation。**"
+description: 修复 ArkTS/HarmonyOS 应用中 UI 内容截断、布局溢出、多设备适配不良等问题（V2 优先，API 12+）。当用户提到"内容显示不全""布局溢出""折叠屏布局异常""图片被裁切""AlphabetIndexer 溢出""列表显示不全""多设备/响应式/断点适配""hover 模式失败"等，或只说"界面显示有问题""这个页面有 bug"（截断/响应式/折叠屏方向）时触发。**沉浸式 / 安全区 / 状态栏遮挡 / setWindowLayoutFullScreen → [arkts-immersive-safearea](../arkts-immersive-safearea/SKILL.md)。** **纯文本字符级截断（Ellipsis 位置 / maxLines 不生效 / Flex 内 Text 被挤没 / 弹窗超屏 / RichEditor / TextInput）→ [arkts-text-truncation](../arkts-text-truncation/SKILL.md)。**
 metadata:
   type: domain
   domain: ui
@@ -10,6 +10,10 @@ metadata:
   - responsive
   - foldable
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS UI Truncation / Display Fix — 界面展示截断修复
 
 本 skill 用于诊断和修复 ArkTS 应用中的 UI 截断、布局溢出、文本溢出、折叠屏布局切换和多设备适配问题。这些问题在手机、平板、折叠屏等不同设备上表现各异，需要系统性排查。

@@ -12,6 +12,6 @@
 
 尚未保证：默认布局、字体、颜色、可访问性、国际化、整数溢出、Swift 状态更新时序、生命周期、导航和源 App 入口。Swift 点与 ArkUI vp 及默认 spacing 需要双端视觉校验。规则只生成独立页面预览工程。自动闭包、跨文件类型遮蔽、有效构建条件还需要 SwiftSyntax/SourceKit/编译器适配器。
 
-版本：代码使用 Stage/ArkTS 1.x；构建 profile 显式传入，最低 API 不低于 12。实际测试的 SDK、工具和结果记录在 `docs/VALIDATION.md`；其他版本仅可生成，未宣称验证通过。
+版本：代码使用 Stage/ArkTS 1.x；构建 profile 显式传入，最低 API 不低于 12。实际测试的 SDK、工具和结果记录在当轮外置验证证据中；其他版本仅可生成，未宣称验证通过。
 
 规范依据：[Apple SwiftUI](https://developer.apple.com/documentation/swiftui)、[华为 ArkUI Stage](https://developer.huawei.com/consumer/cn/arkui/arkui-stage)、[华为 ArkTS](https://developer.huawei.com/consumer/cn/arkts)。映射是本项目实现，官方文档不构成自动迁移等价证明。

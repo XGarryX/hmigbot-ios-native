@@ -54,7 +54,8 @@ def validate_facts(value):
         require(isinstance(fact, dict) and isinstance(fact.get("id"), str), "Invalid fact")
         require(fact["id"] not in seen, "Duplicate fact ID")
         seen.add(fact["id"])
-        require(fact.get("evidence") in {"structured_static", "lexical_hint", "restricted_parser"}, "Invalid static evidence class")
+        require(fact.get("evidence") in {"structured_static", "lexical_hint", "restricted_parser",
+                "SwiftSyntax", "SwiftSyntax_AST_ArkUI_rule", 'weak_python_ArkUI_rule'}, "Invalid static evidence class")
         refs = fact.get("source_anchors_ref")
         require(isinstance(refs, list) and bool(refs), "Missing source anchors")
         for ref in refs:

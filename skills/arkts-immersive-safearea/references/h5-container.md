@@ -23,7 +23,7 @@ H5 容器的状态栏让位**由 H5 自己处理**（CSS `env(safe-area-inset-to
 
 ### 2. TitleBar 通常完全移除
 
-先读 iOS WKWebView 容器的 controller/View、布局和导航源事实。如果 iOS 也无原生 TitleBar、X 关闭按钮由 H5 自己渲染，那 HOS 端**也不要**加任何 native TitleBar 或浮层 X。
+先看 iOS 同款页面 XML（如 `cs_vip_webview_activity.xml`）。如果 iOS 也无原生 TitleBar、X 关闭按钮由 H5 自己渲染，那 HOS 端**也不要**加任何 native TitleBar 或浮层 X。
 
 ### 3. 关闭路径有 3 条，必须语义一致
 

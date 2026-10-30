@@ -1,9 +1,48 @@
-# Slice Step 3c：数据层接入
+<!-- when: 派发 Stage 3 Step 3c 数据层接入（a2h-migration-worker）时加载本段 + _common.md -->
+<!-- topics: Step 3c 数据层接入 prompt, Repository, Service, 数据流闭环 -->
 
-输入 feature spec、source-notes、native facts、已有 Base/VM、api-inventory、owned_files。
-profile 2 输入同时含plan_item_refs/ac_ids、精确spec_refs与contract_refs闭包；共享接口参数、状态值域、动作完成时点逐项联读。预算与冲突回流按_common.md，返回consumed_refs/unread_refs/contract_conflicts。
-读取 arkts-data-layer 与所需平台/库技能，按 impl 指针读协议/持久化 addendum。
-实现真实 Repository/Service，复用公共网络/数据库，不为过编译返回恒定假成功。
-对齐源编码、单位、nullability、错误/重试、缓存、事务、重启恢复与取消后的回调。
-接口参数/返回值/句柄域按已批准目标契约，不能直接套源 API 签名。
-返回代码、依赖、注册/初始化/释放需求和独立验证结果，交 Step 3d 接线。
+# §6. Stage 3 Step 3c 数据层接入 prompt（a2h-migration-worker）
+
+> 公共占位规则 §2.1 + 单写者纪律见 [`_common.md`](./_common.md)，派发时一并 Read。
+
+派发 Codex 子代理 `a2h-migration-worker`（定义于 `.codex/agents/a2h-migration-worker.toml`），任务提示词：
+
+```
+你正在执行 Feature Slice [{slice_name}] 的 Step 3c: 数据层接入。
+
+  功能 Spec: {feature_spec_path}
+  已有 Base 层: entry/src/main/ets/network/, entry/src/main/ets/database/, entry/src/main/ets/models/
+  已有 ViewModel: {viewmodel_path}
+  Slice 复杂度: {complexity}
+  源码理解摘要: {source_notes_path}      # complex 时必传：spec/baseline/source-understanding/{slice_name}-source-notes.md；simple 时可空
+
+  使用 `$arkts-data-layer` skill
+  可调用的辅助 Skills（worker frontmatter 保留的 17 个之一）:
+    - arkts-library-migration: 三方库映射（URLSession→NetworkKit 等）
+    - ios-ui-to-arkui: 类→类的迁移翻译
+
+  任务:
+  1. 按需创建 Repository / Service（复用 Base 层已有的公共能力）
+     （complex）拦截器 / header 注入 / 加密链必须对齐 source-notes 的 role=interceptor 总结
+     （complex）功能 Spec 的 AC 组带 impl: 指针且目标 addendum consumed_at 匹配 step-3c
+     （api / persistence 等，缺省按 slug 默认表）→ 先按 _common.md「impl: 指针语义」精读
+     目标 §节（≤3 节 / ≤150 行，超出记 deferred_addenda）；禁止整目录扫读 addenda
+  2. 接入网络层（API 调用）或本地存储（DB / Preferences）
+     （complex）所有通路必须独立实现，参考 source-notes 的 role=service 总结
+  3. ViewModel 调用 Repository 获取数据
+  4. 完成完整数据流: UI ← ViewModel ← Repository ← API/DB
+  5. 处理数据转换和缓存策略
+
+  多子仓约束（项目存在 module-dep-graph.json 时）:
+  - 调用其它子仓的 service / 数据模型 → 签名与语义契约以 cross-module-contracts.md
+    （被依赖子仓为 owner 的权威规约）+ module-dep-graph.json 接口桩为准，按契约实现，
+    禁止在 slice 内就地发明；契约缺失 → 报告记「决策缺口」（主线程按 §1.1 阻断），不臆造。
+
+  输出: entry/src/main/ets/repositories/{SliceName}Repository.ets（如需）
+  验收: 数据流完整闭环；语法自检通过（编译由 group-closer 统一跑）。
+```
+
+**特殊领域追加 Skill**：当功能涉及特殊领域时，在 `arkts-data-layer` 基础上追加对应 Skill：
+- 媒体播放功能 → 追加 `$arkts-media-playback`
+- 文件下载功能 → 追加 `$arkts-download-manager`
+- 系统权限功能 → 追加 `$arkts-system-capabilities`

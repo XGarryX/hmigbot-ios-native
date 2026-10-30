@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-component-builder
-  short_description: 生成 ArkTS/HarmonyOS 声明式 UI 组件代码（V2 优先，API 12+）。当用户需要创建页面、编写组件、…
-  default_prompt: 请使用 $arkts-component-builder，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

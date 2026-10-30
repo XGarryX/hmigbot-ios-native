@@ -888,6 +888,7 @@ struct TaskListPageRepeat {
 |---|---|
 | 数据来自 IDataSource（如分页 API、过滤排序、需要监听 add/delete/move 事件） | `LazyForEach + BasicDataSource` |
 | 数据是简单内存数组，UI 自然响应数组变化即可 | `Repeat<T>` |
+| 源 UITableView/UICollectionView 数据源需保留相应增量更新语义 | `LazyForEach + BasicDataSource` |
 
 ---
 

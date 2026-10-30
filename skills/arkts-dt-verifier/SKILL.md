@@ -1,6 +1,29 @@
 ---
 name: arkts-dt-verifier
-description: "ArkTS/HarmonyOS Spec 驱动 TDD 验证工具。从 Spec 验收标准出发，自动生成单元测试 + UI 测试，测量应用的逻辑层和 UI 层实现率，置信度 ≥ 95%。 **必须使用此 skill 的场景（包括但不限于）**： - \"验证功能实现率\"、\"measure feature coverage\"、\"spec 合规检查\" - \"从 spec 生成测试\"、\"TDD 验证\"、\"功能验收\" - \"迁移后验证\"、\"iOS → HarmonyOS 验收\" - \"测量逻辑层实现率\"、\"UI 层实现率\"、\"哪些功能没实现\" - \"生成 spec 测试\"、\"从验收标准写测试\" - \"自动生成 MockKit 测试\"、\"批量生成 it() 用例\" - \"RED/GREEN 报告\"、\"实现率报告\" **核心能力**：五步流水线（单元测试 → 测试数据 + ID 注入 → UI 测试 → 基础设施+编译 → 跑测+报告），从 Spec 目录自动推导测试用例，用 MockKit 隔离外部依赖，产出 RED/GREEN 实现率报告 + 分层修复清单。"
+description: 'ArkTS/HarmonyOS Spec 驱动 TDD 验证工具。从 Spec 验收标准出发，自动生成单元测试 + UI 测试，测量应用的逻辑层和 UI 层实现率，置信度 ≥ 95%。
+
+
+  **必须使用此 skill 的场景（包括但不限于）**：
+
+
+  - "验证功能实现率"、"measure feature coverage"、"spec 合规检查"
+
+  - "从 spec 生成测试"、"TDD 验证"、"功能验收"
+
+  - "迁移后验证"、"iOS → HarmonyOS 验收"
+
+  - "测量逻辑层实现率"、"UI 层实现率"、"哪些功能没实现"
+
+  - "生成 spec 测试"、"从验收标准写测试"
+
+  - "自动生成 MockKit 测试"、"批量生成 it() 用例"
+
+  - "RED/GREEN 报告"、"实现率报告"
+
+
+  **核心能力**：五步流水线（单元测试 → 测试数据 + ID 注入 → UI 测试 → 基础设施+编译 → 跑测+报告），从 Spec 目录自动推导测试用例，用 MockKit 隔离外部依赖，产出 RED/GREEN 实现率报告 + 分层修复清单。
+
+  '
 metadata:
   type: domain
   domain: migration
@@ -18,6 +41,8 @@ metadata:
   - 实现率
   - 验收
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
 
 
 # ArkTS Spec TDD 验证工具
@@ -184,6 +209,7 @@ Step 2a Agent 在 §0c 节探测 TestAbility 路径并返回：
 
 **Agent prompt 文件**：`references/agent-prompts/step1-unit-test-agent.md`
 
+> 从 AC 生成测试时，complex feature 的每条 AC 末尾带 `源:<Swift/Objective-C 符号> → 标:<ArkTS 方法>`——以 `标` 作为测试**断言落点**、`源` 作为期望行为来源，提高用例落点精度、减少「以释义写测试」；透传给 Agent 的 spec 须保留该追踪字段。
 
 ### 派发方式
 

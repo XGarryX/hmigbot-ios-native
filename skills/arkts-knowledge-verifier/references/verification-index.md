@@ -1,3 +1,5 @@
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
+
 # ArkTS 知识验证索引
 
 > 本文件是整个 skill 体系的知识查找索引。
@@ -34,6 +36,7 @@
 | **项目结构** | "多模块项目怎么组织？" "HAR 模块怎么配置？" | `arkts-project-scaffolder/references/multi-module-template.md` |
 | **数据源** | "IDataSource 怎么实现？" "BasicDataSource 完整代码？" | `arkts-data-layer/references/datasource-patterns.md` |
 | **功能模式** | "搜索功能怎么做？" "下拉刷新怎么实现？" | `arkts-pattern-library/references/` |
+| **三方库迁移** | "实际原生图片依赖如何承接？" "Xcode/SwiftPM 依赖怎么迁移？" | [库选型](../../arkts-library-migration/SKILL.md) + [候选映射](../../arkts-library-migration/references/library-mapping-table.md) |
 | **系统能力** | "怎么获取相册图片？" "后台播放怎么实现？" "文件存哪里？" | `arkts-system-capabilities/SKILL.md` + `references/` |
 | **数据库操作** | "RdbStore 怎么初始化？" "ResultSet 怎么遍历？" | `arkts-data-layer/references/rdbstore-dao-patterns.md` |
 | **Skill 路由** | "这个需求该用哪个 skill？" "多个 skill 怎么配合？" | 本 skill `references/skill-routing-guide.md` |

@@ -1,0 +1,13 @@
+# Xcode MCP 等待、实例与上下文
+
+本客户端只使用已确认的MCP选择和只读工具，不自动开工程、批准agent或改变系统授权。
+
+默认分别给initialize 30秒、每页tools/list 60秒、每次只读tools/call 60秒；每个发现/查询操作总上限180秒。显式server JSON可配置timeouts.connect/discover/call/overall（秒），兼容timeout_seconds作为每请求默认值。分页仍有总上限和页数限制，不无限等待。等待期间输出实际已等待时间；超时发送取消，关闭自己的stdio进程组并保留transcript、stderr和timings。
+
+自动发现优先探测已运行实例，再考虑默认后台服务。实际GetTargetBuildSettings只读探测的项目可访问性优先于文档工具名；未完成项目探测不能称项目已授权。每次尝试分别记录实例/会话、原响应、超时/授权/缺上下文和采用理由，不把后台服务的失败推广到其他实例。一个查询操作的多个主题复用同一已协商连接；发现与查询沿用同一选定实例及session，查询重新消费当前advertised schema。
+
+需要tabIdentifier时先读取当前只读上下文，仅绑定唯一匹配已配置源的窗口。XcodeListWorkspaces沿原白名单；旧XcodeListWindows只有来自官方bridge且实际advertised readOnlyHint=true时才允许作为上下文读取，其他情况明确缺证据，不按第三方文档猜读写属性。旧tab在同一源只有一个当前匹配时可重新绑定；多个匹配且不能由有效显式tab区分则保持缺口。不同实例的参数不直接套用，schema禁止的额外字段会拒绝。
+
+失败分timeout、authorization_required、tool_unavailable、missing_project_or_window_context、service_disabled_or_not_visible及其他transport/tool错误。原始返回和实际请求时长始终保留；isError不被包装成成功。授权后用当前所选实例/上下文重新查询，不复用旧失败作为当前结论。status只标当前进程观测，host_enabled保持未知；受限进程disabled不能据此要求用户再次开启服务。
+
+MCP不可用继续独立Apple CLI，所缺原生上下文保持未验证。协议fixture不证明Apple实际集成；真实核验须使用明确允许的最小测试工程，未指定时不得拿实际应用转换工程替代。

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Explicit app-scoped iOS Simulator UI request",
+  "type": "object",
+  "required": ["schema_version", "bundle_id", "device_id", "source_root", "app_path", "configuration", "scenario"],
+  "properties": {
+    "schema_version": {"const": "hmigbot-ios-ui-request/1"},
+    "bundle_id": {"type": "string", "minLength": 1},
+    "device_id": {"type": "string", "pattern": "^[0-9A-Fa-f-]{36}$", "description": "Exact selected iOS Simulator UDID; booted/automatic aliases and personal physical devices are not accepted."},
+    "source_root": {"type": "string", "minLength": 1},
+    "app_path": {"type": "string", "minLength": 1, "description": "Actual iPhoneSimulator .app build with matching CFBundleIdentifier."},
+    "configuration": {
+      "type": "object",
+      "required": ["language", "locale", "theme", "content_size"],
+      "properties": {
+        "language": {"type": "string", "minLength": 1},
+        "locale": {"type": "string", "minLength": 1},
+        "theme": {"enum": ["light", "dark"]},
+        "content_size": {"type": "string", "minLength": 1}
+      }
+    },
+    "launch_arguments": {"type": "array", "items": {"type": "string"}},
+    "test_timeout_seconds": {"type": "integer", "minimum": 10, "maximum": 240, "default": 120},
+    "launch_environment": {"type": "object", "additionalProperties": {"type": "string"}},
+    "scenario": {
+      "type": "object",
+      "required": ["id", "business_recipe", "steps"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"},
+        "business_recipe": {"type": ["array", "object"], "description": "Shared platform-neutral business/checkpoint recipe, hashed separately from the platform action script."},
+        "configuration_probe": {"type": "string", "description": "Optional accessibility identifier returning actual app configuration as JSON. Without a valid probe, observations remain unknown rather than blocking screenshots."},
+        "steps": {
+          "type": "array", "minItems": 1, "maxItems": 100,
+          "items": {
+            "type": "object", "required": ["action"],
+            "properties": {
+              "action": {"enum": ["wait", "tap", "type_text", "assert", "swipe_up", "swipe_down", "checkpoint"]},
+              "identifier": {"type": "string", "minLength": 1},
+              "timeout": {"type": "number", "exclusiveMinimum": 0, "maximum": 60},
+              "retries": {"type": "integer", "minimum": 0, "maximum": 2, "description": "Retries readiness queries only; does not repeat mutating actions."},
+              "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"},
+              "scope": {"enum": ["application", "window", "element"]},
+              "text": {"type": "string", "maxLength": 4096},
+              "label": {"type": "string"},
+              "value": {"type": "string"},
+              "enabled": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

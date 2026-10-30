@@ -1,12 +1,12 @@
-"""Invoke a bundled, source-neutral HMigBot helper."""
 from pathlib import Path
-import json, subprocess, sys
+import json, sys
 here = Path(__file__).resolve()
 skill = next(p for p in here.parents if (p / 'SKILL.md').is_file())
-runtime = skill / 'runtime.json'
-root = (skill / json.loads(runtime.read_text())['runtime_relative']).resolve() if runtime.exists() else skill.parents[1]
-helper = root / 'vendor/hmigbot' / 'skills/a2h-join/scripts/audit_join_coverage.py'
-if not helper.is_file(): raise SystemExit('Bundled helper missing; reinstall the complete plugin')
+config = skill / 'runtime.json'
+root = (skill / json.loads(config.read_text())['runtime_relative']).resolve() if config.exists() else skill.parents[1]
 sys.path.insert(0, str(root / 'src'))
+from hmigbot_ios.host_join import maybe_main
+code = maybe_main('audit_join_coverage', sys.argv[1:])
+if code is not None: raise SystemExit(code)
 from hmigbot_ios.portable_helper import run
-raise SystemExit(run(helper, sys.argv[1:]).returncode)
+raise SystemExit(run(root / 'vendor/hmigbot/skills/a2h-join/scripts/audit_join_coverage.py', sys.argv[1:]).returncode)

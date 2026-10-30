@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 
 from .analyze import analyze
+from .core import source_snapshot
 from .core import MigrationError, anchor, digest, io_path, json_bytes, read_json, safe_child, snapshot, write_json, write_new_tree
 
 BINDING = 'hmigbot-binding/1'
@@ -148,7 +149,7 @@ def handoff(source: Path, target: Path, contract_path: Path, binding_path: Path,
     binding = check_binding(binding_path)
     disjoint(source, target, output, Path(binding['root']))
     contract = read_json(contract_path)
-    current = snapshot(source)
+    current = source_snapshot(source)
     if (not isinstance(contract, dict) or contract.get('schema_version') != CONTRACT or contract.get('source_platform') != 'ios'
             or contract.get('target_platform') != 'harmonyos' or contract.get('source_sha256') != current['sha256']):
         raise MigrationError('Invalid or stale iOS-to-HarmonyOS contract')
@@ -249,7 +250,7 @@ def check_handoff(source: Path, directory: Path):
     report = read_json(directory / 'handoff.json')
     if not isinstance(report, dict) or report.get('schema_version') != 'hmigbot-handoff/1':
         raise MigrationError('Unsupported handoff schema')
-    if str(source.resolve()) != report.get('source_root') or snapshot(source.resolve())['sha256'] != report.get('source_sha256'):
+    if str(source.resolve()) != report.get('source_root') or source_snapshot(source.resolve())['sha256'] != report.get('source_sha256'):
         raise MigrationError('Handoff source changed; regenerate from current source semantics')
     artifacts = report.get('artifacts')
     if not isinstance(artifacts, dict) or not {'contract.json', 'binding.json'} <= set(artifacts):

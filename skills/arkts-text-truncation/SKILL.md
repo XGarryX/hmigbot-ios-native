@@ -1,6 +1,6 @@
 ---
 name: arkts-text-truncation
-description: "ArkTS 文本/布局截断场景下的根因定位与修复：文本被 Ellipsis 截断或省略号位置异常、maxLines 不生效、Flex/Row 内 Text 被挤没（缺 layoutWeight/flexShrink）、弹窗/CustomDialog/bindSheet 超出屏幕高度被裁切、布局撑破容器、文本选择手柄或光标在截断边界错位、标题栏/NavBar 长文本异常、RichEditor/TextInput 截断等。若主要是系统字体缩放导致的截断，优先用 arkts-large-font。**边界**：本 skill 仅限文本字符级截断（Text/RichEditor/TextInput）+ 弹窗超屏裁切；图片裁切 / 列表显示不全 / AlphabetIndexer 溢出 / 多设备适配 / 折叠屏布局切换 / 响应式断点 → arkts-truncation-fix。"
+description: ArkTS 文本/布局截断场景下的根因定位与修复：文本被 Ellipsis 截断或省略号位置异常、maxLines 不生效、Flex/Row 内 Text 被挤没（缺 layoutWeight/flexShrink）、弹窗/CustomDialog/bindSheet 超出屏幕高度被裁切、布局撑破容器、文本选择手柄或光标在截断边界错位、标题栏/NavBar 长文本异常、RichEditor/TextInput 截断等。若主要是系统字体缩放导致的截断，优先用 arkts-large-font。**边界**：本 skill 仅限文本字符级截断（Text/RichEditor/TextInput）+ 弹窗超屏裁切；图片裁切 / 列表显示不全 / AlphabetIndexer 溢出 / 多设备适配 / 折叠屏布局切换 / 响应式断点 → [arkts-truncation-fix](../arkts-truncation-fix/SKILL.md)。
 metadata:
   type: domain
   domain: ui
@@ -11,6 +11,10 @@ metadata:
   - dialog
   - layout
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # arkts-text-truncation — ArkTS 截断类缺陷排查技能
 
 > 覆盖「文本内容被截」「容器浮层被裁」「布局溢出撑破」「文本选择边界错位」「标题栏/自适应字号异常」五类"装不下"的 UI 缺陷。
@@ -180,7 +184,7 @@ struct Editor {
 | 设了 `TextOverflow.Ellipsis` 却没省略号 | `.maxLines` 未设 / 父容器宽度未收敛（无 `layoutWeight` 或宽度） |
 | 省略号是 `"..."` 三个点 | 代码里用字符串拼接；应改 `"\u2026"`（`…`） |
 | 图文混排省略号字号异常小 | `ImageSpan` 未继承父字号，显式 `.fontSize` |
-| 跨平台（iOS/鸿蒙）省略号垂直居中 | `fontFamily` 未指定，显式设 `sans-serif` |
+| 跨平台（iOS/iOS）省略号垂直居中 | `fontFamily` 未指定，显式设 `sans-serif` |
 | `Text` 没超宽却被截断 | 父容器宽度计算在临界值；或外部加了额外 padding/margin |
 | Dialog 按钮文字被裁 | `Button` 缺 `.flexShrink(1)` |
 | 标题栏自适应字号不生效 | 运行时误动 `.minFontSize`，或未设 `.heightAdaptivePolicy` |

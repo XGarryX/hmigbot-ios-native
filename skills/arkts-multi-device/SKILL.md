@@ -1,6 +1,6 @@
 ---
 name: arkts-multi-device
-description: "ArkTS 跨设备与断点适配的根因定位与修复（V2 优先，兼容 V1）：布局/尺寸/间距在不同设备（手机/平板/2in1/折叠屏展开折叠/车机/TV）或断点（sm/md/lg/xl）下错位；硬编码 .width/.margin 导致大屏空白或小屏挤爆；Grid/List/WaterFlow 列数不随容器变化；折叠屏铰链区被挡；主副屏/外接显示器切换后白屏；RTL 语言左右镜像错乱。代码示例使用 ArkTS V2 装饰器（`@ComponentV2 / @Local / @ObservedV2 / @Trace / AppStorageV2.connect`），V1（`@Component / @State / @StorageProp`）写法仅作历史对照。若主要是窗口形态切换（分屏/自由窗口/悬浮窗）引发，改用 arkts-multi-window。"
+description: ArkTS 跨设备与断点适配的根因定位与修复（V2 优先，兼容 V1）：布局/尺寸/间距在不同设备（手机/平板/2in1/折叠屏展开折叠/车机/TV）或断点（sm/md/lg/xl）下错位；硬编码 .width/.margin 导致大屏空白或小屏挤爆；Grid/List/WaterFlow 列数不随容器变化；折叠屏铰链区被挡；主副屏/外接显示器切换后白屏；RTL 语言左右镜像错乱。代码示例使用 ArkTS V2 装饰器（`@ComponentV2 / @Local / @ObservedV2 / @Trace / AppStorageV2.connect`），V1（`@Component / @State / @StorageProp`）写法仅作历史对照。若主要是窗口形态切换（分屏/自由窗口/悬浮窗）引发，改用 arkts-multi-window。
 metadata:
   type: domain
   domain: ui
@@ -11,6 +11,10 @@ metadata:
   - responsive
   - rtl
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # arkts-multi-device — ArkTS 多设备适配排查技能
 
 > HarmonyOS "一多"（一次开发、多端部署）语境下的布局与渲染适配。

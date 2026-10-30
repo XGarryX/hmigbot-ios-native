@@ -1,5 +1,6 @@
 # 文件操作指南
 
+> @kit.CoreFileKit 文件读写的完整使用模式，替代 iOS 的 java.io.File。
 
 ---
 

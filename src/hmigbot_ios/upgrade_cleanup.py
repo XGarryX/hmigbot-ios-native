@@ -14,7 +14,7 @@ import stat
 import time
 import uuid
 
-from .core import MigrationError, digest, io_path
+from .core import MigrationError, digest, io_path, json_bytes, read_json
 
 MD_OUTPUTS = {
     'spec/ui-coverage-report.md', 'spec/migration-report.md', 'spec/verify-report.md',
@@ -83,6 +83,32 @@ def _recognized(relative, raw):
     return False
 
 
+def frozen_plan_inputs(project):
+    """Preserve exact machine inputs still referenced by the original frozen run.
+
+    Keeping bytes available does not revalidate their semantics or grant a PASS.
+    The original kernel computes contract identity; no second state writer exists.
+    """
+    plans = [_safe(project, p.relative_to(project).as_posix())
+             for p in (project / 'spec/waves').glob('plan-*.json')]
+    typed = []
+    for path in plans:
+        value = read_json(path)
+        if isinstance(value, dict) and value.get('ios_adapter_version') == 2:
+            typed.append(value)
+    if not typed:
+        return {}
+    contract = read_json(_safe(project, 'spec/blueprint/contracts.json'))
+    from .ios_scheduler import kernel
+    expected = kernel().compute_contract_hash(project / 'spec/blueprint', [])
+    matching = [p for p in typed if p.get('contract_hash') == expected]
+    if (not matching or any(digest(json_bytes({k: v for k, v in p.items() if k != 'contract_hash'}))
+                           != contract.get('plan_identity_sha256') for p in matching)
+            or not isinstance(contract.get('input_hashes'), dict)):
+        raise MigrationError('Frozen plan identity is inconsistent; preserve it before upgrading')
+    return contract['input_hashes']
+
+
 class UpgradeCleanup:
     def __init__(self, project, old, new, tool_changed):
         self.project = io_path(Path(project).resolve(strict=True))
@@ -111,6 +137,7 @@ class UpgradeCleanup:
                 if any(record.get('attempts', 0) > landed.get(ident, 0)
                        for ident, record in row.get('dispatched', {}).items()):
                     raise MigrationError('In-flight tasks must land or be explicitly terminated before tool upgrade')
+        pinned = frozen_plan_inputs(self.project)
         for relative in sorted(MD_OUTPUTS | JSON_OUTPUTS):
             path = _safe(self.project, relative)
             if not path.exists():
@@ -118,6 +145,11 @@ class UpgradeCleanup:
             if not path.is_file() or not stat.S_ISREG(path.stat().st_mode):
                 raise MigrationError('Upgrade cleanup candidate must be a regular file: ' + relative)
             raw = path.read_bytes()
+            if relative in pinned:
+                self._receipt['preserved'].append({'path': relative,
+                    'reason': 'Frozen plan input retained; current consumers must revalidate it',
+                    'expected_sha256': pinned[relative], 'current_sha256': digest(raw)})
+                continue
             if not _recognized(relative, raw):
                 self._receipt['preserved'].append({'path': relative, 'reason': 'Unrecognized content; filename alone cannot authorize cleanup'})
                 continue

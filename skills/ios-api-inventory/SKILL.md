@@ -11,13 +11,22 @@ metadata:
   - evidence
 ---
 
-> **调用关系**：本 skill 是 `ios-source-analysis` 组织的四类分析之一（API 类），负责「服务/系统能力/权限/三方接缝」维度。本 skill **不派发 subagent**，全部步骤在主会话或由派发方（a2h-spec / ios-source-analysis）作为子代理调起执行；若作子代理调起，任务书自足（写清源锚点、scope=api、输出契约），完成后由派发方按 Join 协议收口——**完成的唯一合法信号是 `agent_status=completed`，绝不是产物文件存在**；本 skill 自身不嵌套外派。
+> **调用关系**：本 skill 是 `ios-source-analysis` 组织的四类分析之一（API 类），负责「服务/系统能力/权限/三方接缝」维度。本 skill **不派发 subagent**，全部步骤在主会话或由派发方（a2h-spec / ios-source-analysis）作为子代理调起执行；若作子代理调起，任务书自足（写清源锚点、scope=api、输出契约），完成后由派发方按 Join 协议收口——**完成依据按 [a2h-join](../a2h-join/SKILL.md)：本轮可信宿主 `completed` 或经过身份与时序核验的原生 `FINAL_ANSWER`；产物存在不能代替完成**；本 skill 自身不嵌套外派。
 >
 > 路径约定：`$IOS_SRC` 从 `<target>/.migbot/config.json` 的 `ios` 字段读取；`<target>` = 鸿蒙目标工程根；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根，可用 `<skill>/scripts/run.py --runtime-root` 解析）。产物落 `<target>/spec/`，**禁落会话临时目录**。机器信号文件（`ios-api-signals.json`）由 facts-view 单写，主会话/作者禁手改。
 
 # ios-api-inventory — 外部服务、系统能力与三方 SDK 接缝
 
 适用的 Apple 官方技能与 Xcode MCP 优先。先读取 `spec/ref/ios-expertise-plan.json` 与 `ios-official-analysis.json` 中为本类选择的资源，按原始摘要完成审阅；官方资料、只读 MCP、CLI 和编译器分别记录来源、用途、读写范围及实际结果。无官方证据时记录降级原因，保持相关 unknown；不把第三方资料或自编规程称为 Apple 官方。设备远程控制不在默认调用范围，界面授权由用户自行完成。
+
+
+### 官方分析的执行责任（0.13.1）
+
+当 `ios-expertise-plan.json` 为当前主题选择 Apple 资源时，对应主题的分析过程由导出 skill 的适用规程承担：逐项执行其相关参考的审阅步骤，沿真实源码记录观察、未决项和影响；本技能保留迁移输出字段、归属和门禁合同。不得仅确认已读资料后继续用自编经验替代官方审阅。SwiftUI 使用 swiftui-specialist 的相关结构、状态、身份、环境或文本章节；App Intents 使用 app-intents-specialist 的执行模型、实体/参数、结果及快捷短语章节；文档型 SwiftUI 与 C bounds 仅在实际源输入适用时执行对应导出 skill。没有覆盖该主题的官方 skill 时明确保留自编/第三方分析，不伪称官方执行。
+
+每条 Apple 源观察用 `expertise-review` 写入 `official_basis` 数组，字段为固定资源的 `path`、`sha256`、实际适用的 `section` 与具体 `application`。同时保留 `source`、`interpretation`、`unknowns`。只有资源确认、没有资源规则如何应用到源码的记录将被拒绝；此合同核验不替代对模型判断的独立复核。官方语义规程不能批准产品取舍或目标平台替代。
+
+Swift 文件的词法/声明结构优先消费当前 facts 中固定的 SwiftParser/SwiftSyntax 产物，不能为了旧 Python 闭合语法可接受而改写源文件。编译上下文由实际 Xcode CLI 产物或经过校验的同源回放承担；MCP 不可用保留原错误和未决项。远程控制、界面读取及权限修改不在此分析范围。
 
 ## 0. 定位与纪律
 

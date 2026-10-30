@@ -783,7 +783,7 @@ def source_bounded_image(project, relative, line):
 
 def assembly_main(arguments=None):
     from .runtime_timeouts import timeout_for, timeout_evidence
-    from .scheduler_windows_runtime import run as run_owned_process
+    from .process_runtime import run as run_owned_process
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--project-root', type=Path, required=True)
     parser.add_argument('--output-json', type=Path, required=True)
@@ -948,14 +948,72 @@ def _inputs_snapshot(project):
     """Bind proofs and all original detectors to one stable declared product."""
     index = EvidenceIndex(project)
     paths = {project / 'build-profile.json5', project / '.migbot/config.json'}
+    app_scope=project/'AppScope'
+    if app_scope.is_dir():paths.update(path for path in app_scope.rglob('*') if path.is_file())
     for root in index.source_roots:
         # Main source/resources are small application inputs, never build/cache.
         paths.update(p for p in root.parent.rglob('*') if p.is_file())
-    for directory in ('spec/baseline', 'spec/ref'):
-        base = project / directory
-        if base.is_dir():
-            paths.update(p for p in base.rglob('*') if p.is_file())
-    return {p.relative_to(project).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+    from .consumed_inputs import baseline_inputs as consumed_inputs
+    try:
+        contracts=consumed_inputs(project,'domains')
+    except (OSError,ValueError,KeyError,TypeError) as exc:
+        # Static detectors remain runnable while the source baseline is being
+        # authored. Capture only existing formal objects, not arbitrary notes.
+        from .artifact_contract import catalog, _artifact_paths
+        from .consumed_inputs import PRODUCT_RECORDS
+        formal={project/'spec/baseline'/name for name in PRODUCT_RECORDS}
+        for entry in catalog()['spec']:formal.update(_artifact_paths(project,entry))
+        contracts={p.relative_to(project).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(formal) if p.is_file()}
+        contracts['@partial-contract']=hashlib.sha256(str(exc).encode()).hexdigest()
+    from .artifact_contract import catalog, _artifact_paths
+    for entry in catalog()['plan']['artifacts']:
+        for path in _artifact_paths(project,entry):
+            if path.is_file():contracts[path.relative_to(project).as_posix()]=hashlib.sha256(path.read_bytes()).hexdigest()
+    return {**{p.relative_to(project).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+               for p in sorted(paths) if p.is_file()}, **contracts}
+
+
+def _cache_inputs(project, arguments):
+    """Conservative closed-engine read scope; it affects reuse, never admission."""
+    from .quality_views import target_inputs
+    inputs=target_inputs(project)
+    # Requested result files are outputs, not product inputs. Do not allow this
+    # exception inside a configured product source/resource directory.
+    roots=product_source_roots(project)
+    for flag in ('--state-file','--output-json'):
+        if flag in arguments:
+            path=Path(arguments[arguments.index(flag)+1]).resolve()
+            if (path.is_relative_to(project) and not path.is_relative_to(project/'AppScope')
+                    and not any(path.is_relative_to(root.parent) for root in roots)):
+                inputs.pop(path.relative_to(project).as_posix(),None)
+    for folder in ('spec/baseline','spec/ref'):
+        base=project/folder
+        for path in base.rglob('*') if base.is_dir() else []:
+            if path.is_file():inputs[path.relative_to(project).as_posix()]=hashlib.sha256(path.read_bytes()).hexdigest()
+    for name in ('spec/placeholder-registry.md','spec/execution/base-contracts.md','spec/execution/capability-manifest.json'):
+        path=project/name
+        if path.is_file():inputs[name]=hashlib.sha256(path.read_bytes()).hexdigest()
+    return inputs
+
+
+def _detector_rules():
+    """Pin the actual host payload and adapters, not unrelated platform engines."""
+    import platform
+    root=Path(__file__).resolve().parents[2]
+    paths={Path(__file__)}
+    for name in ('native_structural_evidence.py','native_structural.py','native_helpers.py',
+                 'native_pipeline_runtime.py','native_literal_scope.py','detector_cache.py'):
+        paths.add(root/'src/hmigbot_ios'/name)
+    system={'Darwin':'macos','Windows':'windows','Linux':'linux'}.get(platform.system())
+    arch='arm64' if platform.machine().lower() in {'arm64','aarch64'} else 'x64'
+    for folder in ('skills/arkts-structural-closure/scripts',
+                   'vendor/hmigbot/skills/arkts-structural-closure/scripts'):
+        scripts=root/folder
+        paths.update(scripts.glob('*.py'))
+        payload=scripts/'bin'/f'{system}-{arch}'/'_entry.dist'
+        if payload.is_dir():paths.update(p for p in payload.rglob('*') if p.is_file())
+    return {p.relative_to(root).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
             for p in sorted(paths) if p.is_file()}
 
 
@@ -984,7 +1042,7 @@ def pipeline_iterate(arguments, run_raw):
     parser.add_argument('--mode', choices=['pipeline'], required=True)
     parser.add_argument('--target', required=True)
     parser.add_argument('--max-iter', type=int)
-    args, _ = parser.parse_known_args(arguments)
+    args, extra_arguments = parser.parse_known_args(arguments)
     project, state_path = args.project_root.resolve(), args.state_file.resolve()
     before = _inputs_snapshot(project)
     state = read_json(state_path) if state_path.is_file() else {
@@ -992,16 +1050,29 @@ def pipeline_iterate(arguments, run_raw):
     if state.get('mode') != 'pipeline' or state.get('target') != args.target or not isinstance(state.get('history'), list):
         raise ValueError('Native pipeline structural state identity differs')
     iteration = len(state['history'])
-    raw_directory = state_path.parent / 'native-pipeline-raw' / (
-        state_path.stem + '-iter' + str(iteration) + '-' + uuid.uuid4().hex)
-    raw_directory.mkdir(parents=True)
-    raw_state, raw_output = raw_directory / 'state.json', raw_directory / 'result.json'
-    raw_arguments = _replace_argument(arguments, '--state-file', raw_state)
-    if '--output-json' in raw_arguments:
-        raw_arguments = _replace_argument(raw_arguments, '--output-json', raw_output)
+    from .detector_cache import identity as cache_identity, load as load_cache, save as save_cache
+    cache_before=_cache_inputs(project,arguments)
+    signature=cache_identity(cache_before,_detector_rules(),arguments)
+    cache_path=state_path.parent/'native-detector-cache'/(signature+'.json')
+    # Unknown engine parameters may reference inputs this adapter cannot bind.
+    # Execute normally, but do not reuse a result for an unmodeled read scope.
+    cache_eligible=state_path.is_relative_to(project/'spec') and not extra_arguments
+    cached=load_cache(project,cache_path,signature) if cache_eligible else None
+    reused=cached is not None
+    if cached:
+        raw_directory,process=cached
+        raw_state,raw_output=raw_directory/'state.json',raw_directory/'result.json'
     else:
-        raw_arguments.extend(['--output-json', str(raw_output)])
-    process = run_raw(raw_arguments)
+        raw_directory = state_path.parent / 'native-pipeline-raw' / (
+            state_path.stem + '-iter' + str(iteration) + '-' + uuid.uuid4().hex)
+        raw_directory.mkdir(parents=True)
+        raw_state, raw_output = raw_directory / 'state.json', raw_directory / 'result.json'
+        raw_arguments = _replace_argument(arguments, '--state-file', raw_state)
+        if '--output-json' in raw_arguments:
+            raw_arguments = _replace_argument(raw_arguments, '--output-json', raw_output)
+        else:
+            raw_arguments.extend(['--output-json', str(raw_output)])
+        process = run_raw(raw_arguments)
     if process.returncode not in (0, 1, 2) or not raw_state.is_file() or not raw_output.is_file():
         return process
     raw = read_json(raw_state)
@@ -1072,6 +1143,8 @@ def pipeline_iterate(arguments, run_raw):
     if raw_files != {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                      for p in raw_directory.iterdir() if p.is_file()}:
         raise ValueError('Original raw detector evidence changed during adaptation')
+    if not reused and cache_eligible and cache_before==_cache_inputs(project,arguments):
+        save_cache(project,cache_path,signature,raw_directory,process)
     # Use the unchanged original public runner for all verdict/stall constants.
     from .native_helpers import original
     from .native_structural import _run_report
@@ -1088,8 +1161,12 @@ def pipeline_iterate(arguments, run_raw):
     for detector, report in effective.items():
         destination = state_path.parent / (detector + '-pipeline-iter' + str(iteration) + '.json')
         if destination.exists():
-            raise ValueError('Refusing to overwrite prior effective detector evidence: ' + str(destination))
-        write_json(destination, report)
+            from .core import json_bytes
+            if destination.read_bytes()!=json_bytes(report):
+                destination=state_path.parent/'native-pipeline-effective'/(state_path.stem+'-iter'+str(iteration)+'-'+signature[:12])/(detector+'.json')
+                if destination.exists() and destination.read_bytes()!=json_bytes(report):
+                    raise ValueError('Effective detector evidence identity collision: '+str(destination))
+        if not destination.exists():write_json(destination, report)
         output_paths[detector] = str(destination)
     audit = {'schema_version': 'native-pipeline-dispositions/1', 'iteration': iteration,
         'raw_state': str(raw_state), 'raw_output': str(raw_output), 'raw_files_sha256': raw_files,
@@ -1099,8 +1176,14 @@ def pipeline_iterate(arguments, run_raw):
         'effective_audit_fail': current['audit_fail'],
         'original_finding_count': actions, 'effective_finding_count': current['wiring_repair_actions'],
         'source_inputs_sha256': after, 'original_runner_verdict': verdict,
-        'source_visual_unverified': True, 'all_original_detectors_executed': sorted(DETECTORS)}
+        'source_visual_unverified': True, 'all_original_detectors_executed': sorted(DETECTORS),
+        'detector_evidence_reused':reused,'detector_input_signature':signature,
+        'executed_this_invocation':[] if reused else sorted(DETECTORS),
+        'source_contract_readiness':'partial' if '@partial-contract' in before else 'existing-consumed-inputs',
+        'scope':'Structural detector evidence only; source contract completeness and runtime observation remain independent'}
     audit_path = state_path.parent / ('native-pipeline-dispositions-iter' + str(iteration) + '.json')
+    if audit_path.exists():
+        audit_path=state_path.parent/'native-pipeline-dispositions'/(state_path.stem+'-iter'+str(iteration)+'-'+uuid.uuid4().hex+'.json')
     write_json(audit_path, audit)
     current['native_dispositions_report'] = str(audit_path)
     state.update(history=[*state['history'], current], max_iter=runner['max_iter'], last_verdict=verdict,
@@ -1116,7 +1199,8 @@ def pipeline_iterate(arguments, run_raw):
             'Repair remaining original findings; source-backed native dispositions are recorded separately.\n'
             + json.dumps(fingerprint, ensure_ascii=False)),
         'detector_json_paths': output_paths, 'state_file': str(state_path),
-        'native_dispositions_report': str(audit_path), 'source_visual_unverified': True}
+        'native_dispositions_report': str(audit_path), 'source_visual_unverified': True,
+        'detector_evidence_reused':reused,'detector_input_signature':signature}
     if args.output_json:
         write_json(args.output_json, output)
         stdout = process.stdout

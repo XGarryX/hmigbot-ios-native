@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-ad
-  short_description: iOS 广告 SDK 迁移到 HarmonyOS ArkTS 的全流程指导。识别 iOS 项目使用的主流广告三方库（穿山甲…
-  default_prompt: 请使用 $arkts-ad，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

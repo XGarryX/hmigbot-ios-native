@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-app-identity
-  short_description: 根据 iOS 源应用身份和已批准目标标识实现并核验 HarmonyOS 名称、图标、启动页、链接与权限；不复制源签名配置。
-  default_prompt: 请使用 $arkts-app-identity，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

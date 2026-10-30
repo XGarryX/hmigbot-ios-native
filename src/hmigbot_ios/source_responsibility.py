@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import tempfile
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
 
 KINDS = ('dependency_internal', 'unused_symbol', 'test_target', 'replaced_source_history')
@@ -533,7 +534,7 @@ def load_and_validate(project, source, graph, obligations, *, semantics=None, ca
     """
     from .ios_facts import obligations as derive_obligations
     project, source = Path(project).resolve(), Path(source).resolve()
-    _require(graph.get('source_sha256') == snapshot(source)['sha256'], 'source snapshot is stale')
+    _require(graph.get('source_sha256') == source_snapshot(source)['sha256'], 'source snapshot is stale')
     _require(obligations == derive_obligations(graph), 'obligations are not the original machine-derived denominator')
     ids = [o['id'] for o in obligations['obligations']]
     _require(len(set(ids)) == len(ids), 'duplicate machine obligations')
@@ -571,7 +572,7 @@ def load_and_validate(project, source, graph, obligations, *, semantics=None, ca
     # Candidate hashes are not file pins. Consumers must persist and revalidate
     # before plan freeze; candidate acceptance cannot authorize dispatch.
     members = _context(project, source, payload['product_context'], graph, frozen)
-    indexed = {f['path']:f for f in snapshot(source)['files']}
+    indexed = {f['path']:f for f in source_snapshot(source)['files']}
     roles, routes, reviewers = _review(project, source, payload['review'], graph, indexed, frozen)
     facts = {f['id']:f for f in graph['facts']}
     expected = {o['id']:o for o in obligations['obligations']}
@@ -660,6 +661,6 @@ def load_and_validate(project, source, graph, obligations, *, semantics=None, ca
                             enabled=True, candidate=candidate is not None,
                             historical_action_ids=tuple(a for r in payload['replacements'] for a in r['historical_action_ids']),
                             target_action_ids=tuple(a for r in payload['replacements'] for a in r['target_action_ids']))
-    _require(snapshot(source)['sha256'] == graph['source_sha256'], 'source changed during responsibility validation')
+    _require(source_snapshot(source)['sha256'] == graph['source_sha256'], 'source changed during responsibility validation')
     projection.validate_frozen_inputs(project)
     return projection

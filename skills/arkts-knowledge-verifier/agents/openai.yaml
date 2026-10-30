@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-knowledge-verifier
-  short_description: ArkTS 知识验证与查找入口（V2 优先，兼容 V1 查询）。当你对任何 ArkTS/HarmonyOS 知识点不确定时…
-  default_prompt: 请使用 $arkts-knowledge-verifier，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

@@ -10,7 +10,7 @@ from .swiftui import tokenize
 
 SDK_IMPORTS = frozenset("Swift SwiftData Observation PhotosUI Charts Foundation SwiftUI UIKit Combine WidgetKit AppIntents ActivityKit AVFoundation CoreMedia CoreImage CoreGraphics Vision VisionKit UserNotifications UniformTypeIdentifiers OSLog os Darwin".split())
 BOOL_SETTINGS = frozenset("GENERATE_INFOPLIST_FILE APPLICATION_EXTENSION_API_ONLY SKIP_INSTALL CLANG_ENABLE_MODULES CLANG_ENABLE_OBJC_ARC ENABLE_USER_SCRIPT_SANDBOXING ENABLE_TESTABILITY SUPPORTS_MACCATALYST SWIFT_EMIT_LOC_STRINGS".split())
-METADATA_SETTINGS = frozenset("PRODUCT_NAME PRODUCT_BUNDLE_IDENTIFIER CODE_SIGN_STYLE DEVELOPMENT_TEAM ASSETCATALOG_COMPILER_APPICON_NAME ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME MARKETING_VERSION CURRENT_PROJECT_VERSION TARGETED_DEVICE_FAMILY BUNDLE_PREFIX CUIKE_APP_GROUP".split())
+METADATA_SETTINGS = frozenset("PRODUCT_NAME PRODUCT_BUNDLE_IDENTIFIER CODE_SIGN_STYLE DEVELOPMENT_TEAM ASSETCATALOG_COMPILER_APPICON_NAME ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME MARKETING_VERSION CURRENT_PROJECT_VERSION TARGETED_DEVICE_FAMILY".split())
 PATH_SETTINGS = {'INFOPLIST_FILE', 'CODE_SIGN_ENTITLEMENTS'}
 FIXED_SETTINGS = {
     'SDKROOT': {'iphoneos', 'iphonesimulator'},
@@ -28,7 +28,7 @@ def require(ok, message):
 class Proof:
     def __init__(self, source, project_directory):
         self.source=Path(source).resolve(); self.project_directory=project_directory
-        self.files={}; self.edges=[]; self.settings=[]
+        self.files={}; self.edges=[]; self.settings=[]; self.pending=[]
 
     def path(self, base, spelling):
         require(isinstance(spelling,str) and spelling and not any(c in spelling for c in ('$', '\\', ':')),
@@ -48,11 +48,33 @@ class Proof:
         return value
 
     def setting(self, key, value, origin):
+        self.pending.append((key,value,origin))
+
+    def finish(self):
+        # Custom scalar variables are accepted only through actual metadata
+        # references. No project-name whitelist, and no unknown compiler flags
+        # or search paths are promoted to harmless metadata.
+        definitions={}
+        for key,value,_ in self.pending:
+            if isinstance(value,str): definitions.setdefault(key,[]).append(value)
+        metadata=set(); pending=[value for key,value,_ in self.pending if key in METADATA_SETTINGS and isinstance(value,str)]
+        while pending:
+            for name in re.findall(r'\$\(([^)]+)\)',pending.pop()):
+                if name in {'TARGET_NAME','inherited'} or name in metadata: continue
+                require(re.fullmatch(r'[A-Z][A-Z0-9_]*',name) is not None and name in definitions,
+                        'undefined metadata variable: '+name)
+                require(not re.search(r'(?:FLAGS|SEARCH_PATHS|HEADER|MODULE|SDK|TOOLCHAIN|SWIFT|CLANG|GCC)',name),
+                        'compiler/dependency variable is not scalar metadata: '+name)
+                metadata.add(name); pending.extend(definitions[name])
+        for key,value,origin in self.pending:
+            self._check_setting(key,value,origin,metadata)
+
+    def _check_setting(self, key, value, origin, metadata):
         require(isinstance(key,str) and re.fullmatch(r'[A-Z][A-Z0-9_]*',key), 'conditional/unknown configuration key')
         require(isinstance(value,str), 'non-string configuration value: '+key)
         require(not any(c in value for c in ('\n','\r','\\',';')) and '//' not in value, 'unsupported configuration value: '+key)
         macros=re.findall(r'\$\(([^)]+)\)',value)
-        require(set(macros)<={'TARGET_NAME','BUNDLE_PREFIX','CUIKE_APP_GROUP','inherited'}, 'unknown metadata macro: '+key)
+        require(set(macros)<={'TARGET_NAME','inherited'}|metadata, 'unknown metadata macro: '+key)
         require('$' not in re.sub(r'\$\([^)]+\)','',value), 'unsupported metadata expansion: '+key)
         if key in BOOL_SETTINGS: require(value in {'YES','NO'}, 'unknown boolean setting: '+key)
         elif key in PATH_SETTINGS:
@@ -65,7 +87,7 @@ class Proof:
         elif key=='LD_RUNPATH_SEARCH_PATHS':
             parts=value.split()
             require(parts and set(parts)<={'$(inherited)','@executable_path/Frameworks','@executable_path/../../Frameworks'}, 'unknown runpath bridge')
-        elif key in METADATA_SETTINGS:
+        elif key in METADATA_SETTINGS or key in metadata:
             require(bool(value) and re.fullmatch(r'[A-Za-z0-9_.$(), -]+',value) is not None, 'unsupported metadata value: '+key)
         else: raise MigrationError('unknown/dependency-affecting configuration setting: '+key)
         self.settings.append({'origin':origin,'key':key,'value':value})
@@ -91,7 +113,7 @@ class Proof:
                 self.setting(key.strip(),value.strip(),relative+':'+str(line_number))
 
 
-def classify(source, snap, variant, context):
+def classify(source, snap, variant, context, *, swift_syntax=None):
     """Only a context produced by project_scope.resolve can establish this proof."""
     manifests=[{'path':f['path'],'sha256':f['sha256']} for f in snap['files'] if Path(f['path']).name=='Package.swift']
     proof=Proof(source,context.path.parent.parent); imports=[]; error=None
@@ -112,10 +134,12 @@ def classify(source, snap, variant, context):
         for config in context.selected_configs:
             if config['base_path']: proof.config(proof.path(proof.source,config['base_path']))
             for key,value in config['settings'].items(): proof.setting(key,value,config['owner']+':'+config['name'])
+        proof.finish()
         require(not any(Path(f['path']).suffix.lower() in {'.h','.modulemap'} for f in snap['files']), 'implicit headers/module maps remain unresolved')
         for relative in variant['source_files']:
             require(Path(relative).suffix=='.swift','non-Swift dependency/include bridges remain unresolved')
-            parsed=tokenize((proof.source/relative).read_text(encoding='utf-8-sig'), skip_pragma_marks=Path(relative).suffix != '.swift')
+            from .swift_native import source_tokens
+            parsed=source_tokens(proof.source, relative, swift_syntax)
             for at,token in enumerate(parsed):
                 if token.kind=='string' or token.value!='import': continue
                 following=at+1

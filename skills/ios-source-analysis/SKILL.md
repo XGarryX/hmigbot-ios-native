@@ -12,7 +12,7 @@ metadata:
 ---
 
 > **调用关系**：本 skill 是四类源分析的**统一入口 + 编排器**，自己不解析源码成业务节点——四类分析由四个 skill 承担（工程=ios-project-inspector、UI=ios-ui-analyzer、功能=ios-feature-analyzer、API=ios-api-inventory），本 skill 只做：①确定性机器事实基线 ②按类别派发(或顺序执行) ③合并证据与归属核对 ④门禁收口。若宿主支持 subagent，可把四类分析作为子代理派发；此时一律 `fork_turns:"none"`（任务书自足，写清源锚点、scope 与输出契约），并遵守 **Join 协议（收口五条款）**：
-> ① **循环 wait**：完成的唯一合法信号是 `agent_status=completed`，绝不是产物文件存在（文件会中途落盘，读半截=事故）；② **死句柄与验收**：连续 3 次超时后 `list` 核对，completed≠验收通过，join 点跑本 skill 门禁验产物；③ **收口锚点**：最终报告前必须收口全部句柄；④ **放行≠遗弃**：非阻塞放行只推迟收口，不豁免；⑤ **fire-and-forget** 仅正文显式声明的派发免收口。
+> ① **循环 wait**：完成依据按 [a2h-join](../a2h-join/SKILL.md)：本轮可信宿主 `completed` 或经过身份与时序核验的原生 `FINAL_ANSWER`；产物存在不能代替完成（文件会中途落盘，读半截=事故）；② **死句柄与验收**：连续 3 次超时后 `list` 核对，completed≠验收通过，join 点跑本 skill 门禁验产物；③ **收口锚点**：最终报告前必须收口全部句柄；④ **放行≠遗弃**：非阻塞放行只推迟收口，不豁免；⑤ **fire-and-forget** 仅正文显式声明的派发免收口。
 > **派发纪律**：`task_name` 唯一（带 scope/id 后缀）；派发前写清预期产物清单给 join 门对账；**谁派谁收**（sub-agent 不能嵌套外派后退出）；契约产物必须出自承担任务的子代理，禁止派发方代写占位产物让 gate 转绿。
 >
 > 路径约定：`$IOS_SRC` 从 `<target>/.migbot/config.json` 的 `ios` 字段读取（缺配置文件 → 先执行 a2h-init）；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。产物一律落 `<target>/spec/`（baseline/ref/reports/.a2h），**禁落会话临时目录**。机器信号与账本由随包命令单写，主会话/作者禁手改。
@@ -24,7 +24,7 @@ metadata:
 - **前置**：`<target>/.migbot/config.json` 存在且 `source_platform=ios`；首次由 `source-analysis` 自动完成 harness-init、索引与适用证据编排；已规划项目走受审刷新流程。读写机器事实、审阅外部资料都随本 skill 的命令执行。**源不可读是阻塞**，不以文件夹名或文件数量补造行为。
 - **输入**：iOS 源码（Xcode 工程 / SwiftPM / 混合 Swift+ObjC + SwiftUI/UIKit/IB）+ 用户预知（既有决策、平台侧分工）+ `<target>`。源工程与目标工程必须分离。
 - **输出**：机器事实 `spec/baseline/{ios-source-index,ios-facts,ios-obligations}.json`、语义 `spec/baseline/ios-semantics.json`、覆盖 `spec/baseline/ios-coverage.json`、归属 `spec/ref/ios-source-disposition.json`、四个分析 skill 的 `spec/ref/*.md` 事实（ios-project.md / ios-ui-facts.md / ios-feature-facts.md / api-inventory）。**契约定稿与计划 IR 归 a2h-plan**，本 skill 不请求审批。
-- **唯一交互点**：无。机械检查由 exit code 判定（0=PASS，非 0=FAIL）；不经猜测填表。
+- 不重复询问机械检查或已有选择；首次 MCP/CLI 能力选择和真实授权缺口必须向开发者呈现，不能以“无交互”跳过。机械检查由 exit code 判定（0=PASS，非 0=FAIL），不经猜测填表。
 - **第一条可见输出必须是一行阶段计划**（机器事实基线 → 工程 → UI → 功能 → API → 合并归属 → 门禁），然后才执行 §1。
 - **编排器边界（红线）**：本 skill 不解析源码成业务节点、不写语义结论，四类分析才是唯一事实作者；本 skill 只做基线/派发/合并/门禁。发现事实缺口时派对应 skill 补，**不替子代理代写事实**（代写会让 gate 转绿，绿账不对应真产物）。
 
@@ -44,6 +44,8 @@ metadata:
 | 1.6 | 显式需要底层重采时使用 facts/providers、manifest-evaluate、conditional-capture 或 mcp-query | 保留既有低层能力及配置入口 | 普通流程使用 1.2 自动编排；低层调用不能代替完整收口 |
 
 默认配置为 `spec/ref/ios-analysis-config.json`，支持 auto/native/replay/static、已确认的 selection、证据路径及 MCP 配置；完整字段和自动选择规则见 [自动编排协议](references/auto-orchestration.md)。不得为通过门禁随意改成 static。远程控制设备类能力排除在默认调用范围；其他官方能力逐项说明来源、用途、读写范围和实际结果。
+
+直接进入 spec、未经过 init 时也必须读取 `capability_choices`：pending 时展示“只读 MCP + Apple CLI”与“仅 Apple CLI”的用途、权限及差异并收取选择，不能把机器 JSON 当作已询问。会话已有授权可用 `source-analysis --mcp enable`，明确选 CLI 用 `--mcp skip`；已有项目选择自动沿用。pending 仅暂停 MCP 调用，不阻断独立源分析；不把服务不可见、未打开目标工程、待 agent 授权或单个工具缺失统称为“开发者没开 MCP”。
 
 ### 单写者分区（违者 PROCESS_VIOLATION）
 
@@ -114,7 +116,7 @@ metadata:
 - 先读 `references/source-semantics.md` 与 `references/native-facts.md`。语言与 UI 框架分开建模：Swift/ObjC/ObjC++/C/C++ 是语言；SwiftUI/UIKit/IB/引擎承载是界面形态。首次快照（Index）只是范围与线索。
 - 逐 page/feature 维护 `spec/baseline/ios-semantics.json` v2：`known` 必须是对象 value + 当前机器 `fact_ids` + 落于事实片段内的证据；`unknown` 必须带原因并阻断受影响实现；`not_applicable` 只有完整调用链审阅后才可记录具体理由。**不用“已处理”“无特殊情况”覆盖全部维度**。
 - SwiftUI 的 body/modifier/state/binding/identity/environment/task/导航、UIKit 的 controller/view/constraint/outlet/action/delegate/生命周期分别保留；**IB 与程序化改动共同决定运行布局**。宏/二进制/动态配置无法确认时说明所需额外证据，不伪造解析结果。
-- Preview/mock 数据与实际入口分开；**没有 iPhone 录制不生成运行观察结论**（runtime=not_run 合法）。已有截图只能证明该场景下的显示，不能推导全部导航/状态。
+- Preview/mock 数据与实际入口分开；没有指定应用的实际测试或可核验运行证据，不生成运行观察结论（runtime=not_run 合法），不把录屏当作前置条件。已有截图只能证明该场景下的显示，不能推导全部导航、状态或持久化行为。
 
 ### 3.1 建模维度（逐 framework，不混谈）
 
@@ -200,3 +202,9 @@ python <runtime>/scripts/a2h_ios.py usage-finish --project <target> --run-id <ru
 ```
 
 最后一步执行、**忽略退出码、绝不阻断流水线**；token 用量由宿主生命周期采集，本步不采集。
+
+
+补充业务/设计参考文档时，可按 [Garry 业务设计提纲](references/garry-business-design-outline.md) 检查遗漏维度；本技能的事实、章节、源责任与正式规格合同继续优先。
+
+
+Xcode MCP实际发现、等待预算、同操作会话复用和动态窗口绑定按 [会话规程](references/xcode-mcp-session.md)；超时与某连接未获准分别报告，不据后台失败判断另一个实例授权。

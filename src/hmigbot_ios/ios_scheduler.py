@@ -32,24 +32,14 @@ def baseline_inputs(project, wave):
     from .plan_contract import profile, structural_digest
     projected = {'spec/baseline/ui-manifest.md', 'spec/baseline/feature-index.md'} if profile(project) >= 2 else set()
     mutable -= projected
-    inputs = {f['path']: f['sha256'] for f in snapshot(project)['files']
-            if (f['path'].startswith('spec/baseline/') and f['path'] not in mutable
-                or f['path'].startswith(('spec/ref/ios-expertise-', 'spec/ref/ios-mcp-', 'spec/ref/mcp-runs/', 'spec/ref/ios-analysis-provenance.json', 'spec/ref/ios-manifest-evidence/')))
-            and (wave != 'understand' or Path(f['path']).name in {'ios-facts.json', 'ios-obligations.json', 'ios-source-index.json'})}
-    graph_path = project / 'spec/baseline/ios-facts.json'
-    if graph_path.is_file():
-        from .conditional_evidence import frozen_inputs
-        inputs.update(frozen_inputs(project, read_json(graph_path)))
-    from .source_analysis import frozen_inputs as analysis_inputs
-    inputs.update(analysis_inputs(project))
+    from .consumed_inputs import baseline_inputs as consumed_baseline_inputs
+    inputs = {path: value for path, value in consumed_baseline_inputs(project, wave).items()
+              if path not in mutable}
     if wave == 'domains':
         from .ios_harness import responsibility
         projection = responsibility(project)
         if projection is not None:
             inputs.update(projection.frozen_inputs())
-        from .spec_contract import dependency_inputs
-        inputs.update({path: value for path, value in dependency_inputs(project).items()
-                       if path not in mutable})
         inputs.pop('spec/baseline/plans/resource-mapping.md', None)
         if profile(project) >= 2:
             from .plan_contract import indexed_contract_inputs
@@ -94,12 +84,14 @@ def _execution_evidence(path):
         r'spec/waves/prompts/(?:understand|domains)/[a-z0-9_-]+\.txt(?:\.repair\.txt)?',
         r'spec/waves/results/(?:understand|domains)/[a-z0-9_-]+\.json',
         r'spec/reports/(?:ios-|spec-|migration-)[a-z0-9_-]+\.(?:json|md)',
+        r'spec/reports/ios-harness-receipts/[0-9a-f]{64}\.json',
         r'spec/reports/scheduler/[a-z_]+\.(?:(?:stdout|stderr)\.log|failure\.json)',
         r'spec/reports/scheduler/[a-z_]+\.permissions\.json',
         r'spec/reports/scheduler/[a-z_]+\.cleanup-[0-9a-f]{32}\.json',
         r'spec/reports/static-runtime/land-[a-z0-9_-]+\.json',
         r'spec/reports/ios-blocked-recovery/[0-9a-f]{64}/[a-z-]+\.json',
         r'spec/reports/ios-blocked-receipts/(?:understand|domains)/[a-z0-9_-]+/[0-9a-f]{64}\.json',
+        r'spec/reports/ios-deletion-receipts/(?:understand|domains)/[a-z0-9_-]+/[0-9a-f]{64}(?:\.bridge)?\.json',
         r'spec/reports/derived/(?:[A-Za-z0-9_.-]+/)*(?:spec-summary|product-literals|source-analysis|spec-scaffold|spec-authoring|spec-upgrade|usage-budget)\.json',
         r'spec/reports/derived/(?:[A-Za-z0-9_.-]+/)*(?:ui-plan|feature-plan|migration-report)\.md',
         r'spec/reports/derived/a2h-join/[A-Za-z0-9_.-]+/[0-9a-f]{64}\.json',
@@ -118,6 +110,9 @@ def _execution_evidence(path):
         r'spec/execution/autofix-log/round-[1-9]\d*/[A-Za-z0-9_][A-Za-z0-9_.-]*\.json',
         r'spec/execution/autofix-log/round-[1-9]\d*/(?:loop-state|loop-result-latest|loops|audit|wiring|orphans|immersive|icon|ledger|assembly|binding|capability|theme|literal|deadshell|carrier|hittest|resname|native-images|memory)[A-Za-z0-9_.-]*\.(?:json|log|md)',
         r'spec/execution/autofix-log/round-[1-9]\d*/native-pipeline-dispositions-iter\d+\.json',
+        # Actual cached detector receipts are content-addressed JSON, never a
+        # permission for arbitrary resources/scripts beneath the round folder.
+        r'spec/execution/autofix-log/round-[1-9]\d*/native-detector-cache/[0-9a-f]{64}\.json',
         r'spec/execution/autofix-log/round-[1-9]\d*/native-pipeline-raw/loop-state-pipeline-final-iter\d+-[0-9a-f]{32}/(?:assembly|audit|binding|carrier|deadshell|hittest|icon|immersive|ledger|literal|orphans|resname|theme)-pipeline-iter\d+\.json',
         r'spec/execution/autofix-log/round-[1-9]\d*/native-pipeline-raw/loop-state-pipeline-final-iter\d+-[0-9a-f]{32}/(?:state|result)\.json',
         r'work/pipeline-\d{8}/run\.py',
@@ -279,7 +274,9 @@ def _runtime_directory(project, program, *, windows, cleanup_reports=None):
 
 def invoke(project, program, args):
     from .runtime_timeouts import timeout_for
-    from .scheduler_windows_runtime import run as run_owned_process
+    from .process_runtime import run as run_owned_process
+    from .host import require_supported_host
+    require_supported_host()
     env = {**os.environ, 'PYTHONUTF8': '1', 'ARKTS_SKILL_DIR': str(UPSTREAM.parent)}
     windows, cleanup_reports, permission_receipts = os.name == 'nt', [], []
     if windows:
@@ -338,11 +335,7 @@ def invoke(project, program, args):
                 stage_base_python(directory, env)
                 command = [str(directory / '_entry.exe'), program, *args]
             limit = timeout_for('scheduler', env=env)
-            if windows:
-                proc = run_owned_process(command, cwd=project, env=env, timeout=limit)
-            else:
-                proc = subprocess.run(command,
-                                      cwd=project, env=env, capture_output=True, timeout=limit, shell=False)
+            proc = run_owned_process(command, cwd=project, env=env, timeout=limit)
     except (subprocess.TimeoutExpired, OSError, PermissionRepairError) as exc:
         directory = project / 'spec/reports/scheduler'
         atomic_write(directory / (program + '.stdout.log'), getattr(exc, 'output', None) or b'')
@@ -397,6 +390,8 @@ def generate(project, input_path, *, validate_only=False):
         if projection is not None and projection.candidate:
             raise MigrationError('Candidate responsibility cannot authorize planning or dispatch')
     if wave == 'domains':
+        from .ios_harness import acceptance_binding
+        gate_before = acceptance_binding(project, source, graph) if not validate_only else None
         report, code = check(project, report_only=validate_only)
         if code:
             raise MigrationError('Source harness gate failed; resolve findings before planning implementation')
@@ -434,6 +429,10 @@ def generate(project, input_path, *, validate_only=False):
             if portable in original_owned and original_owned[portable] != ident:
                 raise MigrationError('Ambiguous original ownership projection: ' + path)
             original_owned[portable] = ident
+        from .receipt_outputs import deletion_intent
+        deletion_intent(project, task, check_current=True)
+        if any(_execution_evidence(path) for path in task.get('deletions', {})):
+            raise MigrationError('Deletion intent cannot own execution evidence')
         ac_ids = task.get('ac_ids', [])
         fact_ids = task.get('fact_ids')
         if not isinstance(ac_ids, list) or any(a not in all_acs for a in ac_ids) or wave == 'domains' and not ac_ids and contract_profile < 2:
@@ -484,12 +483,17 @@ def generate(project, input_path, *, validate_only=False):
             raise MigrationError('Original blueprint needs explicit compatibility adaptation')
     # Pin complete model-authored request in the canonical six-item contract.
     input_hashes = baseline_inputs(project, wave)
+    acceptance = None
+    if wave == 'domains':
+        from .ios_harness import retain_acceptance
+        acceptance = retain_acceptance(project, source, graph, report, code, gate_before)
     for name, value in {
         'domain-map.json': {'version': 1, 'domains': [{'key': t['id'], 'title': t['goal'], 'pages': []} for t in planned]},
         'ownership.json': {'version': 1, 'owners': {t['id']: t['ownership'] for t in planned}, 'mainloop_owned': []},
         'contracts.json': {'version': 1, 'ios_adapter_version': 2, 'source_sha256': graph['source_sha256'],
                            'graph_sha256': graph_hash, 'input_hashes': input_hashes, 'ios_tasks': tasks, 'modules': [], 'wires': [],
                            **({'responsibility_enabled': True} if projection is not None else {}),
+                           **({'harness_acceptance': acceptance} if acceptance is not None else {}),
                            'spec_contract_version': contract_profile, 'contract_revision': contract_revision(project),
                            'task_inputs': plan_contract['task_inputs']},
         'decisions.json': {'version': 1, 'decisions': request.get('decisions', [])},
@@ -569,6 +573,8 @@ def _validate_task_inputs(project, task_inputs):
 
 
 def step(project, wave, *, landing=False, usage_ledger=None, usage_run_id=None):
+    if wave == 'domains' and (Path(project) / 'spec/execution/execution-contract.json').exists():
+        raise MigrationError('Indexed execution is active; use a2h-execute Stage 0/UI/Base/Slices and apply_writeback, not the legacy v2 domains scheduler')
     from .native_pipeline import context
     source, project = context(project)
     if (usage_ledger is None) != (usage_run_id is None):
@@ -595,8 +601,16 @@ def step(project, wave, *, landing=False, usage_ledger=None, usage_run_id=None):
         raise MigrationError('Plan source snapshot changed')
     if baseline_inputs(project, wave) != contract['input_hashes']:
         raise MigrationError('Plan baseline changed; review and explicitly replan')
-    if wave == 'domains' and check(project)[1]:
-        raise MigrationError('Source harness gate failed')
+    gate_use = None
+    if wave == 'domains':
+        from .ios_harness import reuse_acceptance
+        reused = reuse_acceptance(project, source, graph, contract)
+        if reused is None:
+            if check(project)[1]:
+                raise MigrationError('Source harness gate failed')
+            gate_use = {'mode': 'actual', 'not_actual_call_now': False}
+        else:
+            _, gate_use = reused
     if landing:
         evidence_path = project / f'spec/reports/ios-dispatch-{wave}.json'
         dispatch_evidence = read_json(evidence_path)
@@ -610,7 +624,12 @@ def step(project, wave, *, landing=False, usage_ledger=None, usage_run_id=None):
         if changed - allowed:
             raise MigrationError('Dispatch changed files outside ownership: ' + ','.join(sorted(changed - allowed)))
         owned_tasks = {t['id']: t for t in contract['ios_tasks']}
+        from .receipt_outputs import recover_bridges, validate_outputs, legacy_projection
+        recover_bridges(project, wave, plan_path,
+                        [{**owned_tasks[t['id']], 'result_path': t['result_path']} for t in plan['tasks']],
+                        graph['source_sha256'], before)
         blocked = []
+        deletions = []
         for task in plan['tasks']:
             path = safe_child(project, task['result_path'])
             if not path.exists():
@@ -624,32 +643,33 @@ def step(project, wave, *, landing=False, usage_ledger=None, usage_run_id=None):
                 raise MigrationError('Receipt cannot claim compilation or behavior acceptance')
             if receipt.get('final_state') != ('PASS' if receipt['status'] == 'generated' else 'BLOCKED'):
                 raise MigrationError('Receipt generation status and original final_state disagree')
-            files = receipt.get('file_hashes')
             readonly_verification = contract.get('spec_contract_version', 1) >= 2 and not task_def['ownership'] and task_def.get('verification') in {'compile', 'behavior', 'visual'}
-            if not isinstance(files, dict) or receipt.get('status') == 'generated' and not files and not readonly_verification:
-                raise MigrationError('Receipt must pin actual generated files')
-            for name, expected in files.items():
-                if name not in task_def['ownership'] or digest(safe_child(project, name).read_bytes()) != expected:
-                    raise MigrationError('Receipt ownership/hash mismatch: ' + name)
-            if receipt.get('status') == 'generated' and set(files) != set(task_def['ownership']):
-                raise MigrationError('Generated receipt omitted planned outputs')
-            if set(receipt.get('files_touched', [])) != set(files):
-                raise MigrationError('Original touched-files field differs from pinned outputs')
+            _, deleted = validate_outputs(project, receipt, task_def, before=before, readonly=readonly_verification)
             if set(receipt.get('ac_ids', [])) != set(task_def.get('ac_ids', [])):
                 raise MigrationError('Receipt omitted task acceptance criteria')
             if receipt.get('status') == 'generated' and receipt.get('findings'):
                 raise MigrationError('Open semantic findings cannot be landed as generated success')
             if receipt['status'] == 'blocked':
                 blocked.append((task['id'], path))
-        action = _land_native_receipts(project, wave, plan_path, blocked)
+            elif deleted:
+                deletions.append((task['id'], path))
+        with legacy_projection(project, wave, plan_path, deletions) as deletion_evidence:
+            action = _land_native_receipts(project, wave, plan_path, blocked)
+        if deletion_evidence:
+            action['ios_deletion_receipts'] = deletion_evidence
     else:
+        from .receipt_outputs import deletion_intent
         state_path = project / 'spec/state/state.json'
+        rows = []
         if state_path.exists():
             rows = read_json(state_path).get('waves', {}).get(wave, {}).get('tasks', [])
             rows = rows.values() if isinstance(rows, dict) else rows
             if any((row.get('status') == 'failed' and not str(row.get('reason', '')).startswith('RETRY_NEEDED'))
                    or row.get('status') == 'folded' or row.get('final_state') == 'BLOCKED' for row in rows):
                 raise MigrationError('Native failed/blocked tasks cannot advance; repair and explicitly review replan')
+        completed_ids = {row['id'] for row in rows if row.get('status') == 'done'}
+        for task in contract['ios_tasks']:
+            deletion_intent(project, task, check_current=task['id'] not in completed_ids)
         usage_observation = None
         if usage_ledger is not None:
             from .usage_budget import check_for_dispatch
@@ -681,6 +701,10 @@ def step(project, wave, *, landing=False, usage_ledger=None, usage_run_id=None):
         if usage_observation is not None:
             action['usage_budget'] = dict(usage_observation, ledger=str(ledger), scope='supplied evidence before dispatch; no reservation')
         if action.get('action') == 'dispatch':
+            selected = {row['id'] for row in action['batch']}
+            for task in contract['ios_tasks']:
+                if task['id'] in selected:
+                    deletion_intent(project, task, check_current=True)
             generated_fence = _fence_files(project)
             if any(path != prefix + '.manifest.json'
                    and value not in (expected_fence.get(path), previous_fence.get(path))
@@ -697,6 +721,8 @@ def step(project, wave, *, landing=False, usage_ledger=None, usage_run_id=None):
             write_json(evidence_path, {'plan_sha256': digest(plan_path.read_bytes()), 'before_files': before, 'task_ids': task_ids})
     action['ios_scope'] = 'task generation only; compile and behavior gates remain separate'
     action['behavior_verified'] = False
+    if gate_use is not None:
+        action['harness_check'] = gate_use
     failed = (bool(action.get('ios_blocked_receipts')) or action.get('action') == 'escalate'
               or any(x.get('status') in {'RETRY_NEEDED', 'RETRY_EXHAUSTED', 'FAIL', 'INFRA_FAIL'} for x in action.get('landed', [])))
     return action, 2 if failed else 0

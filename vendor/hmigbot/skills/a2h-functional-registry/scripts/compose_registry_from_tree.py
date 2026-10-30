@@ -16,9 +16,7 @@ _EXE = os.path.join(_DIST, "_entry" + (".exe" if _OS == "windows" else ".bin"))
 if not os.path.exists(_EXE):
     sys.stderr.write("no bundled binary for %s-%s at %s\n" % (_OS, _ARCH, _EXE))
     sys.exit(2)
-if _OS == "macos":  # idempotent; failure must not block execution
-    subprocess.run(["xattr", "-dr", "com.apple.quarantine", _DIST],
-                   check=False, capture_output=True)
+# Quarantine preparation is owned by the explicit project boundary.
 os.environ.setdefault("ARKTS_SKILL_DIR", _HERE)  # let bundled lib modules locate the real scripts/ dir
 _argv = [_EXE, "compose_registry_from_tree", *sys.argv[1:]]
 if _OS == "windows":

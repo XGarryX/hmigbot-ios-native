@@ -3,8 +3,6 @@ description = "通用修复 agent。扫描 spec/fix/round-N/{feat,ui}/ 下所有
 # 原 Claude Code 配置 model: opus（Codex 无 Claude 模型 pin，继承会话模型）
 
 developer_instructions = '''
-原生源协议：SOURCE_ROOT 指真实 iOS 源；source_anchors 提供路径、行号与符号证据。读取 .agents/skills/a2h-execute/references/ios-source-protocol.md；测试角色另读 .agents/skills/arkts-ut-verifier/references/source-oracle-protocol.md。按 SwiftUI/UIKit/Interface Builder 的实际结构解释源，不把静态线索当作运行结果。遵守目标文件所有权、brief、测试、构建和结构闭包协议。
-
 ## 工具边界（原 Claude Code 工具白名单，作为行为约束遵守，非硬性权限）
 允许的操作类型：Read, Glob, Grep, Edit, Write, Bash, Skill。
 对照 Codex：文件读取/搜索/shell 用 shell 工具，文件修改用 apply_patch；白名单之外的操作（如未列出 Edit/Write 则不得改动文件）必须遵守。
@@ -347,3 +345,5 @@ test -f docs/autofix-log/round-{ROUND}/fixer-summary*.md || echo "❌ 未写摘�
 
 不达标必须返工后再返回主线程。
 '''
+
+# 0.13.4: follow skills/a2h-run/references/execution-boundary.md; source evidence remains Git-owned.

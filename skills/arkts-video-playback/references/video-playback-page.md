@@ -11,7 +11,7 @@
 模板里的控件层引用了 iOS 原生 SuperPlayer 的 4 张图标资源；如果 iOS 源码工程在手，**先拷到 `entry/src/main/resources/base/media/` 再写代码**，否则 `$r('app.media.player_ic_*')` 会 resolve 失败。
 
 ```bash
-# 原路径：<源工程>/Assets.xcassets/<实际 imageset>/
+# 原路径：<iOS 工程>/<player 模块>/src/main/res/drawable-xxhdpi/
 cp player_ic_backward.webp           entry/src/main/resources/base/media/
 cp player_ic_forward.webp            entry/src/main/resources/base/media/
 cp player_ic_vod_pause_normal.webp   entry/src/main/resources/base/media/
@@ -433,8 +433,8 @@ build() {
         colors: [['rgba(0,0,0,0.55)', 0.0], ['rgba(0,0,0,0)', 1.0]],
       })
 
-      // 5) 左右两侧 -15s / +15s（以实际 iOS 播放页 spec 的动作和间距为准）
-      //    资源：由 ios-resources-convert 的实际资源映射提供后退/前进图标
+      // 5) 左右两侧 -15s / +15s（对齐 iOS player_vod_player_fullscreen.xml）
+      //    资源：从 iOS <player 模块>/res/drawable-xxhdpi 拷 player_ic_backward.webp / player_ic_forward.webp
       //    到 entry/src/main/resources/base/media/。webp 自带灰半透明圆底 + 弧箭头 + "15" 数字，
       //    不要再套 rgba 黑圆或加 Text("15")——会双圆叠加且中心偏。
       //    尺寸：36×36vp（对齐 iOS 36dp），距屏边 95vp（对齐 marginLeft="dp_95"）。

@@ -12,6 +12,7 @@ import re
 import shutil
 import tempfile
 
+from .core import source_snapshot
 from .core import MigrationError, atomic_write, digest, json_bytes, read_json, safe_child, snapshot, source_files, write_json
 
 SCHEMA_VERSION = 1
@@ -306,7 +307,7 @@ def inspect(project):
     source, project = context(Path(project))
     if source == project or source.is_relative_to(project) or project.is_relative_to(source):
         raise MigrationError('Upgrade inspection requires separate source and target trees')
-    inputs, source_digest = _inputs(project), snapshot(source)['sha256']
+    inputs, source_digest = _inputs(project), source_snapshot(source)['sha256']
     profile = contract_version(project)
     diagnostics = _profile_diagnostics(project, source)
     patches, manual = [], []
@@ -318,7 +319,7 @@ def inspect(project):
             continue
         patch, notes = _feature_candidate(project, path)
         patches.extend([patch] if patch else []); manual.extend(notes)
-    if inputs != _inputs(project) or source_digest != snapshot(source)['sha256']:
+    if inputs != _inputs(project) or source_digest != source_snapshot(source)['sha256']:
         raise MigrationError('Source or Spec inputs changed during inspection; retry against stable inputs')
     return validate_report({'schema_version': SCHEMA_VERSION, 'kind': 'hmigbot-ios/spec-upgrade',
         'status': 'diagnostic_requires_review', 'project_root': str(project), 'source_root': str(source),
@@ -375,7 +376,7 @@ def apply(project, report, *, patch_ids=None):
     # Recheck input bindings immediately before the write set, including additions.
     from .native_pipeline import context
     source, _ = context(project)
-    if _inputs(project) != current['input_hashes'] or snapshot(source)['sha256'] != current['source_sha256']:
+    if _inputs(project) != current['input_hashes'] or source_snapshot(source)['sha256'] != current['source_sha256']:
         raise MigrationError('Source or Spec inputs changed during apply preflight')
     for path, data in writes:
         atomic_write(path, data)

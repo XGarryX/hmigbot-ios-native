@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-system-capabilities
-  short_description: HarmonyOS 系统 API 使用指南。当用户需要使用 photoAccessHelper 媒体查询、abilityA…
-  default_prompt: 请使用 $arkts-system-capabilities，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

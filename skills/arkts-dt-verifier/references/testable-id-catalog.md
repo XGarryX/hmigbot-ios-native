@@ -15,8 +15,9 @@ UI 测试 selector 的字面量来源问题（图标按钮没有文本、bindMen
 格式：`<page_short>_<purpose>_<kind>`
 
 - `page_short`：页面短名小写。**生成规则**：
+  - 取 spec 文件名 `page_NNNN_<XxxActivity|XxxFragment|XxxPage>.md` 中的业务名（去掉前缀编号、去掉 `Activity`/`Fragment`/`Page` 后缀），**转 snake_case**
   - 例：`page_0002_MainActivity.md` → `main`；`page_0010_SettingsActivity.md` → `settings`；`page_0018_WidgetConfigureActivity.md` → `widget_config`
-  - 多词驼峰拆分用 `_`（`MediaViewer` → `media_viewer`，`PanoramaPhoto` → `panorama_photo`）
+  - 多词驼峰拆分用 `_`（`ViewPager` → `view_pager`，`PanoramaPhoto` → `panorama_photo`）
   - 同业务名碰撞时（`Photo` vs `PhotoVideo`）保留区分词，不要简化到只剩 `photo`
   - **agent 必须为本项目生成完整映射表写入 manifest 头部**，而不是依赖固定预设
 - `purpose`：英文小词，描述用途（`overflow` / `search` / `camera` / `autoplay` / `query` / `save`）。多词用 `_` 连接（`auto_play`）。
@@ -68,7 +69,7 @@ UI 测试 selector 的字面量来源问题（图标按钮没有文本、bindMen
 - 资源名包含 `pause` → `pause`
 - 资源名匹配不到模式 → 用 accessibilityText 翻译为 snake_case；都没有就用图标资源名末段（`ohos_ic_public_xxx` → `xxx`）
 
-kind 统一用 `btn`。例：`main_overflow_btn` / `edit_save_btn` / `media_viewer_back_btn`。
+kind 统一用 `btn`。例：`main_overflow_btn` / `edit_save_btn` / `view_pager_back_btn`。
 
 ### A2. 顶部标题文本
 
@@ -85,7 +86,7 @@ kind 统一用 `btn`。例：`main_overflow_btn` / `edit_save_btn` / `media_view
 | `Tabs()` | `tabs` |
 | `WaterFlow()` | `waterflow` |
 
-每个页面通常只有一两个，purpose 描述其内容（`directory` / `media` / `photo` / `setting`）。例：`main_directory_grid`、`media_thumbnail_grid`、`settings_list`、`media_viewer_swiper`、`photo_image_swiper`。
+每个页面通常只有一两个，purpose 描述其内容（`directory` / `media` / `photo` / `setting`）。例：`main_directory_grid`、`media_thumbnail_grid`、`settings_list`、`view_pager_swiper`、`photo_image_swiper`。
 
 ### A4. 设置项 / 行项
 
@@ -110,7 +111,7 @@ kind 统一用 `btn`。例：`main_overflow_btn` / `edit_save_btn` / `media_view
 
 不足或违反任一项 → Step 2b agent 返回 `BLOCKERS: manifest gap — <PageName> id injection incomplete (expected N, got M)` 或 `BLOCKERS: manifest contains invalid id`，主线程补实装（每个 @Builder 调用必须传 `settingKey`，见 step2b agent §4.4）后重跑 Step 2b。Step 3 在下限自检通过前**不得启动**，否则会退回"合并枚举"兜底（违反反模式 11）。
 
-**不可达页例外**：若 spec 明确标注该页需要外部链接或系统入口启动（Step 3 beforeAll 会 `throw (unreachable)`）→ 本下限自检跳过，manifest 用 `<PageName>: UNREACHABLE_SKIP` 标注。
+**不可达页例外**：若 spec 明确标注该页需要外部 Intent 启动（Step 3 beforeAll 会 `throw (unreachable)`）→ 本下限自检跳过，manifest 用 `<PageName>: UNREACHABLE_SKIP` 标注。
 
 ### A5. FAB / 主操作按钮
 

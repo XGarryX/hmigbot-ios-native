@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from . import __version__
+from .core import source_snapshot
 from .core import SCHEMA, MigrationError, digest, json_bytes, read_json, snapshot, write_new_tree
 from .xcode import project_inventory, dependency_inventory
 from .resources import asset_inventory, localization_inventory, convert_assets, convert_localization
@@ -63,7 +64,7 @@ def run_atom(operation, root, output, *, provider_config=None, input_path=None, 
     root, output = root.resolve(), output.resolve()
     if output.is_relative_to(root) or root.is_relative_to(output):
         raise MigrationError('Atom output must not overlap its source')
-    before = snapshot(root)
+    before = source_snapshot(root)
     files = before['files']
     payload, extra = {}, {}
     if operation == 'project-inventory':
@@ -111,7 +112,7 @@ def run_atom(operation, root, output, *, provider_config=None, input_path=None, 
             value = normalize_build_settings(read_json(input_path / 'artifacts/build-settings.json'))
             issues = []
             extra = {'input_manifest_sha256': digest((input_path / 'manifest.json').read_bytes()), 'input_mode': 'frozen_evidence'}
-    if snapshot(root)['sha256'] != before['sha256']:
+    if source_snapshot(root)['sha256'] != before['sha256']:
         raise MigrationError('Source changed during atomic operation; retry with a stable snapshot')
     report = {'schema_version': SCHEMA, 'tool_version': __version__, 'operation': operation,
               'atom_ids': OPERATIONS[operation], 'source_sha256': before['sha256'], 'source_snapshot': before,

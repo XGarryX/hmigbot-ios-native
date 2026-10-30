@@ -1,28 +1,28 @@
 # Reconciliation 算法（跨轮状态推导）
 
-`arkts-ut-verifier` 的 execute 步骤每轮跑完后，通过比较 `spec/verify/ut/round-{N-1}/ut/` 与本轮 runtime 结果，写出 `spec/verify/ut/round-N/ut/` + `_ut_delta.md`，并保证状态语义正确。
+`arkts-ut-verifier` 的 execute 步骤每轮跑完后，通过比较 `spec/fix/round-{N-1}/ut/` 与本轮 runtime 结果，写出 `spec/fix/round-N/ut/` + `_ut_delta.md`，并保证状态语义正确。
 
 **角色**：ut-verifier execute 步骤的"权威算法"。**依赖**：`fix-file-schema.md`（文件结构）。
 
 ## 一、核心命名约定
 
 - 一个**问题** = 一个 ID（确定性，跨轮稳定）
-- 一个**文件** = `spec/verify/ut/round-N/ut/<id>.md`
-- **文件存在** = 该轮该问题处于 RED / ERROR / IMPL_MISSING / UNREACHABLE 之一
-- **文件不存在** ∧ **该 it() 有真实 GREEN 结果、通过独立质量门且本条行为所需生产接线无缺口** = 该轮验证通过；其余缺结果/缺依据进入未验证清单，已确认接线缺口保留实现问题
+- 一个**文件** = `spec/fix/round-N/ut/<id>.md`
+- **文件存在** = 该轮该问题处于 RED / ERROR 之一
+- **文件不存在** ∧ **测试套件仍含此 it()** = 该轮 GREEN
 - **文件不存在** ∧ **测试套件不含此 it()** = stale（spec/测试已删此条）
 
 ## 二、状态推导表（不依赖 frontmatter）
 
-某 ID 在 round-N 的状态由 `round-(N-1)` 问题文件与本轮验证结论共同决定；本轮结论合并实际日志、独立测试质量检查和必要生产接线复核，不直接套用方法 UT 的原始 GREEN：
+某 ID 在 round-N 的状态 = `round-(N-1)` 与本轮 runtime 的存在性组合：
 
-| round-(N-1) 文件 | round-N 验证结论 | 推导状态 | round-N/ 是否写文件 | 备注 |
+| round-(N-1) 文件 | round-N runtime | 推导状态 | round-N/ 是否写文件 | 备注 |
 |---|---|---|---|---|
-| 不存在 | GREEN 且必要接线无缺口 | `still_green` | 否 | 无开放问题 |
-| 不存在 | RED / ERROR / IMPL_MISSING / UNREACHABLE | `newly_open` | ✅ 新建 | 原始 GREEN 但必要接线缺失也保留实现问题 |
-| 存在 | GREEN 且必要接线无缺口 | `fixed` | 否 | 还须核对稳定 ID 与原验证义务 |
-| 存在 | RED / ERROR / IMPL_MISSING / UNREACHABLE | `still_failing` | ✅ carry forward 写 | disposition 必须 carry；kind 按当前证据重算 |
-| 存在 | 未执行且无足够结论 | 未验证 / `stale` 候选 | 按当前证据 | 测试仍在设计中则保留缺口，仅删除/移出范围才进一步核对 stale |
+| 不存在 | GREEN | `still_green` | 否 | 不关心 |
+| 不存在 | RED / ERROR | `newly_open` | ✅ 新建 | created_round 隐含 = N |
+| 存在 | GREEN | `fixed` | 否 | round-N/ 缺该文件 = fixed 信号 |
+| 存在 | RED / ERROR | `still_failing` | ✅ carry forward 写 | disposition 必须 carry |
+| 存在 | 不在 runtime 中 | `stale` 候选 | 否 | 进一步在 `_delta.md` 区分 |
 
 **回归（regression）检测**：扫历史轮看模式
 
@@ -32,18 +32,14 @@
 
 即：上次 fixed 之后又再次出现 → 这是回归。`_ut_delta.md` 把这种 ID 标 `regressed`。
 
-> **回归需诊断**：主线程区分实际源码回归与测试质量门重分类，保留其它已验证修复，不 git reset。可修生产/测试问题继续派发，不仅因 REGRESSED 自动转人工；行为证据缺失或需裁决时才记录具体处置依据。
-
-> **测试更新后的对账**：先验收 `TEST_UPDATES` 的 iOS 依据、原行为断言与设计/generation/注册一致性，再使用本轮实际执行结果。旧 `no_entry` 已出现入口时不得照抄缺失结论；补测试后使用同一稳定 ID 的真实结果。删除/改名测试或弱化断言不能算 `fixed`，须退回补齐原验证义务；仅有新入口、尚未实跑也不能算解决。旧人工处置仅因禁测、fixture 或待刷新时，由主线程复核并清回 null，executor 不自行覆盖仍有效决策。
-
-> **生产接线对账**：按 `fixer-wiring-policy.md` 独立回查 `WIRING_EVIDENCE` 与实际调用链。本条行为所需接线尚缺时，即使方法 UT 为 GREEN，也保留对应实现问题与 `partial`，不能算 `RESOLVED` 或完整实现。旧 `UNREACHABLE` 因新增入口失效时由主线程按当前证据重分类，再对同一稳定 ID 对账，不能凭改分类或文件消失当成已解决。
+> **不回滚**：fix-loop 主线程拿到 REGRESSED 列表后，给每个 ID 自动写 `disposition: manual_review` 让下轮 fixer 跳过（防来回反复），但**不 git reset**。本轮其它 RESOLVED 的进展保留。原因：回滚的损失大于收益；fixer 应通过反向 impact 自检 + 保留向后兼容来主动防回归。
 
 ## 三、carry forward 算法（写 round-N/ut/<id>.md 之前）
 
 ```pseudocode
 def write_problem_file(round_N: int, id: str, current_run_data: dict):
-    new_file_path  = f"spec/verify/ut/round-{round_N}/ut/{id}.md"
-    prev_file_path = f"spec/verify/ut/round-{round_N - 1}/ut/{id}.md"
+    new_file_path  = f"spec/fix/round-{round_N}/ut/{id}.md"
+    prev_file_path = f"spec/fix/round-{round_N - 1}/ut/{id}.md"
 
     # 1. 准备新 frontmatter（默认值 + 当轮数据）
     fm = {
@@ -79,9 +75,9 @@ def write_problem_file(round_N: int, id: str, current_run_data: dict):
 
 ### 关键不变式
 
-1. **disposition 不静默丢失**：主线程先复核已失效的禁测/待刷新原因，必要时显式清为 null；executor 只继承复核后的有效处置，不能将旧职责限制当永久人工原因
+1. **disposition 永不丢失**：除非 fix-loop 主线程显式清空（设为 null），否则一直 carry forward
 2. **suggested_files 每轮重算**：本轮 verifier 的最新分析为权威（spec 改 / 源码改 → 缺口位置可能变）
-3. **kind / severity 每轮重算**：依据本轮实际运行与独立复核证据（如 ERROR 修成 RED，或方法 GREEN 但必要接线仍缺，也要准确分类）
+3. **kind / severity 每轮重算**：本轮 runtime 是权威（如 ERROR 修成 RED 也要更新）
 4. **不维护历史尝试表**：跨轮历史靠 round 目录序列 + `fixer-summary.md` 承载
 
 ## 四、`_ut_delta.md` 生成算法
@@ -90,8 +86,8 @@ def write_problem_file(round_N: int, id: str, current_run_data: dict):
 
 ```pseudocode
 def gen_delta(round_N: int):
-    prev_dir = f"spec/verify/ut/round-{round_N - 1}/ut"
-    curr_dir = f"spec/verify/ut/round-{round_N}/ut"
+    prev_dir = f"spec/fix/round-{round_N - 1}/ut"
+    curr_dir = f"spec/fix/round-{round_N}/ut"
 
     prev_ids = scan_problem_files(prev_dir)
     curr_ids = scan_problem_files(curr_dir)
@@ -111,12 +107,9 @@ def gen_delta(round_N: int):
     # resolved 区分"真 fixed"vs"stale"
     fixed, stale = [], []
     test_names_now = parse_current_test_suite_it_names()
-    validated_green = 本轮有真实 GREEN 日志、通过独立测试质量门且本条行为必要生产接线无缺口的ID
     for id in resolved:
         if id not in test_names_now:
-            stale.append(id)   # 缺测试需说明，原行为义务未完成则退回补测，不算修复
-        elif id not in validated_green:
-            返回未执行、质量不合格或必要接线缺失问题，保持开放并修正本轮报告
+            stale.append(id)   # spec 改 / 测试删 → it() 不再存在
         else:
             fixed.append(id)
 
@@ -148,13 +141,13 @@ def gen_delta(round_N: int):
 - F022_AC01_savedPage_resume    ← spec 改了引入新测试
 - ...
 
-## 🚨 Regressed（回归，{count}）
+## 🚨 Regressed（回归，{count}）⚠️ 自动 mark manual_review，不回滚
 
 历史轮次中 fixed 过、本轮再次失败：
 
 - F005_AC01_db_init   ← 在 round-2 fixed，本轮 round-{N} 再次失败
   上次 fixed 时 commit: <sha>（见 fixer-summary.md）
-  按本轮证据区分生产回归/测试质量问题；可修项保持开放，需裁决项注明依据
+  本轮自动标 disposition: manual_review（需人工排查 fix 的副作用）
 
 ## 🪦 Stale（{count}）
 
@@ -195,7 +188,7 @@ schema_version: 1
 current_round: <N>
 last_verifier_run_at: <ISO 时间戳>
 last_verifier_source: arkts-ut-verifier
-loop_status: running | paused | passed | converged | failed | stalled
+loop_status: running | paused | passed | failed | stalled
 max_rounds: 10
 no_progress_rounds: 2
 ```
@@ -204,18 +197,15 @@ no_progress_rounds: 2
 - verifier 首跑（baseline）→ 写 `current_round: 0`
 - fix-loop 调度 verifier 重跑 → `current_round = N+1`
 - verifier 不要自己推断 round 号；主线程显式传 `ROUND` 参数
-- `passed` 仅用于实际全范围通过；有真实缺证据/不可达等未验证残留但内部工作已完成时为 `converged`，仍有待补测/质量退回时保持 `running` 或按明确失败退出。
 
-> `_state.yaml` 位于本 skill 私有的 `spec/verify/ut/` 根下，不与其它 verifier 共享——不存在并发覆盖问题。
+> 若同项目并行跑 `arkts-ui-verifier`，`last_verifier_source` 字段会被各 skill 互相覆盖（最后写者胜出）；不影响 round 推进。
 
 ## 七、自检（verifier 完成 reconcile 后必跑）
 
-失败处理统一遵循 executor §6.5 与 `fix-file-schema.md §九`：自身产物错误在本轮自动修复并重验，最多 2 次；不得改变原始证据、失败事实或擅清 disposition。主线程已批准变更的处置须附批准证据，核对该证据后更新 carry-forward 检查依据，不能把有效处置改回旧值来消除告警。
-
 ```bash
 N=<本轮号>
-ROUND_DIR="spec/verify/ut/round-$N"
-PREV_DIR="spec/verify/ut/round-$((N-1))"
+ROUND_DIR="spec/fix/round-$N"
+PREV_DIR="spec/fix/round-$((N-1))"
 
 # 1. round 目录已建
 test -d $ROUND_DIR/ut || mkdir -p $ROUND_DIR/ut
@@ -243,6 +233,6 @@ if [[ -d $PREV_DIR/ut ]]; then
 fi
 
 # 4. _state.yaml 已更新到本轮
-state_round=$(awk '/^current_round:/{print $2; exit}' spec/verify/ut/_state.yaml)
+state_round=$(awk '/^current_round:/{print $2; exit}' spec/fix/_state.yaml)
 [[ "$state_round" == "$N" ]] || echo "❌ _state.yaml current_round 未更新到 $N"
 ```

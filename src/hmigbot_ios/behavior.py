@@ -6,6 +6,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_json
 
 
@@ -326,18 +327,32 @@ def verify(project, source, graph, acs, *, run=False):
             except (MigrationError, OSError, TypeError) as exc:
                 failures.append({'rule': 'IOS.BEHAVIOR_TARGET_CHANGED', 'subject': ident, 'detail': str(exc)})
     # Report whether invoked processes changed source/target rather than silently accepting side effects.
-    if snapshot(source)['sha256'] != graph['source_sha256']:
+    if source_snapshot(source)['sha256'] != graph['source_sha256']:
         failures.append({'rule': 'IOS.BEHAVIOR_SOURCE_CHANGED', 'subject': 'source'})
     if (digest(verification_path.read_bytes()) != verification_sha
             or spec_inputs(project) != contract_hashes or target_inputs(project) != product_hashes):
         failures.append({'rule': 'IOS.BEHAVIOR_INPUT_CHANGED', 'subject': 'verification/spec/target'})
+    from .behavior_review import review as review_effects
+    try:
+        effect_review = review_effects(project, source, graph, spec, observations)
+    except (MigrationError, OSError, ValueError, KeyError, TypeError) as exc:
+        # Preserve the original findings/report even when the optional review
+        # contract or its inputs fail; never replace them with an old PASS.
+        effect_review = {'status': 'UNVERIFIED', 'behavior_verified': False, 'findings': [
+            {'id': 'effect-input-unavailable', 'rule': 'IOS.EFFECT_REVIEW_INPUT',
+             'subject': 'effect_review', 'status': 'unverified', 'detail': str(exc)}]}
+    failures.extend(f for f in effect_review['findings'] if f.get('status') == 'confirmed_failure')
+    effect_unverified = effect_review['status'] == 'UNVERIFIED'
     pending = sorted(set(acs) - covered)
-    report = {'schema_version': 2, 'status': 'FAIL' if failures else 'UNVERIFIED' if pending else 'PASS',
+    report = {'schema_version': 2, 'status': 'FAIL' if failures else 'UNVERIFIED' if pending or effect_unverified else 'PASS',
               'verification_sha256': verification_sha,
               'spec_input_hashes': contract_hashes, 'target_input_hashes': product_hashes,
               'source_sha256': graph['source_sha256'], 'target_before_sha256': target_before,
               'failures': failures, 'observations': observations, 'unverified_ac_ids': pending,
-              'behavior_verified': not failures and not pending,
+              'effect_review': effect_review,
+              'behavior_verified': not failures and not pending and not effect_unverified,
               'scope': 'declared cases and process observations; source oracle and device authenticity need independent review'}
     write_json(project / 'spec/reports/ios-behavior-check.json', report)
-    return report, 2 if failures else 3 if pending else 0
+    if effect_review['status'] != 'not_selected':
+        write_json(project / 'spec/reports/ios-behavior-review.json', effect_review)
+    return report, 2 if failures else 3 if pending or effect_unverified else 0

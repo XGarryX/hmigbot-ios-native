@@ -5,10 +5,62 @@ import platform
 import shlex
 import shutil
 
-from .core import MigrationError, digest, read_json, snapshot, write_json
+from .core import source_snapshot
+from .core import MigrationError, digest, json_bytes, read_json, snapshot, write_json
 from .apple_capabilities import command
 
 ROOT = Path(__file__).resolve().parents[2]
+
+# Owned adapter fingerprints verified against the corresponding local 0.13.x
+# source packages. Unknown/third-party implementations are never substituted.
+SWIFT_PREDECESSORS = {
+    '20e6ecd716cde8c994ffa2d72e2f75d7983e3e37d289c50017a3f29fec63877b': '0.13.0',
+    '4963baf6ac13af05a02b288d6a9ed602646b06807f6f39a5003e139978687ff9': '0.13.1',
+}
+
+
+def swift_provider_identity():
+    """Bind every compiled Swift adapter source, not just its main entry file."""
+    sources = [ROOT / 'providers/swift-syntax' / name for name in ('main.swift', 'VisibilityFacts.swift')]
+    hashes = {path.relative_to(ROOT).as_posix(): digest(path.read_bytes()) for path in sources}
+    return sources, hashes, digest(json_bytes(hashes))
+
+
+def current_swift_adapter(config_path, config):
+    """Upgrade only known, unextended HMigBot adapter requests.
+
+    The caller first checks the requested executable hash. Original configs and
+    artifacts remain untouched; fresh CLI diagnostics are retained outside the
+    package. This prevents old project configuration from retaining Python Swift
+    analysis after the local tool has been upgraded.
+    """
+    previous = config.get('provider_source_sha256')
+    _, _, current = swift_provider_identity()
+    declared = config.get('provider_sources_sha256')
+    if declared is not None:
+        if (not isinstance(declared, dict) or not declared
+                or any(not isinstance(path, str) or not isinstance(value, str) or len(value) != 64
+                       or any(char not in '0123456789abcdef' for char in value) for path, value in declared.items())
+                or digest(json_bytes(declared)) != previous):
+            raise MigrationError('Swift adapter source bundle identity is inconsistent')
+    if previous not in SWIFT_PREDECESSORS or previous == current:
+        return config, None
+    fields = {'command', 'version_command', 'timeout_seconds', 'provider_source_sha256', 'provider_binary_sha256'}
+    if (set(config) != fields or len(config['command']) != 1 or not Path(config['command'][0]).is_absolute()
+            or config['version_command'] != ['xcrun', 'swiftc', '--version']):
+        raise MigrationError('Known legacy Swift adapter has custom configuration; explicit migration is required')
+    import tempfile
+    from . import __version__
+    folder = Path(tempfile.mkdtemp(prefix='hmigbot-swift-upgrade-'))
+    path = swift_provider(folder, folder / 'provider')
+    effective = read_json(path)
+    record = {'status': 'upgraded', 'from_tool': SWIFT_PREDECESSORS[previous], 'tool_version': __version__,
+              'requested_config_sha256': digest(Path(config_path).read_bytes()),
+              'requested_source_sha256': previous, 'effective_source_sha256': current,
+              'effective_config_sha256': digest(path.read_bytes()),
+              'effective_binary_sha256': effective['provider_binary_sha256'], 'evidence_directory': str(folder)}
+    write_json(folder / 'upgrade.json', record)
+    return effective, record
 
 
 def selection(source, supplied, output):
@@ -60,15 +112,17 @@ def swift_provider(source, output):
     if not (host / 'SwiftSyntax.swiftmodule').exists() or not (host / 'SwiftParser.swiftmodule').exists():
         raise MigrationError('Installed Swift toolchain has no compatible SwiftSyntax/SwiftParser host modules')
     executable = output / 'swift-syntax-provider'
-    main = ROOT / 'providers/swift-syntax/main.swift'
+    sources, source_hashes, source_identity = swift_provider_identity()
     sdk = command(output, 'macos-sdk', ['xcrun', '--sdk', 'macosx', '--show-sdk-path'], cwd=source, timeout=30).decode().strip()
-    argv = [str(compiler), str(main), '-sdk', sdk, '-I', str(host), '-L', str(host),
+    argv = [str(compiler), *map(str, sources), '-O', '-sdk', sdk, '-module-cache-path', str(output / 'ModuleCache'),
+            '-I', str(host), '-L', str(host),
             '-lSwiftSyntax', '-lSwiftParser', '-lSwiftParserDiagnostics',
             '-Xlinker', '-rpath', '-Xlinker', str(host), '-o', str(executable)]
     command(output, 'swift-syntax-build', argv, cwd=source, timeout=120)
     config = output / 'swift-syntax.json'
     write_json(config, {'command': [str(executable)], 'version_command': ['xcrun', 'swiftc', '--version'],
-                        'timeout_seconds': 120, 'provider_source_sha256': digest(main.read_bytes()),
+                        'timeout_seconds': 120, 'provider_source_sha256': source_identity,
+                        'provider_sources_sha256': source_hashes,
                         'provider_binary_sha256': digest(executable.read_bytes())})
     return config
 
@@ -77,7 +131,7 @@ def capture(source, project, supplied, output, *, need_conditionals=False, timeo
     from .source_build_membership import collect
     from .evidence import pack
     from .conditional_evidence import _dependency_paths, preprocess_argv, FLAGS
-    before = snapshot(source)['sha256']
+    before = source_snapshot(source)['sha256']
     selected = supplied
     capture_dir = output / 'capture'
     capture_dir.mkdir(parents=True)
@@ -98,7 +152,7 @@ def capture(source, project, supplied, output, *, need_conditionals=False, timeo
     selected = {**selected, 'target': candidates[0]['target']}
     write_json(capture_dir / 'build-settings.json', settings)
     known_tools = {}
-    for program in ('clang', 'clang++'):
+    for program in ('clang', 'clang++', 'swiftc'):
         compiler = Path(command(capture_dir, program.replace('+', 'p') + '-location',
                                 ['xcrun', '--find', program], cwd=source, timeout=30).decode().strip()).resolve()
         known_tools[str(compiler)] = digest(compiler.read_bytes())
@@ -107,15 +161,22 @@ def capture(source, project, supplied, output, *, need_conditionals=False, timeo
     # The same raw build feeds membership, Clang AST and conditional capture.
     build = base + ['-verbose', 'build']
     command(capture_dir, 'device-build', build, cwd=source, timeout=timeout)
-    if snapshot(source)['sha256'] != before:
+    if source_snapshot(source)['sha256'] != before:
         raise MigrationError('Source changed during automatic native capture')
     records = [{'name': 'device-build', 'argv': build, 'cwd': str(source), 'exit_code': 0}]
     write_json(capture_dir / 'commands.json', records)
     write_json(capture_dir / 'capture-report.json', {'commands': records, 'build_succeeded': True,
                'source_unchanged': True, 'source_sha256': before})
+    from .native_product_scope import capture_scope
+    product_scope = capture_scope(source, derived, capture_dir, settings,
+        root_target=selected['target'], scheme=selected['scheme'], configuration=selected['configuration'],
+        sdk=selected['sdk'], architectures=[selected['arch']], source_sha256=before,
+        command=lambda name, argv: command(capture_dir, name, argv, cwd=source, timeout=min(timeout, 120)),
+        allow_non_application=True)
+    selected = {**selected, 'targets': product_scope['targets']}
     membership = collect(source, derived, capture_dir,
                          {'scheme': selected['scheme'], 'configuration': selected['configuration'],
-                          'sdk': selected['sdk'], 'xcode_version': version, 'targets': [selected['target']],
+                          'sdk': selected['sdk'], 'xcode_version': version, 'targets': product_scope['targets'],
                           'architectures': [selected['arch']]},
                          build_log=capture_dir / 'device-build.stdout.log')
     if membership['membership_status'] != 'complete':
@@ -171,6 +232,18 @@ def capture(source, project, supplied, output, *, need_conditionals=False, timeo
         raise MigrationError('Compiler or SDK changed or was not observed before build')
     tool_hashes = {p: known_tools[p] for p in used_tools}
     write_json(capture_dir / 'toolchain-inputs.json', {'before': tool_hashes, 'after': tool_hashes})
+    swift_tools = set()
+    for line in log:
+        if line.lstrip().startswith('builtin-SwiftDriver -- '):
+            arguments = shlex.split(line.strip())[2:]
+            if arguments:
+                swift_tools.add(str(Path(arguments[0]).resolve()))
+    if swift_tools:
+        swift_tools.add(str(sdk_settings))
+        if any(path not in known_tools or digest(Path(path).read_bytes()) != known_tools[path] for path in swift_tools):
+            raise MigrationError('Swift compiler/SDK changed since the observed native build')
+        hashes = {path: known_tools[path] for path in sorted(swift_tools)}
+        write_json(capture_dir / 'swift-toolchain-inputs.json', {'before': hashes, 'after': hashes})
     write_json(capture_dir / 'compile-commands.json', commands)
     clang = None
     if ast_units:
@@ -182,11 +255,14 @@ def capture(source, project, supplied, output, *, need_conditionals=False, timeo
     variant = {'scope': 'selected-build', 'source_files': membership['source_files'], 'evidence_path': str(compiled)}
     condition_path, unsupported = None, None
     if need_conditionals:
-        if kind != 'project':
+        has_swift = any(name.endswith('.swift') for name in membership['source_files'])
+        if len(product_scope['targets']) != 1:
+            unsupported = 'Conditional compiler evidence currently requires a single selected target'
+        elif kind != 'project':
             unsupported = 'Conditional compiler evidence currently requires a single Xcode project'
-        elif not commands:
+        elif not commands and not has_swift:
             unsupported = 'No C-family compilation command available for conditional evidence'
-        else:
+        elif commands:
             # Keep compiler units and preprocessing dependencies in separate bundles.
             conditional_dir = output / 'conditional-build-capture'
             shutil.copytree(capture_dir, conditional_dir)
@@ -205,6 +281,21 @@ def capture(source, project, supplied, output, *, need_conditionals=False, timeo
             variant = {'scope': 'selected-build', 'source_files': sorted(members),
                        'evidence_path': str(bundle), 'conditional_evidence': str(condition_path),
                        'expected_build': expected, 'compilation_evidence_path': str(compiled)}
+        if has_swift and unsupported is None:
+            # Compose real Swift and Clang observations under the one selected
+            # compiler membership. Swift flags and Clang -D/-Xcc contexts stay
+            # separate; a failed component never invents active source lines.
+            expected = {'project': selected[kind], 'scheme': selected['scheme'],
+                        'target': selected['target'], 'configuration': selected['configuration'],
+                        'sdk': selected['sdk'], 'architecture': selected['arch']}
+            from .conditional_views import capture as capture_views
+            swift_path = project / 'spec/ref/ios-conditional-evidence' / (output.parent.name + '-' + output.name + '-configured')
+            result = capture_views(source, project, compiled, swift_path, expected, clang=condition_path)
+            condition_path = swift_path
+            variant = {'scope': 'selected-build', 'source_files': membership['source_files'],
+                       'evidence_path': str(compiled), 'conditional_evidence': str(condition_path),
+                       'expected_build': expected}
+            unsupported = result['unknowns'] or None
     return {'variant': variant, 'compilation': str(compiled), 'clang_config': str(clang) if clang else None,
             'conditional': str(condition_path) if condition_path else None, 'conditional_unresolved': unsupported,
             'selection': selected, 'source_sha256': before, 'status': 'captured'}

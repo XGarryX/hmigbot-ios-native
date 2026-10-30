@@ -1,15 +1,20 @@
 ---
 name: hmos-fix-build-errors
-description: "Build a HarmonyOS project via CLI and automatically fix compile errors in a loop until the build succeeds. Handles ArkTS V2 errors (@ComponentV2/@Local/@Param/@Event/@Once/@Provider/@Consumer/@Monitor/@Computed/@ObservedV2/@Trace/AppStorageV2/PersistenceV2) as well as legacy V1 (@Component/@State/@Prop/@Link/@Provide/@Consume/@Observed/@ObjectLink/@StorageLink/@StorageProp/@Watch). Default unsigned HAP; pass --signed to build a signed HAP (signing config must already exist in the project's build-profile.json5)."
+description: Build a HarmonyOS project via CLI and automatically fix compile errors in a loop until the build succeeds. Handles ArkTS V2 errors (@ComponentV2/@Local/@Param/@Event/@Once/@Provider/@Consumer/@Monitor/@Computed/@ObservedV2/@Trace/AppStorageV2/PersistenceV2) as well as legacy V1 (@Component/@State/@Prop/@Link/@Provide/@Consume/@Observed/@ObjectLink/@StorageLink/@StorageProp/@Watch). Default unsigned HAP; pass --signed to build a signed HAP (signing config must already exist in the project's build-profile.json5).
 metadata:
   type: tool
   domain: engineering
 ---
 
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+
+> **Codex subagent dispatch convention.** This skill dispatches subagents. In Codex, spawn them with the `spawn_agent` tool and pass `agent_type` = the role name **exactly as written in this skill** — the roles registered under `.codex/agents/*.toml` use the same hyphenated names, so no translation step is involved: `a2h-ios-converter`, `a2h-ios-analyzer`, `a2h-closer`, `a2h-fixer`, `a2h-migration-worker`, `ad-profile-builder`, `compose-fact-analyzer`, `hmos-builder`, `scenario-builder`, `visual-fixer`, `visual-fixer-reviewer`. The built-in `general-purpose` agent_type is unchanged. (Claude's `subagent_type` field is written `agent_type` for Codex; `Agent(...)` dispatch calls are `spawn_agent(...)`; there is no `Task` tool in Codex.)
 >
-> **Join 协议（收口五条款）。** Codex 子代理完成后**不会**唤醒主会话——结果必须由派发方主动收口，违者=静默卡死（实测事故）。
-> ① **循环 wait**：每个 `spawn_agent` 句柄用循环调用 `wait_agent` 收口；单次超时只代表"还在跑"，继续再调；**禁止以"等待子代理"为由结束回合**。醒后必调 `list_agents` 确认是谁完成——**完成的唯一合法信号 = `agent_status` 为 `{"completed": …}`，绝不是产物文件的存在/条数**（文件会中途落盘，读半截=实测事故）；completed 态会在数轮后从 list 中消失，所以每次醒来都要及时查。正文所有"等待完成 / join / 到点即收"表述一律指此循环。
-> ② **死句柄与验收**：连续 3 次超时后调 `list_agents` 核对，可配 `wait_for_artifact.py` 探产物活性；已 completed 且 summary 可读 → 直接消费；句柄消失且从未观测到 completed → 按断点重派（带原 prompt + 已落盘产物，上限 2 次），禁止继续等待。**completed ≠ 验收通过**：join 点跑 `python3 .agents/skills/a2h-join/scripts/join_gate.py --project .` 验产物完整性，FAIL 视同未取回、按本条重派。
+> **Join 协议（收口五条款）。** 子代理通知与等待行为由宿主决定；派发方必须按 [a2h-join](../a2h-join/SKILL.md) 主动核对可信终态并验收产物，不能只等通知或看到文件就放行。
+> ① **循环 wait**：每个 `spawn_agent` 句柄用循环调用 `wait_agent` 收口；单次超时只代表"还在跑"，继续再调；**禁止以"等待子代理"为由结束回合**。醒后必调 `list_agents` 确认是谁完成——**完成依据按 [a2h-join](../a2h-join/SKILL.md)：本轮可信宿主 `completed` 或经过身份与时序核验的原生 `FINAL_ANSWER`；产物存在/条数不能代替完成**（文件会中途落盘，读半截=实测事故）；completed 态会在数轮后从 list 中消失，所以每次醒来都要及时查。正文所有"等待完成 / join / 到点即收"表述一律指此循环。
+> ② **死句柄与验收**：连续 3 次超时后调 `list_agents` 核对，可配 `wait_for_artifact.py` 探产物活性；已 completed 且 summary 可读 → 直接消费；句柄消失且从未观测到可信完成 → 按断点重派（带原 prompt + 已落盘产物，上限 2 次），禁止继续等待。**completed ≠ 验收通过**：join 点跑 `python3 .agents/skills/a2h-join/scripts/join_gate.py --project .` 验产物完整性，FAIL 视同未取回、按本条重派。
 > ③ **收口锚点**：本 skill 最终完成报告前必须收口全部句柄（join_gate exit 0）；正文写明的显式 join 点优先按正文执行。发用户门（Gate）时允许句柄跨 Gate 存活，但 Gate 摘要必须列明未收口句柄清单 + 各自的指定 join 点。
 > ④ **放行 ≠ 遗弃**：正文"非阻塞放行/到点即收/降级继续"只推迟收口时机，不豁免收口义务。
 > ⑤ **fire-and-forget**：仅正文显式声明"结果丢弃/不 gate"的派发（如 a2h-execute 的 env-prewarm）免收口；审计只认 join_gate 内静态 allowlist，正文声明只是文档层。
@@ -78,7 +83,6 @@ Automatically build a HarmonyOS NEXT project from the command line, parse compil
 5. **Determine Build Mode**（**只读探测，绝不改 `build-profile.json5`**——2026-08-18 前的版本在这里"若有 signingConfigs 则删除"，实测会把用户 DevEco 配好的真实签名连同密码整段删掉并随 checkpoint 入库，下游装机全废；已废止）：
    1. **跑脚本**（别手工看，`.cer` 里通常是 3 张证书的链，`openssl x509 -enddate` 只显示第一张根证书 2049 会误判）：
       `python3 <本 skill 目录>/scripts/check_signing.py <project-dir>` → 一行 JSON：`configured` / `product_ref` / `files{}` / `cert_not_after`（链中最早到期=叶证书）/ `profile_not_after`（.p7b 载荷 validity）/ `expired` / `verdict` / `reason`。脚本只读，不改任何文件；Windows 下同一份（不依赖 openssl 命令）。**脚本跑不起来**（无 python / 报错）→ 不阻塞：按 Unsigned build mode 继续，报告 `unsigned(fallback: signing probe unavailable: <错误首行>)`——编译永远照跑，签名探测失败只影响出不出 signed 包。
-      若原探测exit0却明确报profile不存在，而文档project-dir下的`build-profile.json5`实际存在，公开包装器只做存在性核对，返回exit3与`status=unavailable / verdict=unverified`；不解析配置、不补造签名结论。auto按上述probe-unavailable fallback报告真实理由后继续构建；显式`--signed`仍须有效签名证据，显式`--unsigned`照常。其它原结果与退出码保持转发。这仅防止已知错误理由，不代表底层签名探测接口已修复。
    2. 按 `$ARGUMENTS[2]` 决定：
       - **omitted（auto）**：直接采用脚本 `verdict`：`signed` → **Signed build mode**（Step 0.5 只做校验，不会 STOP）；`unsigned` → **Unsigned build mode**，报告原样转录脚本 `reason`（`no signing configured` / `material missing: …` / `certificate expired NotAfter=…` / `no product references it`）。
       - **auto 命中 signed 但 SignHap 阶段仍失败**（hvigor 报 `Failed :entry:default@SignHap` / `11013xxx` 证书或 profile 错误，且 ArkTS 编译 0 error）：这不是源码错误，**不进 build-fix 循环**；改按下面 §5.3 的临时剥离流程用 unsigned 重跑一次，报告 `unsigned(fallback: SignHap failed: <hvigor 原话首行>)`，并在报告里提示用户到 DevEco 重新生成签名。
@@ -151,7 +155,7 @@ Env vars must be set inside a `.bat` so they reach the native `node.exe`/`java` 
    ```
    (the `SignHap` step spawns `java` as a child process)
 
-2. **Run the batch file via the PowerShell tool** (foreground or the host’s supported asynchronous command mechanism per the timeout policy below):
+2. **Run the batch file via the PowerShell tool** (foreground or `run_in_background` per the timeout policy below):
    ```powershell
    cmd /c '"<project-dir>\build_temp.bat"'
    ```
@@ -180,7 +184,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 #### Timeout policy
 
-- **First build (cold)**: run in the background (the host’s supported asynchronous command mechanism). Cold start (hvigor init, SDK component load, dependency scan, antivirus scanning on Windows) routinely exceeds 5 minutes. You are notified automatically on completion — do NOT poll in a sleep loop; you may Grep `build_out.log` occasionally for progress.
+- **First build (cold)**: run in the background (`run_in_background`). Cold start (hvigor init, SDK component load, dependency scan, antivirus scanning on Windows) routinely exceeds 5 minutes. You are notified automatically on completion — do NOT poll in a sleep loop; you may Grep `build_out.log` occasionally for progress.
 - **Subsequent builds (incremental, daemon warm)**: foreground with a 600000ms (10 min) timeout.
 
 #### Recovery protocol on timeout / lost result

@@ -1,3 +1,5 @@
+当前默认交界见 [执行交界合同](../skills/a2h-run/references/execution-boundary.md)：init/spec/plan 由 git 主导，从 execute 起使用 Garry indexed 阶段与七项验证。文中旧 v2 四拍/四项描述仅适用于原冻结合同兼容。
+
 # 0.9.0 Spec/Plan 合同与使用
 
 本轮优化作用于工具的 MD 规程、模板、角色和 Python 检查/派发接口。业务规格仍以 MD 为权威，结构通过不证明语义完整或运行等价。
@@ -38,6 +40,6 @@ python .hmigbot-ios/plugin/scripts/a2h_ios.py spec-summary --project . --build-e
 
 ## 验收与边界
 
-回归覆盖合法/缺失结构、N/A证据、共享动作冲突与排除、Plan映射、写权/依赖/进度、冻结降级、真实原调度、字面量混合来源和过期证据。实际模型规则对照样本另见`tests/evaluations/spec-plan-v2/`的源、生成记录与独立复核；小样本不能外推真实项目迁移成功率。
+回归覆盖合法/缺失结构、N/A证据、共享动作冲突与排除、Plan映射、写权/依赖/进度、冻结降级、真实原调度、字面量混合来源和过期证据。小样本不能外推真实项目迁移成功率。
 
-发行与安装验证入口见验证说明（本地过程记录：`VALIDATION.md`）。未在本轮完成Chunky或其他真实App的iOS/鸿蒙双端设备验收。
+发行与安装验证入口见 [开发与复现](../README.md#开发与复现)。工具回归不代表真实App的iOS/鸿蒙双端设备验收。

@@ -1,3 +1,11 @@
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
+
 # Single-Module HarmonyOS Project Template
 
 A minimal, runnable HarmonyOS (API 12+) single-module project. Every file is shown in full with inline comments explaining each field.
@@ -171,7 +179,7 @@ This is the **module-level** configuration for the entry module. It declares abi
         // true for the main launcher ability.
         "exported": true,
 
-        // Skills define the ability action, entity and URI matching rules.
+        // Skills define the IntentFilter-like matching rules.
         // This makes the ability appear in the device launcher.
         "skills": [
           {
@@ -604,6 +612,7 @@ Root-level package configuration for the entire project (workspace).
 
 ## 11. hvigorfile.ts (root level)
 
+The root-level build script. Hvigor is HarmonyOS's build system (similar to Gradle).
 
 ```typescript
 // Import the appTasks plugin which provides top-level build tasks

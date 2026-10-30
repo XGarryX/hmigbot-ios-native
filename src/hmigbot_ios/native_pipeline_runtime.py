@@ -21,8 +21,7 @@ import tempfile
 from .core import io_path
 from .init_environment import check_runtime_ready
 from .portable_helper import quarantine_free_launcher
-from .scheduler_windows_runtime import run as run_owned_process
-from .windows_python_runtime import stage_base_python
+from .process_runtime import run as run_owned_process
 from .runtime_timeouts import timeout_for
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,11 +34,9 @@ HELPERS = {
 
 
 def _platform():
-    system = {'Windows': 'windows', 'Linux': 'linux', 'Darwin': 'macos'}.get(platform.system())
-    if system is None:
-        raise ValueError('Unsupported structural pipeline platform')
-    architecture = 'arm64' if platform.machine().lower() in {'arm64', 'aarch64'} else 'x64'
-    return system, architecture
+    from .host import require_supported_host
+    require_supported_host()
+    return 'macos', 'arm64'
 
 
 def _copy_scripts(source, destination, system, architecture, *, project_root=None, permission_receipts=None):
@@ -111,6 +108,8 @@ def runtime_layout(*, project_root=None, permission_receipts=None):
         env = {**os.environ, 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8',
                'ARKTS_SKILL_DIR': str(closure)}
         if system == 'windows':
+            # Deferred source path; _platform refuses this host before any copy.
+            from .windows_python_runtime import stage_base_python
             stage_base_python(closure, env)
         suffix = '.exe' if system == 'windows' else '.bin'
         yield closure / ('_entry' + suffix), env
@@ -129,14 +128,10 @@ def _invoke_raw(arguments, original=None):
         command = [str(executable), 'structural_loop', *arguments]
         try:
             limit = timeout_for('structural', env=env)
-            if os.name == 'nt':
-                result = run_owned_process(command, cwd=project, env=env, timeout=limit)
-            else:
-                result = subprocess.run(command, cwd=project, env=env, capture_output=True,
-                                        timeout=limit, shell=False)
+            result = run_owned_process(command, cwd=project, env=env, timeout=limit)
         except subprocess.TimeoutExpired as exc:
-            # The owned runner already terminates and reaps its Job tree.
-            # Relay actual partial output instead of losing child evidence.
+            # Preserve the Mac subprocess timeout's actual partial output.
+            # Descendant-tree cleanup is not claimed by this adapter.
             result = subprocess.CompletedProcess(command, 124, exc.output or b'',
                 (exc.stderr or b'') + b'\nOriginal structural pipeline timed out.\n')
     process = subprocess.CompletedProcess(result.args, result.returncode,

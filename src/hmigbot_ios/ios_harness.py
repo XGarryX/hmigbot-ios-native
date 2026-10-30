@@ -41,7 +41,7 @@ def initialize(project: Path, *, import_legacy=False):
                           'scheduler': 'hmigbot-codex-1.7.0',
                           'state_writer': 'state_update.py', 'journal_writer': 'land_results.py',
                           'dispatch_writer': 'next_batch.py', 'legacy_pass_inherited': False}
-    cfg['ios_expertise'] = {'version': 1, 'required': True}
+    cfg['ios_expertise'] = {'version': 1, 'required': False}
     write_json(cfg_path, cfg)
     return {'status': 'initialized', 'harness_version': 2, 'legacy_pass_inherited': False, 'source': str(source)}
 
@@ -212,6 +212,7 @@ def check(project: Path, *, report_only=False):
     from .native_pipeline import context, check_source, source_paths, findings_module
     source, project = context(project)
     queue = findings_module()
+    from .gate_policy import action_options, blocking_findings, normalize_findings, summary_status
     issues = []
     excluded_obligations = set()
     preview_cache = {}
@@ -230,9 +231,11 @@ def check(project: Path, *, report_only=False):
         A skipped consumer is explicitly blocked, never counted as a passing
         validation. Only the original queue writer below persists the result.
         """
-        blocked = [dep for dep in dependencies if checks[dep]['status'] != 'PASS']
+        blocked = [dep for dep in dependencies if checks[dep]['status'] not in {'PASS', 'needs_review', 'advisory'}]
         if blocked:
-            checks[name] = {'status': 'not_run', 'blocked_dependencies': blocked}
+            checks[name] = {'status': 'not_run', 'blocked_dependencies': blocked,
+                            'actual_call': None, 'result': 'not_run', 'evidence_paths': [],
+                            'recovery': 'Restore the listed consumed prerequisites; independent checks remain available.'}
             return
         before = len(issues)
         try:
@@ -240,8 +243,16 @@ def check(project: Path, *, report_only=False):
         except (MigrationError, OSError, ValueError, TypeError, AttributeError,
                 KeyError, IndexError) as exc:
             fail('IOS.HARNESS_CONTRACT', subject or name, str(exc))
-        checks[name] = {'status': 'FAIL' if len(issues) != before else 'PASS',
-                        'finding_count': len(issues) - before}
+        added = issues[before:]
+        checks[name] = {'status': summary_status(added, queue=queue),
+                        'finding_count': len(added),
+                        'blocking_count': len(blocking_findings(added, queue=queue)),
+                        'actual_call': {'kind': 'tool_gate_check', 'name': name},
+                        'result': summary_status(added, queue=queue),
+                        'evidence_paths': [] if report_only else ['spec/reports/ios-harness-check.json'],
+                        'recovery': 'Repair only identified affected inputs and rerun this owning check; report options do not establish native verification.'}
+        if name == 'expertise' and isinstance(values.get(name), dict) and values[name].get('blocking') is False:
+            checks[name].update(status='advisory', result='advisory', detail=values[name])
 
     def configuration():
         cfg = read_json(project / '.migbot/config.json')
@@ -268,8 +279,8 @@ def check(project: Path, *, report_only=False):
         return check_expertise(project, source, values['graph'][0])
 
     def literals():
-        from .ios_literals import extract as extract_literals
-        if read_json(project / 'spec/baseline/literal-ledger.json') != extract_literals(source):
+        from .ios_literals import extract_for_project
+        if read_json(project / 'spec/baseline/literal-ledger.json') != extract_for_project(source, project):
             raise MigrationError('Literal ledger must be extracted from current iOS source; spec-only empty scans are insufficient')
 
     def semantics_input():
@@ -344,7 +355,7 @@ def check(project: Path, *, report_only=False):
             source_fact = facts[expected[ident]['fact_id']]
             anchor = source_fact['anchor']
             if anchor['path'] not in preview_cache:
-                preview_cache[anchor['path']] = preview_source_lines(safe_child(source, anchor['path']))
+                preview_cache[anchor['path']] = preview_source_lines(safe_child(source, anchor['path']), project=project, source=source)
             preview = preview_cache[anchor['path']]
             is_preview = set(range(anchor['line'], anchor['end_line'] + 1)) <= preview
             if is_preview or mapping.get('disposition') == 'preview-only':
@@ -414,9 +425,13 @@ def check(project: Path, *, report_only=False):
     # This independent stage is attempted even when source or graph checks fail;
     # its own input error is reported rather than hiding the remaining contract.
     stage('spec_contract', spec_contract)
+    issues = normalize_findings(issues, queue=queue)
     if not report_only:
         queue.replace_section(str(project), 'spec.ios-harness', issues)
-    report = {'schema_version': 2, 'status': 'FAIL' if issues else 'PASS', 'findings': issues,
+    report = {'schema_version': 2, 'status': summary_status(issues, queue=queue), 'findings': issues,
+              'blocking_count': len(blocking_findings(issues, queue=queue)),
+              'advisory_count': len(issues) - len(blocking_findings(issues, queue=queue)),
+              'action_options': action_options(queue=queue) if issues else [],
               'scope': 'source contract and obligation coverage', 'behavior_verified': False,
               'excluded_obligation_ids': sorted(excluded_obligations),
               'extraction_issue_dispositions': extraction_dispositions, 'checks': checks}
@@ -431,7 +446,87 @@ def check(project: Path, *, report_only=False):
                       target_acceptance_ids=list(projection.target_acceptance_ids))
     if not report_only:
         write_json(project / 'spec/reports/ios-harness-check.json', report)
-    return report, 2 if issues else 0
+    return report, queue.exit_code(issues)
+
+
+def acceptance_binding(project, source, graph):
+    """Exact consumed inputs for optional reuse, never a replacement native check.
+
+    Raw authored bytes intentionally make this stricter than progress-tolerant
+    plan identity. A cache miss runs the full gate and introduces no new gate.
+    """
+    try:
+        from .consumed_inputs import baseline_inputs
+        from .plan_contract import contract_revision
+        from .expertise import check as check_expertise, PLAN, REVIEWS
+        from .apple_capabilities import GUIDANCE
+        inputs = baseline_inputs(project, 'domains')
+        for name in ('.migbot/config.json', PLAN, REVIEWS, GUIDANCE):
+            path = safe_child(project, name)
+            inputs[name] = digest(path.read_bytes()) if path.is_file() else None
+        # Revalidate selected guidance/resources now: their source files may be
+        # outside the project. Never cache resource freshness behind its label.
+        expertise = check_expertise(project, source, graph)
+        return {'rules_sha256': contract_revision(project),
+                'source_sha256': graph['source_sha256'],
+                'graph_sha256': digest(json_bytes(graph)),
+                'consumed_inputs': inputs,
+                'expertise_sha256': digest(json_bytes(expertise))}
+    except (MigrationError, OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def retain_acceptance(project, source, graph, report, code, before):
+    """Retain only an actual successful check with unchanged input boundaries."""
+    after = acceptance_binding(project, source, graph)
+    if code or before is None or before != after:
+        return None
+    value = {'schema_version': 1, 'kind': 'actual_harness_acceptance',
+             'actually_invoked': True, 'exit_code': 0, 'binding': after, 'report': report}
+    raw = json_bytes(value)
+    name = 'spec/reports/ios-harness-receipts/' + digest(raw) + '.json'
+    write_json(safe_child(project, name), value)
+    return {'path': name, 'sha256': digest(raw), 'binding_sha256': digest(json_bytes(after))}
+
+
+def reuse_acceptance(project, source, graph, contract):
+    """Reuse a frozen success only after live native/source validation by caller.
+
+    Missing/old/changed receipts fall back to the full gate. This does not cache
+    validate_graph: condition/compiler evidence remains validated every call.
+    """
+    try:
+        from .plan_contract import assert_pinned
+        from .ios_scheduler import kernel
+        assert_pinned(project, contract)
+        plan = read_json(safe_child(project, 'spec/waves/plan-domains.json'))
+        identity = digest(json_bytes({k: v for k, v in plan.items() if k != 'contract_hash'}))
+        if (identity != contract.get('plan_identity_sha256')
+                or kernel().compute_contract_hash(Path(project) / 'spec/blueprint', []) != plan.get('contract_hash')):
+            return None
+        ref = contract.get('harness_acceptance')
+        if not isinstance(ref, dict) or set(ref) != {'path', 'sha256', 'binding_sha256'}:
+            return None
+        if not re.fullmatch(r'spec/reports/ios-harness-receipts/[0-9a-f]{64}\.json', ref['path']):
+            return None
+        path = safe_child(project, ref['path'])
+        if digest(path.read_bytes()) != ref['sha256']:
+            return None
+        value = read_json(path)
+        current = acceptance_binding(project, source, graph)
+        if (value.get('schema_version') != 1 or value.get('kind') != 'actual_harness_acceptance'
+                or value.get('actually_invoked') is not True or value.get('exit_code') != 0
+                or current is None or value.get('binding') != current
+                or digest(json_bytes(current)) != ref['binding_sha256']):
+            return None
+        report = value['report']
+        from .gate_policy import blocking_findings
+        if not isinstance(report, dict) or blocking_findings(report.get('findings', [])):
+            return None
+        return report, {'mode': 'reused', 'not_actual_call_now': True,
+                        'original_result': ref, 'native_evidence_validated_now': True}
+    except (MigrationError, OSError, ValueError, KeyError, TypeError):
+        return None
 
 
 def behavior_check(project: Path):

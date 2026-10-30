@@ -1,6 +1,6 @@
 ---
 name: arkts-payment
-description: "ArkTS/HarmonyOS 第三方支付通用集成技能（与生态无关）。专注于微信支付 SDK、支付宝 SDK、H5 支付 WebView 容器、跨 App 跳转、华为 IAP 选型等平台级能力与协议约束，不绑定任何特定后端字段/私有 lib。当用户需要从零集成第三方支付、接入 wxopensdk 或 cashiersdk、构建通用 H5 支付容器、适配 HarmonyOS WebView 支付白屏问题、设计保护窗口与订单查询重试策略、决策 IAP vs 三方 SDK 时使用此技能。也适用于新项目脚手架阶段、跨项目支付代码提炼、或当项目未使用 lib_payment/lib_common 等私有库时。**调试场景触发**：'商家参数格式有误'、'微信 H5 白屏'、'支付回调不触发'、'scheme 跳不过去'、'UIAbilityContext 找不到'、'Bundle ID 校验不通过'、'应用未注册'等。关键词：pay、payment、wxpay、alipay、third-party、cashier、sdk、webview、scheme、H5、IAP。本 skill 为通用平台方案（与生态无关）；如有项目专属生态版本另行集成。"
+description: ArkTS/HarmonyOS 第三方支付通用集成技能（与生态无关）。专注于微信支付 SDK、支付宝 SDK、H5 支付 WebView 容器、跨 App 跳转、华为 IAP 选型等平台级能力与协议约束，不绑定任何特定后端字段/私有 lib。当用户需要从零集成第三方支付、接入 wxopensdk 或 cashiersdk、构建通用 H5 支付容器、适配 HarmonyOS WebView 支付白屏问题、设计保护窗口与订单查询重试策略、决策 IAP vs 三方 SDK 时使用此技能。也适用于新项目脚手架阶段、跨项目支付代码提炼、或当项目未使用 lib_payment/lib_common 等私有库时。**调试场景触发**：'商家参数格式有误'、'微信 H5 白屏'、'支付回调不触发'、'scheme 跳不过去'、'UIAbilityContext 找不到'、'Bundle ID 校验不通过'、'应用未注册'等。关键词：pay、payment、wxpay、alipay、third-party、cashier、sdk、webview、scheme、H5、IAP。本 skill 为通用平台方案（与生态无关）；如有项目专属生态版本另行集成。
 metadata:
   type: domain
   domain: system
@@ -14,6 +14,10 @@ metadata:
   - third-party
   - iap
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS 第三方支付通用集成指南
 
 **不绑定任何特定后端/私有 lib** 的第三方支付集成方案，专注于 HarmonyOS 平台约束与微信/支付宝/华为 IAP 的官方协议要求。
@@ -145,7 +149,7 @@ private async onPaySuccess(): Promise<void> {
 |---|---|
 | 虚拟商品（VIP/点数/道具）+ 华为应用市场 | IAP |
 | 订阅型自动续费 | IAP |
-| 多端统一（源平台/HarmonyOS）| 三方 SDK |
+| 多端统一（iOS/iOS/HarmonyOS）| 三方 SDK |
 | 实物商品/线下服务 | 三方 SDK |
 
 详细决策树见 [06-huawei-iap-selection.md](references/06-huawei-iap-selection.md)。

@@ -1,10 +1,14 @@
 ---
 name: arkts-codebase-modifier
-description: "针对ArkTS语言的Harmony应用代码仓功能修改类问题回答。专注于\"给xx增加开关/参数/流程怎么做？\"、\"新增视频播放怎么实现？\"等功能修改类问题。提供基于代码仓事实的功能修改建议，不直接修改代码（同时支持 ArkTS V1 装饰器 @Component/@State/@Prop/@Link/@Provide/@Consume/@Observed/@ObjectLink/@StorageLink/@StorageProp/@LocalStorageLink/@LocalStorageProp/@Watch 与 V2 装饰器 @ComponentV2/@Local/@Param/@Once/@Event/@Provider/@Consumer/@ObservedV2/@Trace/@Monitor/@Computed/AppStorageV2/PersistenceV2 两套体系，新增代码默认采用 V2 风格）。使用场景包括：(1) 功能新增实现，(2) 参数/开关添加，(3) 流程修改优化，(4) 组件功能扩展，(5) 交互逻辑调整，(6) 多媒体功能集成。依赖arkts-locator提供的定位信息。"
+description: 针对ArkTS语言的Harmony应用代码仓功能修改类问题回答。专注于"给xx增加开关/参数/流程怎么做？"、"新增视频播放怎么实现？"等功能修改类问题。提供基于代码仓事实的功能修改建议，不直接修改代码（同时支持 ArkTS V1 装饰器 @Component/@State/@Prop/@Link/@Provide/@Consume/@Observed/@ObjectLink/@StorageLink/@StorageProp/@LocalStorageLink/@LocalStorageProp/@Watch 与 V2 装饰器 @ComponentV2/@Local/@Param/@Once/@Event/@Provider/@Consumer/@ObservedV2/@Trace/@Monitor/@Computed/AppStorageV2/PersistenceV2 两套体系，新增代码默认采用 V2 风格）。使用场景包括：(1) 功能新增实现，(2) 参数/开关添加，(3) 流程修改优化，(4) 组件功能扩展，(5) 交互逻辑调整，(6) 多媒体功能集成。依赖arkts-locator提供的定位信息。
 metadata:
   type: codebase
   domain: general
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS 功能修改问答技能
 
 ## 概述

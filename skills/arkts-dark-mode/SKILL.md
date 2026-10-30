@@ -1,6 +1,6 @@
 ---
 name: arkts-dark-mode
-description: "ArkTS 深色模式场景下的根因定位与修复（V2 优先，兼容 V1）：硬编码颜色（#RRGGBB / 0x / Color.xxx）、主题资源未切换、resources/dark 目录缺失或路径错、状态栏/导航栏颜色错、图标/SVG/图片未变色、HSP/HAR 模块深色资源失效、ColorMode 切换后不刷新、Canvas/Web 未响应主题等。代码示例使用 ArkTS V2 装饰器（`@ComponentV2 / @Local / @ObservedV2 / @Trace / AppStorageV2.connect`），V1（`@Component / @State / @StorageLink`）写法仅作历史对照。"
+description: ArkTS 深色模式场景下的根因定位与修复（V2 优先，兼容 V1）：硬编码颜色（#RRGGBB / 0x / Color.xxx）、主题资源未切换、resources/dark 目录缺失或路径错、状态栏/导航栏颜色错、图标/SVG/图片未变色、HSP/HAR 模块深色资源失效、ColorMode 切换后不刷新、Canvas/Web 未响应主题等。代码示例使用 ArkTS V2 装饰器（`@ComponentV2 / @Local / @ObservedV2 / @Trace / AppStorageV2.connect`），V1（`@Component / @State / @StorageLink`）写法仅作历史对照。
 metadata:
   type: domain
   domain: ui
@@ -11,6 +11,10 @@ metadata:
   - resources
   - token
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # arkts-dark-mode — ArkTS 深色模式排查技能
 
 > HarmonyOS / ArkUI 语境下深色浅色主题切换的资源匹配与渲染刷新问题定位。

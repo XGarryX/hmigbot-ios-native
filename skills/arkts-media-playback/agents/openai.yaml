@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-media-playback
-  short_description: 生成 ArkTS/HarmonyOS **音频**播放代码。当用户需要实现 AVPlayer 音频播放、本地音频文件播放(…
-  default_prompt: 请使用 $arkts-media-playback，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

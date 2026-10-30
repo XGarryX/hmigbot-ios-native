@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import uuid
+import time
 
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, write_json
 
@@ -9,15 +10,19 @@ GUIDANCE = 'spec/ref/ios-official-analysis.json'
 APPLE_SKILLS = 'spec/ref/ios-apple-skills.json'
 
 
-def command(output, name, argv, *, cwd, timeout=120):
+def command(output, name, argv, *, cwd, timeout=120, input_data=None):
     """Run a real tool and retain failures and partial output before raising."""
     output.mkdir(parents=True, exist_ok=True)
     record = {'argv': list(map(str, argv)), 'cwd': str(cwd), 'exit_code': None}
+    if input_data is not None:
+        (output / (name + '.stdin.json')).write_bytes(input_data)
+        record['stdin_sha256'] = digest(input_data)
     process = None
     try:
-        process = subprocess.Popen(record['argv'], cwd=cwd, stdout=subprocess.PIPE,
+        process = subprocess.Popen(record['argv'], cwd=cwd, stdin=subprocess.PIPE if input_data is not None else None,
+                                   stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE, shell=False)
-        stdout, stderr = process.communicate(timeout=timeout)
+        stdout, stderr = process.communicate(input=input_data, timeout=timeout)
         record['exit_code'] = process.returncode
     except subprocess.TimeoutExpired as exc:
         stdout, stderr = exc.stdout or b'', exc.stderr or b''
@@ -74,6 +79,7 @@ def export_skills(source, project, run, inventory, *, enabled=True, available=Tr
                             raise MigrationError('Apple skill cache resource changed')
                         path.read_text(encoding='utf-8')
                 cached = {**cached, 'status': 'loaded', 'replayed': True,
+                          'used': False, 'guidance_loaded': True, 'application_status': 'requires_source_review',
                           'selection_reason': 'Current source-bound official export and resource hashes revalidated'}
         except (OSError, ValueError, KeyError, TypeError) as exc:
             cached = None
@@ -83,6 +89,17 @@ def export_skills(source, project, run, inventory, *, enabled=True, available=Tr
             return cached
         return {'status': 'unavailable', 'reason': 'Official skill export disabled or Xcode tools unavailable',
                 'publisher': 'Apple', 'loaded': [], 'used': False}
+    from .xcode_mcp import status as mcp_status, running_instances
+    service, instances = mcp_status(), running_instances()
+    write_json(run / 'apple-service-observation.json', {'service': service, 'instances': instances})
+    if not service.get('enabled') and not instances['instances']:
+        # The export launcher may otherwise start a GUI Xcode. Keep this task's
+        # CLI-only boundary; a current verified export remains reusable.
+        if cached:
+            return {**cached, 'live_export_skipped': 'No observed active Xcode service; GUI launch is not authorized'}
+        return {'status': 'unavailable', 'publisher': 'Apple', 'loaded': [], 'used': False,
+                'export_attempted': False, 'reason': 'No Xcode service visible to this process; automatic GUI launch was not attempted',
+                'fallback': 'Continue compiler/CLI evidence; export in an authorized host context or choose optional MCP preparation'}
     destination = run / 'apple-skills'
     result = {'status': 'unavailable', 'publisher': 'Apple', 'loaded': [], 'used': False,
               'source_sha256': inventory['snapshot']['sha256'], 'method': 'xcrun agent skills export'}
@@ -117,7 +134,8 @@ def export_skills(source, project, run, inventory, *, enabled=True, available=Tr
                            'publisher': 'Apple', 'resources': resources})
         result.update(status='loaded' if loaded else 'not_applicable', loaded=loaded,
                       xcode_version=version, exported_skill_count=len(list(destination.glob('*/SKILL.md'))),
-                      used=bool(loaded), use_scope='Loaded guidance for analysis; not a reviewed semantic conclusion')
+                      used=False, guidance_loaded=bool(loaded), application_status='requires_source_review',
+                      use_scope='Loaded guidance only; applied source reviews are recorded separately by expertise-review')
         write_json(run / 'apple-skills.json', result)
         write_json(project / APPLE_SKILLS, {'path': (run / 'apple-skills.json').relative_to(project).as_posix(),
                                           'sha256': digest((run / 'apple-skills.json').read_bytes())})
@@ -133,6 +151,12 @@ def export_skills(source, project, run, inventory, *, enabled=True, available=Tr
 def server_config(project, cfg, *, available):
     if cfg.get('mode') in {'static', 'replay'}:
         return None, 'No live MCP call in explicitly static/replay mode'
+    from .xcode_mcp import resolve_choice
+    choice, _ = resolve_choice(project, cfg.get('mcp'), configured_server=bool(cfg.get('mcp_server')))
+    if choice == 'skip':
+        return None, 'Developer selected CLI evidence; MCP is not selected'
+    if choice == 'ask':
+        return None, 'MCP use is awaiting the developer choice; independent CLI evidence continues without treating silence as consent'
     if cfg.get('mcp_server'):
         path = Path(cfg['mcp_server'])
         path = path if path.is_absolute() else safe_child(project, cfg['mcp_server'])
@@ -145,31 +169,73 @@ def server_config(project, cfg, *, available):
         return None, 'Apple Xcode MCP requires a native Xcode host'
     return {'provider': 'xcode', 'transport': 'stdio', 'command': ['xcrun', 'mcpbridge'],
             'env': {'MCP_XCODE_SESSION_ID': str(uuid.uuid4())},
-            'timeout_seconds': 10, '_official': True}, 'Prefer the Apple bridge exported by Xcode with one scoped session per run'
+            'timeout_seconds': 60, 'timeouts': {'connect': 30, 'discover': 60, 'call': 60, 'overall': 180}, '_official': True}, 'Prefer the Apple bridge exported by Xcode with one scoped session per run'
 
 
 def discover_mcp(source, project, run, cfg, *, available):
     from .source_mcp import discover
     server, reason = server_config(project, cfg, available=available)
     if server is None:
-        return {'status': 'unavailable', 'reason': reason, 'tool_calls_performed': False}
+        state = ('awaiting_choice' if 'awaiting the developer choice' in reason
+                 else 'not_selected' if 'not selected' in reason or 'explicitly static/replay' in reason
+                 else 'unavailable')
+        return {'status': state, 'reason': reason, 'tool_calls_performed': False}
+    candidates = []
+    if server['_official'] and not cfg.get('mcp_server'):
+        from .xcode_mcp import running_instances, status
+        instances, host_status = running_instances(), status()
+        write_json(run / 'mcp-host-status.json', host_status)
+        write_json(run / 'mcp-running-instances.json', instances)
+        for instance in instances['instances']:
+            candidates.append({**server, 'env': {**server.get('env', {}), 'MCP_XCODE_PID': str(instance['pid'])}})
+    candidates.append(server)
+    attempts, selected, selected_server = [], None, server
+    operation_deadline = time.monotonic() + server.get('timeouts', {}).get('overall', 180)
+    for index, candidate in enumerate(candidates):
+        remaining = operation_deadline - time.monotonic()
+        if remaining <= 0:
+            attempts.append({'status':'not_run','reason':'Discovery operation overall budget exhausted'})
+            break
+        output = run / ('mcp-discovery' if index == 0 else 'mcp-discovery-instance-' + str(index))
+        bounded = {**candidate, 'timeouts': {**candidate.get('timeouts', {}), 'overall': remaining}}
+        result = discover(bounded, source, output)
+        names = {tool.get('name') for tool in result.get('tools', [])
+                 if tool.get('annotations', {}).get('readOnlyHint') is not False}
+        project_access = result.get('project_access', {})
+        score = (1000 if project_access.get('authorized') is True else 0) + (100 if 'DocumentationSearch' in names else 10 if 'GetTargetBuildSettings' in names else 1 if names else 0)
+        attempts.append({'path': str(output), 'status': result['status'], 'score': score,
+                         'pid': candidate.get('env', {}).get('MCP_XCODE_PID'),
+                         'error': result.get('error'), 'failure_kind': result.get('failure_kind'),
+                         'session_id': candidate.get('env', {}).get('MCP_XCODE_SESSION_ID'),
+                         'project_access': project_access, 'selection_basis': 'actual read probe before documentation availability'})
+        if selected is None or score > selected[0]:
+            selected, selected_server = (score, result), candidate
+        if score >= 1000:
+            break
     path = run / 'mcp-server.json'
-    write_json(path, {k: v for k, v in server.items() if not k.startswith('_')})
-    result = discover(server, source, run / 'mcp-discovery')
+    if selected is None:
+        return {'status':'unavailable','reason':'Discovery operation overall budget exhausted',
+                'attempts':attempts,'failure_kind':'timeout','tool_calls_performed':False}
+    write_json(path, {k: v for k, v in selected_server.items() if not k.startswith('_')})
+    write_json(run / 'mcp-discovery-selection.json', {'attempts': attempts, 'selected_config': str(path)})
+    result = selected[1]
     return {**result, 'config': str(path), 'publisher': 'Apple' if server['_official'] else 'user_configured',
-            'selection_reason': reason}
+            'selection_reason': reason, 'attempts': attempts,
+            'documentation_search': 'available' if any(t.get('name') == 'DocumentationSearch' for t in result.get('tools', [])) else 'not_advertised'}
 
 
 def query_mcp(project, source, graph, run, inventory, discovery):
-    from .source_mcp import capture
+    from .source_mcp import capture, recovery_options, StdioClient, failure_kind
     result = {'status': 'not_run', 'publisher': discovery.get('publisher'), 'captures': [], 'failures': []}
     if discovery.get('status') != 'discovered':
         result['reason'] = discovery.get('error', discovery.get('reason', 'MCP not connected'))
+        result['options'] = discovery.get('options', recovery_options(discovery.get('failure_kind')))
         return result
     tools = {t.get('name'): t for t in discovery['tools']}
     tool = tools.get('DocumentationSearch')
     if tool is None or tool.get('annotations', {}).get('readOnlyHint') is False:
         result['reason'] = 'Server does not expose the permitted DocumentationSearch tool'
+        result['options'] = recovery_options('tool_unavailable')
         return result
     queries = {'swiftui': 'SwiftUI state data flow view identity ForEach',
                'uikit': 'UIKit UIViewController lifecycle Auto Layout delegate ownership',
@@ -179,22 +245,40 @@ def query_mcp(project, source, graph, run, inventory, discovery):
     if not ids:
         result['reason'] = 'No source facts to bind an MCP query'
         return result
-    for topic in topics(inventory['tokens']):
-        arguments = {'query': queries[topic]}
-        required = tool.get('inputSchema', {}).get('required', [])
-        if any(k not in arguments for k in required):
-            result['failures'].append({'topic': topic, 'reason': 'Tool requires context not safely derivable: ' + ','.join(required)})
-            continue
-        request = run / ('mcp-query-' + topic + '.json')
-        write_json(request, {'source_sha256': graph['source_sha256'],
-                             'graph_sha256': digest(json_bytes(graph)), 'fact_ids': ids,
-                             'tool': 'DocumentationSearch', 'arguments': arguments})
-        try:
-            saved = capture(project, Path(discovery['config']), request)
-            result['captures'].append({**saved, 'topic': topic,
-                                       'publisher': discovery.get('publisher')})
-        except (MigrationError, OSError, ValueError) as exc:
-            result['failures'].append({'topic': topic, 'reason': str(exc)})
+    output = run / 'mcp-query-session'
+    output.mkdir(parents=True, exist_ok=False)
+    client = StdioClient(read_json(Path(discovery['config'])), source, output)
+    try:
+        _, live_tools = client.prepare()
+        tool = next((v for v in live_tools if v.get('name') == 'DocumentationSearch'), None)
+        if tool is None: raise MigrationError('DocumentationSearch is no longer advertised')
+        for topic in topics(inventory['tokens']):
+            arguments = {'query': queries[topic]}
+            required = tool.get('inputSchema', {}).get('required', [])
+            if any(k not in arguments and k != 'tabIdentifier' for k in required):
+                result['failures'].append({'topic': topic, 'reason': 'Tool requires context not safely derivable: ' + ','.join(required)})
+                continue
+            request = run / ('mcp-query-' + topic + '.json')
+            write_json(request, {'source_sha256': graph['source_sha256'],
+                                 'graph_sha256': digest(json_bytes(graph)), 'fact_ids': ids,
+                                 'tool': 'DocumentationSearch', 'arguments': arguments})
+            try:
+                saved = capture(project, Path(discovery['config']), request, shared_client=client)
+                result['captures'].append({**saved, 'topic': topic,
+                                           'publisher': discovery.get('publisher')})
+            except (MigrationError, OSError, ValueError) as exc:
+                diagnostic = getattr(exc, 'diagnostic', {})
+                result['failures'].append({'topic': topic, 'reason': str(exc),
+                                           'failure_kind': diagnostic.get('failure_kind'),
+                                           'execution': diagnostic.get('execution'),
+                                           'options': diagnostic.get('options', recovery_options(None))})
+                # No blind retries on a timed-out or unauthorized connection.
+                # A later explicit operation may reconnect to this same context.
+                break
+    except (MigrationError,OSError,ValueError) as exc:
+        result['failures'].append({'reason':str(exc),'failure_kind':failure_kind(exc)})
+    finally:
+        client.close()
     result['status'] = 'captured' if result['captures'] else 'unavailable'
     return result
 
@@ -238,7 +322,8 @@ def preferred_reviews(project, source, graph, reviews):
             resolved = []
             for resource in official:
                 item = safe_child(project, resource['path'])
-                if not item.is_relative_to((project / 'spec/ref').resolve()) or digest(item.read_bytes()) != resource['sha256']:
+                if (not item.is_relative_to((project / 'spec/ref').resolve()) or not item.is_file()
+                        or digest(item.read_bytes()) != resource['sha256']):
                     raise MigrationError('Official analysis resource changed')
                 resolved.append({'path': str(item), 'sha256': resource['sha256']})
             changed.append({**review, 'resources': resolved, 'resource_origin': 'Apple',

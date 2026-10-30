@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 
 from . import __version__
+from .core import source_snapshot
 from .core import SCHEMA, MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_new_tree
 from .analyze import analyze, migration_plan, render_report
 from .swiftui import emit_view
@@ -31,7 +32,11 @@ def generate(root: Path, output: Path, *, sdk: str, min_sdk: str, model_version:
     if not re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)+", bundle_name):
         raise MigrationError("Invalid HarmonyOS bundle name")
     report = analyze(root)
-    pages = [p for p in report["pages"] if p["status"] == "convertible_subset"]
+    if report['parsing']['status'] == 'failed' and not scaffold_only:
+        failed = [p for p in report['parsing']['files'] if p['status'] == 'failed']
+        raise MigrationError('Official and weak parsing failed: ' +
+            '; '.join(p['path'] + ': ' + ' | '.join(a.get('error', a['status']) for a in p['attempts']) for p in failed))
+    pages = [p for p in report["pages"] if p["status"] in {"convertible_subset", 'weak_draft_subset'}]
     if not pages and not scaffold_only:
         raise MigrationError("No page is completely covered by an implemented rule; run scan for gaps")
     if scaffold_only:
@@ -143,11 +148,14 @@ def generate(root: Path, output: Path, *, sdk: str, min_sdk: str, model_version:
     manifest = {"schema_version": SCHEMA, "tool_version": __version__, "source_sha256": report["source_snapshot"]["sha256"],
                 "source_root": str(root), "profile": {"sdk": sdk, "min_sdk": min_sdk, "model_version": model_version},
                 "generated_pages": [{"source": p["path"], "target": f"entry/src/main/ets/pages/{p['view']['name']}.ets",
-                                     "rule": p["view"]["rule"]} for p in pages],
+                                     "rule": p["view"]["rule"], 'parsing': p['parsing']} for p in pages],
+                'parsing': report['parsing'],
                 "files": {name: digest(data) for name, data in sorted(files.items())},
                 "status": "scaffold_created" if scaffold_only else "draft_generated", "target_build": "not_run", "source_build": "not_run",
                 "behavior": "not_verified", "visual": "not_verified", "app_migration": "incomplete"}
     put("migration/generation.json", manifest)
+    if source_snapshot(root)['sha256'] != report['source_snapshot']['sha256']:
+        raise MigrationError('Source changed before draft publication')
     write_new_tree(output, files)
     return manifest
 
@@ -156,7 +164,7 @@ def verify(root: Path, output: Path):
     from .contracts import validate_generation
     manifest = read_json(output / "migration/generation.json")
     validate_generation(manifest)
-    checks = [{"name": "source_snapshot", "passed": snapshot(root)["sha256"] == manifest["source_sha256"]}]
+    checks = [{"name": "source_snapshot", "passed": source_snapshot(root)["sha256"] == manifest["source_sha256"]}]
     for name, expected in manifest["files"].items():
         path = safe_child(output, name)
         checks.append({"name": name, "passed": path.is_file() and digest(path.read_bytes()) == expected})

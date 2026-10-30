@@ -10,5 +10,5 @@ let package = Package(
         .product(name: "SwiftSyntax", package: "swift-syntax"),
         .product(name: "SwiftParser", package: "swift-syntax"),
         .product(name: "SwiftParserDiagnostics", package: "swift-syntax")
-    ], path: ".", exclude: ["README.md", "provider.example.json"], sources: ["main.swift"])]
+    ], path: ".", exclude: ["README.md", "provider.example.json"], sources: ["main.swift", "VisibilityFacts.swift"])]
 )

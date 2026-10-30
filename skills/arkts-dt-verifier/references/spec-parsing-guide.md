@@ -44,7 +44,7 @@ class SearchService { ... }
 
 ## 对接点
 - SearchPage: SearchMenuBar 的 onSearchTextChanged → 触发 filterMedia
-- 结果点击 → MediaViewerPage（图片）/ openPath（视频）
+- 结果点击 → ViewPagerPage（图片）/ openPath（视频）
 
 ## 验收标准
 - [ ] 搜索框自动聚焦
@@ -86,6 +86,8 @@ UI spec 文件在需要写具体 UI 定位符时查阅，不需要全部读完�
 **`## 转换决策`** — 找 ON.type() 的值
 
 ```markdown
+| RecyclerView (Grid) | Grid + LazyForEach |
+| RecyclerView (List) | List + LazyForEach |
 ```
 
 → UI 测试中用 `ON.type('Grid')` 或 `ON.type('List')` 定位
@@ -113,6 +115,7 @@ UI spec 文件在需要写具体 UI 定位符时查阅，不需要全部读完�
 
 ## 页面级 UI AC 推导（Step 3 专用）
 
+Step 3 Agent 除了消费 Feature 文件的 UI AC，还要**只依据 spec**（`spec/baseline/ui/page_*.md`）为每个页面派生一组 `P{编号}_UI_*` 用例。**不读 `.ets` 源码，不读 iOS `view.xml`/`meta.json` snapshot**。
 
 ### AC 类型清单（每页至少产出这些）
 
@@ -182,7 +185,7 @@ AC 描述包含以下特征 → 单元测试（Step 1）
 ### 实例分类（F004 收藏夹）
 
 ```
-- [ ] 在 MediaViewer 中标记收藏后，Favorites 目录出现该媒体   → UI 测试
+- [ ] 在 ViewPager 中标记收藏后，Favorites 目录出现该媒体   → UI 测试
 - [ ] 取消收藏后从 Favorites 目录移除                       → UI 测试
 - [ ] App 重启后收藏状态保持                               → 单元测试（MockKit，验证 DB 写入）
 - [ ] Favorites 虚拟目录在 MainPage 始终固定显示           → UI 测试
@@ -211,7 +214,7 @@ AC 描述包含以下特征 → 单元测试（Step 1）
 | MainPage             | ui/page_0002_MainActivity.md |
 | MediaPage            | ui/page_0003_MediaActivity.md |
 | SearchPage           | ui/page_0004_SearchActivity.md |
-| MediaViewerPage        | ui/page_0005_MediaViewer.md |
+| ViewPagerPage        | ui/page_0005_ViewPagerActivity.md |
 | VideoPlayerPage      | ui/page_0007_VideoPlayerActivity.md |
 | SettingsPage         | ui/page_0010_SettingsActivity.md |
 

@@ -13,7 +13,7 @@
       "required": ["id", "kind", "value", "evidence", "source_platform", "source_anchors_ref"],
       "properties": {
         "id": {"type": "string"}, "kind": {"type": "string"}, "value": {"type": "object"},
-        "evidence": {"enum": ["structured_static", "lexical_hint", "restricted_parser"]},
+        "evidence": {"enum": ["structured_static", "lexical_hint", "restricted_parser", "SwiftSyntax", "SwiftSyntax_AST_ArkUI_rule"]},
         "source_platform": {"const": "ios"},
         "source_anchors_ref": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/anchor"}}
       }

@@ -351,7 +351,7 @@ Column() { ... }
 
 ## 顶部分段 Tabs + Swiper 圆点指示 + 半透明顶栏（整段编译验证）
 
-源分段选择与分页容器 顶部分段、Banner 圆点指示、半透明悬浮顶栏的标准还原：
+iOS `TabLayout+ViewPager2` 顶部分段、Banner 圆点指示、半透明悬浮顶栏的标准还原：
 
 ```typescript
 @Entry

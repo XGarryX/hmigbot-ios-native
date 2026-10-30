@@ -1,7 +1,7 @@
 """Canonical lexical source candidates; never compiler binding or approved scope."""
 from pathlib import Path
 import re
-from .core import safe_child
+from .core import MigrationError, safe_child
 from .swiftui import tokenize
 CODE = {".swift", ".m", ".mm", ".h", ".c", ".cpp"}
 DECL_KEYWORDS = {'struct', 'class', 'enum', 'actor', 'extension'}
@@ -27,7 +27,27 @@ def _header_values(tokens, start, end):
     return [t.value for t in tokens[start:end] if t.kind != 'string']
 
 
-def _top_level_types(text, *, language="swift"):
+def _top_level_types(text, *, language='swift'):
+    """Compatibility entry; Swift declarations come exclusively from SwiftParser."""
+    if language != 'swift':
+        return _top_level_c_types(tokenize(text, language='c', skip_pragma_marks=True))
+    from .swift_native import parse_sources, tokens_for
+    file = parse_sources({'Types.swift': text})['Types.swift']
+    tokens_for(file, text)
+    result = []
+    for node in file['nodes']:
+        value = node['value']
+        if node['kind'] not in {'type', 'extension'} or value.get('top_level') is not True:
+            continue
+        kind, name = value.get('kind', 'extension'), value.get('name', value.get('type'))
+        header = [kind, name]
+        for i, inherited in enumerate(value.get('inherits', [])):
+            header.extend([':' if i == 0 else ',', inherited])
+        result.append((name, kind, node['line'], header))
+    return result
+
+
+def _top_level_c_types(tokens):
     """Return ``(name, decl_kind, line, header_values)`` for each top-level type.
 
     Uses the token stack discipline from ``ios_facts``: a declaration only becomes a
@@ -35,7 +55,6 @@ def _top_level_types(text, *, language="swift"):
     ignored. ``header_values`` carries only the declaration's own signature tokens,
     excluding comments and string literals.
     """
-    tokens = tokenize(text, language=language, skip_pragma_marks=language != "swift")
     found, pending_owner, decl_kind, decl_start, depth = [], None, None, None, 0
     for i, tok in enumerate(tokens):
         v = tok.value
@@ -58,20 +77,6 @@ def _top_level_types(text, *, language="swift"):
             if depth > 0:
                 depth -= 1
     return found
-
-
-def _file_imports(text, *, language="swift"):
-    """Token-based file-level import detection (comment/string immune)."""
-    tokens = tokenize(text, language=language, skip_pragma_marks=language != "swift")
-    swiftui = uikit = False
-    for i, tok in enumerate(tokens):
-        if tok.value == 'import' and i + 1 < len(tokens) and tokens[i + 1].kind != 'string':
-            mod = tokens[i + 1].value
-            if mod == 'SwiftUI':
-                swiftui = True
-            elif mod == 'UIKit':
-                uikit = True
-    return swiftui, uikit
 
 
 def _has_conformance(header_values, name):
@@ -113,21 +118,65 @@ def classify_type(name, decl_kind, header_values, imports_swiftui, imports_uikit
     return ('unknown', 'unknown', 'none', False, False, False, True)
 
 
-def discover_candidates(source, index):
+def discover_candidates(source, index, *, swift_syntax=None, conditional=None):
     """Discover candidate types from the reviewed source index, deterministically."""
     known = {f['path']: f for f in index.get('files', [])}
+    if swift_syntax is None:
+        from .swift_native import parse_sources
+        inputs = {path: safe_child(source, path).read_bytes().decode('utf-8')
+                  for path in known if Path(path).suffix == '.swift' and safe_child(source, path).is_file()}
+        if inputs:
+            swift_syntax = parse_sources(inputs)
     candidates = []
     for path, meta in known.items():
         if Path(path).suffix.lower() not in CODE:
             continue
+        if conditional is not None:
+            selected = set(conditional['members']) | set(conditional.get('analysis_files', []))
+            if path not in selected:
+                continue
+            if path in {item['path'] for item in conditional.get('unknowns', [])}:
+                raise MigrationError('Candidate source has unresolved compiler context: ' + path)
+            views = conditional['observed'].get(path, [])
+            active = {line for view in views for line in view['active_lines']} if views else None
+        else:
+            active = None
         file = safe_child(source, path)
         if not file.is_file():
             continue
         text = file.read_text(encoding='utf-8-sig')
-        imports_swiftui, imports_uikit = _file_imports(text, language='swift' if Path(path).suffix == '.swift' else 'c')
-        declarations = _top_level_types(text, language='swift' if Path(path).suffix == '.swift' else 'c')
+        if Path(path).suffix == '.swift':
+            from .swift_native import source_tokens
+            source_tokens(source, path, swift_syntax)  # Reject missing/error/stale coordinates.
+            view = swift_syntax[path]
+            if view.get('selected_for_build') is False:
+                continue
+            if 'active_lines' in view:
+                configured = set(view['active_lines'])
+                active = configured if active is None else active & configured
+            nodes = [node for node in view['nodes'] if active is None or node['line'] in active]
+            imports = {n['value'].get('module') for n in nodes if n['kind'] == 'import'}
+            imports_swiftui, imports_uikit = 'SwiftUI' in imports, 'UIKit' in imports
+            declarations = []
+            for node in nodes:
+                value = node['value']
+                if node['kind'] not in {'type', 'extension'} or value.get('top_level') is not True:
+                    continue
+                kind = value.get('kind', 'extension')
+                name = value.get('name', value.get('type'))
+                header = [kind, name]
+                for index, inherited in enumerate(value.get('inherits', [])):
+                    header.extend([':' if index == 0 else ',', inherited])
+                declarations.append((name, kind, node['line'], header))
+        else:
+            tokens = tokenize(text, language='c', skip_pragma_marks=True)
+            if active is not None:
+                tokens = [token for token in tokens if token.line in active]
+            imports = {tokens[i+1].value for i, token in enumerate(tokens[:-1])
+                       if token.value == 'import' and tokens[i+1].kind != 'string'}
+            imports_swiftui, imports_uikit = 'SwiftUI' in imports, 'UIKit' in imports
+            declarations = _top_level_c_types(tokens)
         if Path(path).suffix in {'.m', '.mm', '.h'}:
-            tokens = tokenize(text, skip_pragma_marks=True)
             for i, token in enumerate(tokens[:-4]):
                 if token.value == '@' and tokens[i+1].value == 'interface' and tokens[i+3].value == ':':
                     declarations.append((tokens[i+2].value, 'class', token.line,

@@ -2,7 +2,7 @@ name = "hmos-builder"
 description = "在隔离上下文中执行 HarmonyOS 项目的 build-fix 循环（hvigorw 编译 + 最多 20 轮 ArkTS 错误自动修复），避免 build 日志、错误堆栈、Read/Edit 过程污染主 session。a2h-execute 各编译检查点（Stage 0 资源前置 / Stage 1 收口 single-pass / Stage 2 Base-7 / Stage 3 建页 / FV-2）+ a2h-verify CHECK-1 + 用户手动构建均通过此 agent 派发。返回结构化摘要而非原始日志。"
 
 developer_instructions = '''
-原生源协议：SOURCE_ROOT 指真实 iOS 源；source_anchors 提供路径、行号与符号证据。读取 .agents/skills/a2h-execute/references/ios-source-protocol.md；测试角色另读 .agents/skills/arkts-ut-verifier/references/source-oracle-protocol.md。按 SwiftUI/UIKit/Interface Builder 的实际结构解释源，不把静态线索当作运行结果。遵守目标文件所有权、brief、测试、构建和结构闭包协议。
+Native source operations use the selected Swift/ObjC, Xcode/SwiftPM, SwiftUI/UIKit and native resources. Source build/device observations require real evidence; unavailable observations are DEFERRED. Keep target hdc/hvigor gates unchanged and read this project's a2h-spec/references/native-input.md.
 
 ## 前置 Skills（原 Claude Code spawn 时预加载，Codex 下改为执行前显式加载）
 开始任务前，先读取并遵循以下 skill（位于本仓库安装的 skills 目录，如 `<project>/.agents/skills/<name>/SKILL.md`）：
@@ -77,6 +77,7 @@ SUGGESTED_NEXT_STEP: <人工介入 | 等上游 Slice | 升级 arkts-knowledge-ve
 
 ## 3. 硬规则
 
+- **永不回传原始日志**：hvigorw 输出、编译进度、.hvigor 缓存路径、Read/Edit 过程一律不进主线程上下文
 - **不私自降级**：Skill 的 20 轮上限不得改小；FAIL 不得"宽容"为 PASS
 - **任何模式都不修改签名配置**：build-profile.json5 的 signingConfigs / product signingConfig 由用户在 DevEco 配置，本 agent 与 skill 只读探测、绝不删改（unsigned-fallback 也只是临时剥离+构建后原样还原，不入 commit）；`--signed` 模式缺签名 → FAIL 直接报回，不降级成 unsigned 硬跑。返回时若 `git diff -- build-profile.json5` 含 signingConfigs 改动 → 视为本次执行违规，BUILD_STATUS=FAIL + DIAGNOSIS="signing_config_mutated"
 - **不 git commit**：修改后的源码由主线程决定何时入库；本 agent 仅落盘
@@ -84,3 +85,5 @@ SUGGESTED_NEXT_STEP: <人工介入 | 等上游 Slice | 升级 arkts-knowledge-ve
 - **PASS / FAIL 二元**：无中间态；触达 20 轮上限算 FAIL
 - **placeholder 回填不归你管**：编译通过后 `spec/placeholder-registry.md` 的 trigger 白名单 6 类回填由主线程在收到你的 PASS 后自行执行
 '''
+
+# 0.13.4: follow skills/a2h-run/references/execution-boundary.md; source evidence remains Git-owned.

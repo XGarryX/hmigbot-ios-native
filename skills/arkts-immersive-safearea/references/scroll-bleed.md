@@ -26,7 +26,7 @@ import { WindowModel } from 'lib_common'
 import { AppStorageV2 } from '@kit.ArkUI'
 
 @ComponentV2
-struct HomeScreenComponent {
+struct HomeFragmentComponent {
   @Local windowModel: WindowModel = AppStorageV2.connect(WindowModel, () => new WindowModel())!
   @Local bannerImageRes: Resource = $r('app.media.bg_home_banner')
   @Local bannerAspect: number = 1080 / 768
@@ -85,7 +85,7 @@ struct HomeScreenComponent {
 
 ### 切换 banner 时这层切片要不要跟着换
 
-需要。把 `bannerImageRes` 抽成 `@Local` 状态，主 banner 切换时这层切片跟着变。本项目 [HomeScreenComponent.ets](../../features/business_home/src/main/ets/components/HomeScreenComponent.ets) 里就是这么做的。
+需要。把 `bannerImageRes` 抽成 `@Local` 状态，主 banner 切换时这层切片跟着变。本项目 [HomeFragmentComponent.ets](../../features/business_home/src/main/ets/components/HomeFragmentComponent.ets) 里就是这么做的。
 
 ### 是否影响点击事件
 
@@ -101,4 +101,4 @@ struct HomeScreenComponent {
 
 ## 相关代码引用
 
-实测代码：[features/business_home/src/main/ets/components/HomeScreenComponent.ets](../../features/business_home/src/main/ets/components/HomeScreenComponent.ets) 末尾的 build() 方法。
+实测代码：[features/business_home/src/main/ets/components/HomeFragmentComponent.ets](../../features/business_home/src/main/ets/components/HomeFragmentComponent.ets) 末尾的 build() 方法。

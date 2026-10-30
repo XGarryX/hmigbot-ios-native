@@ -77,14 +77,13 @@ def quarantine_free_launcher(text):
 
 @contextmanager
 def command(helper, arguments, env=None, *, project_root=None, permission_receipts=None):
+    from .host import require_supported_host
+    require_supported_host()
     arguments = list(arguments)
     original_helper = Path(helper).expanduser().absolute()
     helper = original_helper.resolve()
     environment = dict(os.environ if env is None else env)
-    if platform.system() != 'Darwin':
-        yield [sys.executable, str(helper), *map(str, arguments)], environment
-        return
-    architecture = 'arm64' if platform.machine().lower() in {'arm64', 'aarch64'} else 'x64'
+    architecture = 'arm64'
     payload = helper.parent / 'bin' / ('macos-' + architecture) / '_entry.dist'
     if not (payload / '_entry.bin').is_file():
         # Preserve the original script's actual missing-platform/error protocol.

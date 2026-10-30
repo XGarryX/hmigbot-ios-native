@@ -1,7 +1,23 @@
 ---
 name: migbot-increment-applying
-description: "Migbot-Increment APPLYING 阶段 skill，用于代码应用与测试。 当用户说\"执行 migbot-increment-applying\"、\"应用代码\"、\"测试xxx\"或类似表述时触发。 本 skill 负责 APPLYING 阶段的所有工作：代码应用、单元测试、lint 检查、产出应用报告。"
+description: |
+  Migbot-Increment APPLYING 阶段 skill，用于代码应用与测试。
+  当用户说"执行 migbot-increment-applying"、"应用代码"、"测试xxx"或类似表述时触发。
+  本 skill 负责 APPLYING 阶段的所有工作：代码应用、单元测试、lint 检查、产出应用报告。
 ---
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
 
 # migbot-increment-applying Skill
 
@@ -72,6 +88,8 @@ step3-0（环境检查）→ step3-1（确认应用条件）→ step3-2（代码
 |---------|---------|---------|---------|
 | `hvigorw` | HarmonyOS | `hvigorw assembleHap` | `hvigorw test@entry` |
 | `package.json` | Node/JS/TS | `npm run build` | `npm test` |
+| `gradlew` | Gradle/iOS | `gradlew assembleDebug` | `gradlew test` |
+| `pom.xml` / `build.gradle` | Maven/Java/Kotlin | `mvn compile` / `gradle compileJava` | `mvn test` / `gradle test` |
 | `Cargo.toml` | Rust | `cargo build` | `cargo test` |
 | `Makefile` | C/C++ | `make` | `make test` |
 | 其他 | 未知类型 | 询问用户 | 询问用户 |
@@ -90,6 +108,7 @@ step3-0（环境检查）→ step3-1（确认应用条件）→ step3-2（代码
 |---------|---------|---------|
 | HarmonyOS | `hvigorw --version` | 输出版本号 |
 | Node/JS/TS | `node --version && npm --version` | 输出版本号 |
+| Gradle | `gradlew --version` | 输出版本号 |
 | Maven | `mvn --version` | 输出版本号 |
 | Rust | `cargo --version` | 输出版本号 |
 | C/C++ | `make --version` | 输出版本号 |
@@ -107,6 +126,7 @@ step3-0（环境检查）→ step3-1（确认应用条件）→ step3-2（代码
 |---------|---------|---------|
 | HarmonyOS | `hvigorw assembleHap` | BUILD SUCCESS |
 | Node/JS/TS | `npm run build` | 退出码 0 |
+| Gradle | `gradlew assembleDebug` | BUILD SUCCESSFUL |
 | Maven | `mvn compile` | BUILD SUCCESS |
 | Rust | `cargo build` | 退出码 0 |
 | C/C++ | `make` | 退出码 0 |
@@ -124,6 +144,7 @@ step3-0（环境检查）→ step3-1（确认应用条件）→ step3-2（代码
 |---------|---------|---------|
 | HarmonyOS | `hvigorw test@entry --help` | 输出帮助信息 |
 | Node/JS/TS | `npm test -- --help` 或 `jest --version` | 输出版本或帮助 |
+| Gradle | `gradlew test --help` | 输出帮助信息 |
 | Maven | `mvn test --help` | 输出帮助信息 |
 | Rust | `cargo test --help` | 输出帮助信息 |
 | C/C++ | `make test` 或检查 Makefile | 目标存在 |

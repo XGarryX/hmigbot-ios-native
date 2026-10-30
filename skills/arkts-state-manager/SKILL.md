@@ -1,6 +1,6 @@
 ---
 name: arkts-state-manager
-description: "生成 ArkTS/HarmonyOS 状态管理代码（V2 优先，API 12+）。当用户需要解决组件间数据通信、全局状态共享、数据持久化、UI 刷新不触发等问题，或使用 V2/V1 状态装饰器（@Local/@Param/@Event/@Provider/@Consumer/@ObservedV2/AppStorageV2/PersistenceV2 等）时，务必触发此 skill。即使只说\"父子组件传值\"\"全局变量\"也应触发。页面路由/导航跳转用 arkts-navigation-builder。"
+description: 生成 ArkTS/HarmonyOS 状态管理代码（V2 优先，API 12+）。当用户需要解决组件间数据通信、全局状态共享、数据持久化、UI 刷新不触发等问题，或使用 V2/V1 状态装饰器（@Local/@Param/@Event/@Provider/@Consumer/@ObservedV2/AppStorageV2/PersistenceV2 等）时，务必触发此 skill。即使只说"父子组件传值""全局变量"也应触发。页面路由/导航跳转用 arkts-navigation-builder。
 metadata:
   type: domain
   domain: state
@@ -10,6 +10,10 @@ metadata:
   - arkts-v2
   - appstorage
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS State Manager — 状态管理生成器（V2 优先）
 
 ## API 版本与项目策略

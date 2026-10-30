@@ -9,6 +9,7 @@ import json
 import re
 from pathlib import Path
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot
 
 LITERAL_GROUPS = ('texts', 'colors', 'dims', 'durations_ms', 'dynamic_texts',
@@ -21,26 +22,60 @@ def spec_inputs(project):
     return {**baseline_inputs(Path(project), 'domains'), '@tool-contract': contract_revision(Path(project))}
 
 
+def _summary_inputs(project):
+    """Progress remains inspectable before the authored baseline is complete."""
+    from .artifact_contract import catalog
+    missing = []
+    for entry in catalog()['spec']:
+        if not entry.get('required'):
+            continue
+        if 'path' in entry and not (project / entry['path']).is_file():
+            missing.append(entry['path'])
+        elif 'glob' in entry and not any(project.glob(entry['glob'])):
+            missing.append(entry['glob'])
+    state = {'status': 'not_established' if missing else 'pending_review',
+             'missing_inputs': missing,
+             'resume': 'Complete real baseline inputs, then run source-check and spec-check; reporting does not require fabricated features or ACs.'}
+    try:
+        inputs = spec_inputs(project)
+    except (OSError, MigrationError, ValueError, KeyError, TypeError) as exc:
+        state.update(status='not_established' if missing else 'blocked', input_error=str(exc))
+        # This records existing bytes for a progress report only. It is never
+        # substituted into a plan/freeze or accepted as a validated contract.
+        inputs = {item['path']: item['sha256'] for item in snapshot(project)['files']
+                  if item['path'].startswith('spec/baseline/')}
+    return inputs, state
+
+
 def target_inputs(project):
     """Bind the complete non-generated product tree, separate from tool reports."""
     from .ios_scheduler import _execution_evidence
-    return {f['path']: f['sha256'] for f in snapshot(Path(project))['files']
-            if not f['path'].startswith(('spec/', 'migration/'))
-            and (not f['path'].startswith('.migbot/') or f['path'] == '.migbot/config.json')
-            and not _execution_evidence(f['path'])}
+    project = Path(project).resolve()
+    # Prune excluded evidence/control/cache roots before traversal. Filtering
+    # after a raw snapshot made an unrelated SwiftPM test-cache link prevent
+    # even a scoped app screenshot. Raw iOS/source audits keep their defaults.
+    files = snapshot(project, skip_roots={'spec', 'migration', '.migbot', '.migration-cache'})['files']
+    result = {f['path']: f['sha256'] for f in files if not _execution_evidence(f['path'])}
+    config = project / '.migbot/config.json'
+    if (project / '.migbot').is_symlink() or config.is_symlink():
+        raise MigrationError('Product configuration requires a materialized file')
+    if config.exists():
+        config = safe_child(project, '.migbot/config.json')
+        result['.migbot/config.json'] = digest(config.read_bytes())
+    return result
 
 
 def product_literals(project):
     from .native_pipeline import context
     from .ios_facts import validate_graph
     from .ios_harness import ac_inventory
-    from .ios_literals import extract
+    from .ios_literals import extract_for_project
     from .native_contract import validate_literal_exclusion
     from .source_scope import preview_source_lines
     source, project = context(Path(project))
     base = project / 'spec/baseline'
     raw = read_json(base / 'literal-ledger.json')
-    if raw != extract(source):
+    if raw != extract_for_project(source, project):
         raise MigrationError('Raw literal ledger is stale or edited; extract it again')
     graph, obs = validate_graph(source, project)
     from .ios_harness import responsibility
@@ -67,7 +102,7 @@ def product_literals(project):
         scope = read_json(scope_path)
         if scope.get('source_sha256') != graph['source_sha256']:
             raise MigrationError('Source disposition is stale; re-review the scope')
-        indexed = {f['path'] for f in snapshot(source)['files']}
+        indexed = {f['path'] for f in source_snapshot(source)['files']}
         for item in scope.get('files', []):
             validate_literal_exclusion(source, indexed, item)
             dispositions.append(item)
@@ -80,7 +115,7 @@ def product_literals(project):
                     raise MigrationError('Literal source must identify an exact source line')
                 line = int(raw_line)
                 if path not in preview_cache:
-                    preview_cache[path] = preview_source_lines(safe_child(source, path))
+                    preview_cache[path] = preview_source_lines(safe_child(source, path), project=project, source=source)
                 classification, reason = 'unknown', 'No reviewed active source fact at this line'
                 if any(a['path'] == path and a['line'] <= line <= a['end_line'] for a in historical):
                     classification, reason = 'source_history', 'Exact validated historical source responsibility; retained in raw ledger'
@@ -140,30 +175,18 @@ def _placeholders(project):
     result = {'status': 'not_present', **dict.fromkeys(sorted(statuses), 0)}
     if not path.exists():
         return result
-    text, seen = path.read_text(encoding='utf-8-sig'), set()
-    sections = [s for s in markdown_sections(text) if s['title'] == '注册表']
-    if len(sections) > 1:
-        result['status'] = 'parse_error'; return result
-    if sections:
-        text = sections[0]['body']
-    result['status'] = 'parsed'
-    for table in markdown_tables(text):
-        for row in table['rows']:
-            row = [cell.strip('` ') for cell in row]
-            ids = [cell for cell in row if re.fullmatch(r'P-[A-Za-z0-9-]+', cell)]
-            if not ids:
-                continue
-            header = [cell.strip('` ') for cell in table['headers']]
-            status_columns = [i for i, name in enumerate(header) if name.lower() in {'status', '状态'}]
-            if len(ids) != 1 or ids[0] in seen or len(status_columns) != 1 or status_columns[0] >= len(row):
-                result['status'] = 'parse_error'; continue
-            seen.add(ids[0])
-            status = row[status_columns[0]].lower()
+    from .registry_contract import parse
+    try:
+        _, rows = parse(path.read_text(encoding='utf-8-sig'))
+        for row in rows.values():
+            status = row['status'].lower()
             if status not in statuses:
-                result['status'] = 'parse_error'; continue
+                raise MigrationError('Unknown placeholder status: '+row['status'])
             result[status] += 1
-    if (set(re.findall(r'\bP-[A-Za-z0-9-]+\b', text)) - {'P-ID'}) - seen:
+        result['status'] = 'parsed'
+    except (MigrationError, OSError, UnicodeError) as exc:
         result['status'] = 'parse_error'
+        result['detail'] = str(exc)
     return result
 
 
@@ -171,16 +194,29 @@ def _compilation(project, source_sha, evidence):
     if evidence is None:
         return {'status': 'not_run'}
     path = Path(evidence)
-    report = read_json(path)
+    try:
+        report = read_json(path)
+    except (OSError, MigrationError, ValueError, TypeError) as exc:
+        return {'status': 'unverified', 'evidence': str(path.resolve()), 'reason': str(exc),
+                'recovery': 'Provide a readable current SDK build receipt, or continue the partial file report'}
     result = {'status': 'legacy_unclassified', 'evidence': str(path.resolve())}
-    required = {'target_project', 'source_sha256', 'target_input_hashes', 'spec_input_hashes', 'artifacts'}
+    if not isinstance(report, dict):
+        return {**result, 'reason': 'Build evidence is not an object'}
+    required = {'target_project', 'source_sha256', 'target_input_hashes', 'artifacts'}
     if not required <= set(report):
         return result
     try:
+        source_binding = report.get('source_binding', {'status': 'bound'})
+        if not isinstance(source_binding, dict):
+            source_binding = {'status': 'invalid', 'reason': 'Malformed source binding metadata'}
+        unavailable_source = (source_binding.get('status') == 'unavailable'
+                              and report['source_sha256'] is None and report.get('source_changed') is None)
         current = (Path(report['target_project']).resolve() == project.resolve()
-                   and report['source_sha256'] == source_sha
-                   and report['target_input_hashes'] == target_inputs(project)
-                   and report['spec_input_hashes'] == spec_inputs(project))
+                   and (report['source_sha256'] == source_sha or unavailable_source)
+                   and report['target_input_hashes'] == target_inputs(project))
+        if 'command' in report:
+            current = current and isinstance(report['command'], list) and bool(report['command']) and all(
+                isinstance(argument, str) and argument for argument in report['command'])
         artifacts = report['artifacts']
         current = current and isinstance(artifacts, list) and bool(artifacts) and all(
             digest(safe_child(project, a['path']).read_bytes()) == a['sha256'] for a in artifacts)
@@ -188,7 +224,20 @@ def _compilation(project, source_sha, evidence):
         current = False
     result['status'] = ('stale' if not current else 'passed' if report.get('status') == 'build_passed'
                         and report.get('exit_code') == 0 and report.get('hvigor_success_marker') is True
-                        and report.get('source_changed') is False else 'failed')
+                        and (report.get('source_changed') is False or unavailable_source) else 'failed')
+    result['source_binding'] = source_binding
+    try:
+        current_spec = spec_inputs(project)
+        declared_binding = report.get('contract_binding', {})
+        producer_binding = declared_binding.get('status', 'input_bound') if isinstance(declared_binding, dict) else 'unbound'
+        result['contract_binding'] = ({'status': 'input_bound', 'acceptance_verified': False}
+                                      if report.get('spec_input_hashes') == current_spec and producer_binding in {'bound', 'input_bound'}
+                                      else {'status': 'stale' if producer_binding in {'bound', 'input_bound'} else 'unbound',
+                                            'acceptance_verified': False,
+                                            'reason': 'Current SDK compilation is separate from the migration spec/plan contract'})
+    except (OSError, MigrationError, ValueError, KeyError, TypeError) as exc:
+        result['contract_binding'] = {'status': 'unbound', 'acceptance_verified': False, 'reason': str(exc)}
+    result['scope'] = 'Current target inputs and produced artifact integrity; source and migration contract bindings are reported separately, without runtime behavior proof'
     return result
 
 
@@ -267,10 +316,11 @@ def summary(project, *, build_evidence=None, include_behavior=True):
         if str(exc) != 'No stable acceptance criteria exist':
             raise
         acs = {}
-    source_sha = snapshot(source)['sha256']
+    source_sha = source_snapshot(source)['sha256']
     base = project / 'spec/baseline'
     from .page_evidence import generation, pages
     generated, tasks, records = generation(project, source_sha)
+    spec_hashes, baseline = _summary_inputs(project)
     axes = {'generation': generated,
             'compilation': _compilation(project, source_sha, build_evidence),
             'behavior': _behavior(project, source_sha, acs) if include_behavior else {'status': 'not_run', 'scope': 'behavior not selected in this verification scope'}, 'visual': {'status': 'not_run'}}
@@ -285,10 +335,10 @@ def summary(project, *, build_evidence=None, include_behavior=True):
     for name in ('ios-behavior-check.json', 'visual-verify-report.md'):
         path = project / 'spec/reports' / name
         if path.exists() and (include_behavior or name != 'ios-behavior-check.json'): evidence_files.append(path)
-    inputs = {'spec': spec_inputs(project), 'target': target_inputs(project),
+    inputs = {'spec': spec_hashes, 'target': target_inputs(project),
               'evidence': {p.relative_to(project).as_posix(): digest(p.read_bytes()) for p in sorted(evidence_files)}}
     if build_evidence is not None: inputs['build_evidence_sha256'] = digest(Path(build_evidence).read_bytes())
-    result = {'schema_version': 2, 'source_sha256': source_sha, 'axes': axes, 'inputs': inputs,
+    result = {'schema_version': 2, 'source_sha256': source_sha, 'axes': axes, 'inputs': inputs, 'baseline': baseline,
             'pages': pages(project, acs, axes, tasks, records),
             'behavior_verified': axes['behavior']['status'] == 'passed',
             'counts': {'acceptance': len(acs), 'features': sum(_primary_feature(p) for p in (base / 'features').glob('F*.md')),
@@ -317,6 +367,13 @@ def render_report(report):
     lines += ['| ' + k + ' | ' + str(v) + ' |' for k, v in report['counts'].items()]
     lines += ['', '| 证据轴 | 当前状态 |', '|---|---|']
     lines += ['| ' + k + ' | ' + v['status'] + ' |' for k, v in report['axes'].items()]
+    if 'baseline' in report:
+        baseline = report['baseline']
+        lines += ['', '规格基线：' + baseline['status'],
+                  '待建立输入：' + (', '.join(baseline['missing_inputs']) or '无缺失文件；尚需正式门禁审查'),
+                  '恢复条件：' + baseline['resume']]
+        if baseline.get('input_error'):
+            lines.append('输入诊断：' + baseline['input_error'])
     lines += ['', '| 页面 | 计划项 | 任务 | AC | 生成 | 编译 | 行为 | 视觉 |', '|---|---|---|---|---|---|---|---|']
     for page in report['pages']:
         cells = [page['page_id'], ', '.join(page['plan_item_refs']) or '-',

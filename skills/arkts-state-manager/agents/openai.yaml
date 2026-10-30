@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-state-manager
-  short_description: 生成 ArkTS/HarmonyOS 状态管理代码（V2 优先，API 12+）。当用户需要解决组件间数据通信、全局状态共…
-  default_prompt: 请使用 $arkts-state-manager，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

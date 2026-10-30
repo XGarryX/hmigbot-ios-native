@@ -4,7 +4,7 @@ import json
 import re
 import subprocess
 
-from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_new_tree
+from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot, source_snapshot, write_new_tree
 
 
 def validate_config(config):
@@ -30,13 +30,14 @@ def prepare(source, config_path, output):
     if not safe_child(source, config['project']).is_dir():
         raise MigrationError('Selected Xcode project/workspace does not exist under source')
     before = snapshot(source)
+    migration = source_snapshot(source)
     files = {}
     for entry in before['files']:
         path = Path(entry['path'])
         if path.suffix.lower() in {'.p12', '.pfx', '.mobileprovision', '.key', '.pem'} or path.name.startswith('.env'):
             raise MigrationError('Remove credential material from the export source: ' + entry['path'])
         files['source/' + entry['path']] = (source / entry['path']).read_bytes()
-    config = {**config, 'source_sha256': before['sha256']}
+    config = {**config, 'source_sha256': migration['sha256']}
     root = Path(__file__).resolve().parents[2]
     for folder in ('src',):
         for path in (root / folder).rglob('*'):
@@ -81,7 +82,8 @@ jobs:
     if snapshot(source)['sha256'] != before['sha256']:
         raise MigrationError('Source changed during cloud preparation')
     write_new_tree(output, files)
-    return {'status': 'prepared', 'output': str(output), 'source_sha256': before['sha256'],
+    return {'status': 'prepared', 'output': str(output), 'source_sha256': migration['sha256'],
+            'repository_sha256': before['sha256'],
             'files': len(files), 'upload_performed': False, 'signing': 'unsigned_for_local_signing'}
 
 
@@ -129,7 +131,7 @@ def fetch(gh, repository, run_id, source, output):
     gh_command(gh, ['run', 'download', str(run_id), '--repo', repository, '--name', 'hmigbot-ios-source', '--dir', str(output)], timeout=180)
     (output / 'github-run.json').write_bytes(json_bytes(run))
     report = read_json(output / 'cloud-result.json')
-    if report.get('source_sha256') != snapshot(source)['sha256']:
+    if report.get('source_sha256') != source_snapshot(source)['sha256']:
         raise MigrationError('Downloaded evidence belongs to another source snapshot')
     artifacts = report.get('artifacts')
     if not isinstance(artifacts, dict) or not artifacts:

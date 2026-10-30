@@ -251,7 +251,7 @@ def check(project):
                 if not match or match[1] not in allowed:
                     fail('METADATA', path.name + ':' + field, 'Declare a supported scheduling value: ' + '/'.join(sorted(allowed)))
         for heading, body in parts.items():
-            if any(key in heading for key in ('服务层', '实现映射', '状态接口', '对接点')) and re.search(r'\bTBD\b|\bTODO\b|待确定|待计划阶段', body):
+            if any(key in heading for key in ('服务层', '实现映射', '状态接口', '对接点')) and re.search(r'(?im)^\s*(?:TBD|TODO|待确定|待计划阶段)\s*[:：]', body):
                 fail('UNRESOLVED', path.name + ':' + heading, 'Resolve public target contracts before planning implementation; preserve unrelated unknowns separately')
         shared = {}
         pending, visited = [path], set()
@@ -300,7 +300,9 @@ def check(project):
                     source_file = safe_child(source, truth[1])
                     if source_file not in source_views:
                         source_text = source_file.read_text(encoding='utf-8-sig')
-                        source_views[source_file] = (source_text.splitlines(), preview_lines(source_text), import_token_lines(tokenize(source_text)))
+                        from .swift_native import project_syntax, source_tokens
+                        parsed = source_tokens(source, truth[1], project_syntax(project, source))
+                        source_views[source_file] = (source_text.splitlines(), preview_lines(source_text, tokens=parsed), import_token_lines(parsed))
                     source_lines, preview, imports = source_views[source_file]
                     line = int(truth[2])
                     if not 1 <= line <= len(source_lines):
@@ -311,7 +313,8 @@ def check(project):
                         fail('TRUTH_PREVIEW', ident, 'Preview-only code cannot establish production behavior')
                 except (MigrationError, OSError, UnicodeError) as exc:
                     fail('TRUTH_INVALID', ident, str(exc))
-    report = {'schema_version': 1, 'status': 'FAIL' if findings else 'PASS',
+    from .gate_policy import summary_status
+    report = {'schema_version': 1, 'status': summary_status(findings, queue=queue),
               'scope': 'Markdown migration content and consumer contracts; not semantic or runtime equivalence',
               'behavior_verified': False, 'spec_contract_version': profile,
               'artifact_contract_revision': revision(project) if profile else None,

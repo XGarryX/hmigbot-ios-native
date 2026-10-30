@@ -14,7 +14,7 @@ metadata:
 本统一版本先读 [单一流程、环境前置与兼容范围](../a2h-run/references/unified-workflow.md)；其中明确的写入、准备时机和行为范围规则优先于下文的旧调用示例。
 
 
-> **调用关系**：本 skill 主会话执行，**不直接 spawn 迁移 worker**。四类源分析由主会话按 `ios-source-analysis` 技能组织（工程=ios-project-inspector、UI=ios-ui-analyzer、功能=ios-feature-analyzer、API=ios-api-inventory）。若宿主支持 subagent，可把四类分析按 `a2h-ios-analyzer` 角色派发；此时一律 `fork_turns:"none"`（任务书自足，写清源锚点、输出契约），并遵守 Join 协议：完成的唯一合法信号是 `agent_status=completed`，绝不是产物文件存在；completed≠验收通过，join 点跑本 skill 门禁验产物；谁派谁收；最终报告前必须收口全部句柄。
+> **调用关系**：本 skill 主会话执行，**不直接 spawn 迁移 worker**。四类源分析由主会话按 `ios-source-analysis` 技能组织（工程=ios-project-inspector、UI=ios-ui-analyzer、功能=ios-feature-analyzer、API=ios-api-inventory）。若宿主支持 subagent，可把四类分析按 `a2h-ios-analyzer` 角色派发；此时一律 `fork_turns:"none"`（任务书自足，写清源锚点、输出契约），并遵守 Join 协议：完成依据按 [a2h-join](../a2h-join/SKILL.md)：本轮可信宿主 `completed` 或经过身份与时序核验的原生 `FINAL_ANSWER`；产物存在不能代替完成；completed≠验收通过，join 点跑本 skill 门禁验产物；谁派谁收；最终报告前必须收口全部句柄。
 >
 > 路径约定：`$IOS_SRC` 从 `<target>/.migbot/config.json` 的 `ios` 字段读取（缺配置文件 → 先执行 a2h-init）；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。产物一律落 `<target>/spec/`（baseline/ref/reports/.a2h），**禁落会话临时目录**。本 skill 自有脚本：`scripts/lint_addenda_closure.py`、`scripts/lint_divergence.py`、`scripts/extract_literals.py`、`scripts/build_traceability_index.py`。
 
@@ -29,7 +29,7 @@ metadata:
 - **前置**：`<target>/.migbot/config.json` 存在且 `source_platform=ios`（缺 → 先跑 a2h-init，不代跑）；spec 真正的起步门 = §1 的 `harness-init`。
 - **输入**：iOS 源码（Xcode 工程 / SwiftPM / 混合 Swift+ObjC）+ 用户预知（既有决策、平台侧分工）；**源不可读是阻塞**，不以文件夹名或旧报告补造行为。
 - **输出**：`spec/baseline/{feature-index,feature-base}.md`、`spec/baseline/features/FNNN-*.md`、`spec/baseline/ui-manifest.md`、`spec/baseline/ui/page_NNNN_*.md`、`spec/baseline/{ios-semantics,ios-coverage,ios-facts,ios-obligations}.json`、`spec/ref/{ios-project,module-index,ios-ui-facts,ios-feature-facts,ios-api-facts}.md`、`spec/decision-ledger.md`、套靠九件门禁产物（§6）。**契约定稿与计划 IR 归 a2h-plan**——本 skill 不请求审批。
-- **唯一交互点 = Gate C**（产品选择只问具体未决点，不能用阶段名要求重复批准已授权的开发）；其余禁交互追问，机械检查由 exit code 判定（0=PASS，1=FAIL，2=用法错）。
+- 产品取舍集中在 Gate C，只问具体未决点，不能用阶段名要求重复批准已授权开发。首次 MCP/CLI 能力选择、真实授权或无法推断的输入缺口独立处理，不能被 Gate C 交互限制压掉；已有选择直接沿用。机械检查由 exit code 判定（0=PASS，1=FAIL，2=用法错），exit 0 不表示能力选择已完成。
 - **第一条可见输出必须是一行阶段计划**（harness 门 → 源分析 → UI baseline → 功能 baseline → 门禁 → Gate C），然后才执行 §1。
 - **恢复与已有 baseline**：先读 `spec/.a2h/open-findings.json`（findings 只能由产生它的检查重跑后关闭，不同阶段队列分开，不能把整个文件重写成空）。已有完整 baseline → 比较源版本走增量规程（a2h-incremental-migration/arkts-spec-evolver）；部分 baseline 只续缺/受影响部分，**保留稳定 page/F/AC/decision ID**。
 
@@ -63,7 +63,8 @@ metadata:
 
 - 源证据 = 真实文件/符号/行号/快照。SwiftUI 的 body/modifier/state/binding/identity/environment/task/导航，UIKit 的 controller/view/constraint/outlet/action/delegate/生命周期分别保留在 `spec/baseline/ios-semantics.json` 的对应记录；**IB 与程序化改动共同决定运行布局**。
 - `known` 必须有源码证据；不适用给具体理由；未知保持 `unknown` 并回流分析。宏/二进制/动态配置无法确认时说明所需额外证据，**不伪造解析结果**。
-- Preview/mock 数据与实际入口分开；**没有 iPhone 录制不生成运行观察结论**（runtime=not_run，screenshot=null 合法）。
+- Preview/mock 数据与实际入口分开；没有指定应用实际测试或可核验运行证据不生成运行观察结论，不把录屏作为前置条件（runtime=not_run，screenshot=null 合法）。
+- 源端 UI 策略在 init 一次说明并复用已有选择；直接进入 spec 也读取 `source_ui_capture` 选择卡。明确选择 capture/replay 后，主控按已确认的应用、模拟器、固定场景生成 `ui_capture` 请求及页面/源码绑定，由 `source-analysis` 的 source-ui 步骤实际调用现有 XCUITest 适配器；不能以“采集入口已安装”代替执行。无当前模拟器 App 构建时先用已授权 Apple CLI 构建所选目标，或报告具体缺口/当前证据复用路径，不猜设备或扩到未选页面。协议见 [源端 UI 采集与规格消费](../ios-source-analysis/references/source-ui-capture.md)。
 
 ## 4. Phase B：UI baseline
 
@@ -71,7 +72,8 @@ metadata:
 2. 写 `ui/page_NNNN_Name.md`（模板 `templates/page-spec-template.md`）：组件层级、布局约束、具体 ArkUI 映射、资源引用；公共段落（页面结构/视觉/状态接口/交互/导航/资源/验收/目标接线责任）与 `ios` 原生语义段**完整并保留**。
 3. `ui-snapshots/<page_id>/meta.json` 存 source_platform、framework、source refs、状态条件与真实截图路径（若有）。**不创建伪造布局树**；程序化 UI 按真实代码与语义树表达。
 4. 状态接口写明持有者、变化来源、消费者、清理边界、已确定目标接口；**原语义与 ArkTS 决策分段，不能用目标装饰器反向修改源事实**。
-5. 门禁：`python <runtime>/scripts/a2h_ios.py source-check --harness --project <target>`；UI 覆盖用 `arkts-ui-coverage-auditor`（入口/页面/交互逐项核对），出 `spec/ui-coverage-report.md`。**静态覆盖与运行验证分别记录，不许互代**。
+   已选采集时，页面作者必须读取 `spec/ref/ios-source-ui-observations.json` 中本页检查点的原图、原生树与配置缺口。`spec-authoring` 清单提供 `runtime_observations` 并把当前附件纳入输入摘要；候选输出会在对应页面加入原生观察段，已有本页 meta 同步为 captured 和真实 screenshot。作者独立核对后写入候选，不能由一张图覆盖源码默认值、条件分支或其他页面；UI 捕获不等同业务通过。
+5. UI 中途仅做针对性诊断：`python <runtime>/scripts/a2h_ios.py facts-view --project <target> --scope ui` 核对正式源事实与当前编译视图；此时功能规格/AC 尚未完成，不运行完整 harness。UI 覆盖用 `arkts-ui-coverage-auditor`（入口/页面/交互逐项核对），出 `spec/ui-coverage-report.md`。**静态覆盖与运行验证分别记录，不许互代**。
 
 ## 5. Phase C：功能 baseline
 
@@ -98,7 +100,6 @@ metadata:
 ## 6. 程序门禁（全部通过才进 Gate C；FAIL 按 §0 处置阶梯最多修 2 轮）
 
 ```text
-python <runtime>/scripts/a2h_ios.py spec-check --project <target>
 python <runtime>/scripts/a2h_ios.py source-check --harness --project <target>
 python <skills>/a2h-spec/scripts/lint_addenda_closure.py --spec <target>/spec/baseline
 python <skills>/a2h-spec/scripts/lint_divergence.py --spec-dir <target>/spec/baseline/features --gate
@@ -106,6 +107,7 @@ python <skills>/a2h-spec/scripts/extract_literals.py --spec-dir <target>/spec/ba
 python <skills>/a2h-spec/scripts/build_traceability_index.py --project-root <target>
 ```
 
+- 完整 harness 已包含 spec contract 校验；`spec-check` 保留为可选的定向规格诊断，不在正式交接前重复运行同一检查。
 - 审阅/升级诊断可用 `source-check --harness --report-only`（不更新 findings、不更新门禁报告）；正式 plan/execute 仍需实际源门禁。
 - **facts checker 检查身份、条件字段与溯源，不声称证明完整语义理解**：文档/结构 PASS 不代表已编译或行为等价。
 - 原 Android 源语言专用画像检查**不用于 iOS**（口径坑：不得把 android-* 检查套在 iOS 规格上）。
@@ -142,3 +144,11 @@ python <skills>/a2h-spec/scripts/build_traceability_index.py --project-root <tar
 ```
 
 标记 `a2h-spec` 阶段水位（写 stage-marks fact，受授权门控、尽力而为）。token 用量由宿主生命周期采集，本步不采集。**忽略其退出码，绝不阻断流水线。**
+
+
+## 0.13.5 设置与点击的具体效果
+
+在C3行为合同编写时，对当前已选迁移范围内的persistence/event源事实，按 [效果链专项](../a2h-verify/references/behavior-effect-review.md) 自动组织适用的effect_review；不要求用户额外点选技术检查。设置分别给默认、保存、重载和业务效果，点击分别给输入、处理、副作用和反馈；每阶段使用不同可观察值、独立源oracle及对应case/AC/owner。确无相关行为则not_applicable；缺独立预期、运行后端或已确认应用/设备范围时保留缺口，不编造用例结果，不扩大授权。正式合同在Plan前形成并按原冻结流程处理，Execute不能临时重写expected来通过测试。
+
+
+0.13.6路由源清单：按 [路由实际协议](../arkts-router-verify/SKILL.md) 在正式Plan前从已审navigation事实和page Spec形成ios-routing.json；覆盖全部当前事实，目标映射来自计划设计，不能倒抄生成代码作expected。未决保留并交由原作者查证，Verify会实际抽目标图并消费本清单。

@@ -16,13 +16,13 @@
 从配置读取源、目标。源不可读即阻断。首次依次执行随包 runtime 的：
 
 ```text
-python <runtime>/scripts/a2h_ios.py harness-init --project <target>
-python <runtime>/scripts/a2h_ios.py source-index --project <target>
-python <runtime>/scripts/a2h_ios.py facts --project <target>
-python <runtime>/scripts/a2h_ios.py literals --project <target>
+python <runtime>/scripts/a2h_ios.py source-analysis --project <target> --plan-only
+python <runtime>/scripts/a2h_ios.py source-analysis --project <target>
 ```
 
 有 0.5.0 baseline 时用 `import-legacy` 代替 `harness-init`；旧声明存入 history 并转 unknown，稳定 page/F/AC ID 保留。已有外来 state.json 时拒绝混用写者，先审阅迁移方案，不能删除账本绕过。
+
+source-analysis 内部按已有范围执行初始化、纯快照索引、官方 Provider 采集、facts 与 literals；显式低层命令仅用于已明确的重采或静态兼容。原生 Swift 主路径由 SwiftParser/SwiftSyntax 提供词项、声明与解码，不先调用旧闭合 SwiftUI 解析器。
 
 facts 生成 ios-facts.json 与 ios-obligations.json。这两件禁止模型手改。fact ID 与行号分离，源片段、文件摘要、owner、symbol、kind、value、解析层级和构建范围均保留。状态初值保留源表达式文本，不擅自求值。
 
@@ -193,3 +193,14 @@ App或任意JSON放入证明。首次归档保留`managed-install.json`原清单
 证明/旧公开原字节/当前公开及包内原字节（base64）；完整纳入seal，重复时重新校验归档
 证明和旧dispatch绑定，不依赖后来又升级的当前文件。此证明只解释托管说明变化，不能
 声称任务生成/行为成功；其它普通冻结和恢复保护保持。
+
+### 已声明文件删除（0.13.3）
+
+任务输入可增加 `deletions` 精确路径到派发前 SHA256，路径必须已在 ownership 中且当前为匹配的普通文件。必须在受审计划中声明；已有冻结计划使用正常 replan，不手改 plan IR 或调度账本。
+
+回执 `file_hashes` 仅写实际仍存在的文件；可选 `deleted_files` 写真实已删除路径到原 SHA256。`files_touched` 以及提供时的 `files` 是两类路径并集，generated 必须覆盖全部 ownership 且完成全部计划删除。不能用 null、零摘要或空文件替代真实缺席。blocked 可保留实际部分结果，仍按失败落账。
+
+维护适配器核对原字节、写权、派发前快照及当前缺席，再向原内核提供现存文件列表投影并恢复原 native 回执；代理只提交真实 native 结果，不自行投影、编辑原三账或把 blocked 改 PASS。原件及恢复标记在 spec/reports/ios-deletion-receipts 下，属于执行证据，不是业务代码。
+
+
+0.13.5 对本次范围内已有persistence/event行为，应按 [设置和点击效果链](../../a2h-verify/references/behavior-effect-review.md) 由源作者形成独立oracle及effect_review分阶段观察；只要原任务范围包含对应行为，即由编排自动采用，不增加“是否启用专项”的重复询问。原behavior-check --run实际执行并消费结果，未执行/来源不足仍UNVERIFIED；独立真值、target_hashes、当前配置和设备边界保持原协议。

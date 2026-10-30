@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-text-truncation
-  short_description: ArkTS 文本/布局截断场景下的根因定位与修复：文本被 Ellipsis 截断或省略号位置异常、maxLines 不生效…
-  default_prompt: 请使用 $arkts-text-truncation，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

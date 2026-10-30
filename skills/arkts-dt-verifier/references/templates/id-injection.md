@@ -10,6 +10,7 @@
 
 格式：`<page_short>_<purpose>_<kind>`
 
+- `page_short`：页面短名 snake_case，从 spec 文件名业务部分生成（去编号、去 Activity/Fragment/Page 后缀）。例：
   - `page_0002_MainActivity.md` → `main`
   - `page_0010_SettingsActivity.md` → `settings`
   - `page_0018_WidgetConfigureActivity.md` → `widget_config`

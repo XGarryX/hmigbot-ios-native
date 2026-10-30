@@ -1,4 +1,2 @@
-interface:
-  display_name: a2h-functional-merge
-  short_description: 合并 iOS 分片功能事实与原 a2h 功能登记，按行为和证据消歧，保持稳定 F/AC ID、源语义与决策边界。
-  default_prompt: 请使用 $a2h-functional-merge，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

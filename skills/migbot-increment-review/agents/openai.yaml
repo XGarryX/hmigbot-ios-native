@@ -1,5 +1,10 @@
+# openai.yaml — Codex skill interface for the converted `migbot-increment-review` command.
+# When the user selects this skill in /skills, `interface.default_prompt` is
+# auto-attached — the Codex equivalent of running the slash command.
 interface:
-  display_name: migbot-increment-review
-  short_description: 'Trigger: `$migbot-increment-review` or natural language. 审阅
-    S…'
-  default_prompt: 请使用 $migbot-increment-review，按本技能的输入、执行步骤和验收条件完成当前任务。
+  display_name: "migbot-increment-review"
+  default_prompt: |
+    Run the migbot-increment-review now: review the specified change per its review spec and write the review verdict.
+
+policy:
+  allow_implicit_invocation: true

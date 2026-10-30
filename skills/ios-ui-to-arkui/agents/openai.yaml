@@ -1,4 +1,6 @@
 interface:
-  display_name: ios-ui-to-arkui
-  short_description: 在 a2h-execute Stage 1 按 iOS 页面 spec 实现 ArkUI；保留 SwiftUI 状态/Bi…
-  default_prompt: 请使用 $ios-ui-to-arkui，按本技能的输入、执行步骤和验收条件完成当前任务。
+  display_name: iOS UI to ArkUI
+  short_description: Audit and migrate iOS View UI into ArkUI batches
+  default_prompt: Use $ios-ui-to-arkui to audit an iOS View/XML app and migrate one feature batch into ArkUI with coverage and build checks.
+policy:
+  allow_implicit_invocation: false

@@ -3,6 +3,7 @@ from pathlib import Path
 import time
 import uuid
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_json
 
 INPUTS = 'spec/ref/ios-source-analysis-inputs.json'
@@ -39,6 +40,9 @@ def _replay_variant(project, source, plan, cfg):
     for candidate in candidates:
         try:
             condition = validate_condition(source, candidate, project=project)
+            condition_manifest = read_json(candidate / 'manifest.json')
+            if any(name.endswith('.swift') for name in evidence['source_files']) and condition_manifest.get('kind') != 'compiler_source_views':
+                raise MigrationError('Selected Swift inputs require composed Swift/Clang compiler views')
             expected = condition['expected_build']
             selection = evidence['selection']
             if (any(selection.get(k) != expected[k] for k in ('scheme', 'configuration', 'sdk'))
@@ -46,7 +50,7 @@ def _replay_variant(project, source, plan, cfg):
                 raise MigrationError('Conditional context differs from selected compiler membership')
             if evidence.get('projects') and expected['project'] not in evidence['projects']:
                 raise MigrationError('Conditional project differs from selected compiler membership')
-            conditional_build = Path(read_json(candidate / 'manifest.json')['build_evidence'])
+            conditional_build = Path(condition_manifest['build_evidence'])
             compiled = read_json(bundle / 'artifacts/source-files.json')
             build_log_sha = compiled.get('evidence', {}).get('captured_build_log', {}).get('sha256')
             conditional_log = conditional_build / 'artifacts/device-build.stdout.log'
@@ -59,11 +63,20 @@ def _replay_variant(project, source, plan, cfg):
             if declared:
                 raise MigrationError('Requested conditional replay rejected: ' + str(exc)) from exc
             rejected.append({'path': str(candidate), 'reason': str(exc)})
+    # Repository inventory also includes tests and other unselected products.
+    # Only an actual selected Swift compiler member can require its configured
+    # source view; never trigger product recapture from an unrelated #if.
+    selected_swift_conditionals = set(evidence['source_files']).intersection(
+        plan.get('inventory', {}).get('swift_conditionals') or [])
+    if selected_swift_conditionals:
+        raise MigrationError('Selected Swift conditional source lacks a validated compiler view; '
+                             'capture the current Xcode build context or select a matching existing view: '
+                             + ', '.join(sorted(selected_swift_conditionals)))
     return variant, rejected
 
 
 def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_scaffold=False,
-        analysis_config=None, plan_only=False, progress=None):
+        analysis_config=None, plan_only=False, progress=None, mcp=None, source_ui=None):
     from .native_pipeline import context, index_source
     from .ios_harness import initialize
     from .ios_facts import refresh, obligations
@@ -78,7 +91,7 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
     if ((project / 'spec/state/state.json').exists()
             or any((project / 'spec/waves').glob('plan-*.json'))):
         raise MigrationError('Source analysis cannot mutate a planned project; use reviewed source-refresh/replan')
-    current = snapshot(source)
+    current = source_snapshot(source)
     index_path = project / 'spec/baseline/ios-source-index.json'
     if index_path.exists():
         index = read_json(index_path)
@@ -86,7 +99,18 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
             raise MigrationError('Source index is stale; preserve it and use reviewed source-refresh before analysis')
     cfg, config_ref = configuration(project, analysis_config)
     host_profile = detect_host_profile()
+    from .xcode_mcp import resolve_choice, choice_card
+    choice, origin = resolve_choice(project, mcp if mcp is not None else cfg.get('mcp'),
+                                   configured_server=bool(cfg.get('mcp_server')))
+    cfg = {**cfg, 'mcp': choice}
+    choices = [choice_card({'choice': choice, 'choice_origin': origin},
+        applicable=host_profile['host']['os'] == 'macos' and cfg.get('mode') not in {'static', 'replay'})]
+    from .source_ui_capture import settings as ui_settings, choice_card as ui_choice
+    cfg={**cfg,'ui_capture':ui_settings(project,cfg,source_ui)}
+    choices.append(ui_choice(project,source,cfg))
     execution = plan(source, project, cfg, host_profile, explicit_providers=providers, variant=variant)
+    execution['capability_choices'] = choices
+    execution['user_action_required'] = any(c['requires_user_choice'] for c in choices)
     if plan_only:
         return {key: value for key, value in execution.items() if key != 'inventory'}
     run_dir = project / 'spec/ref/analysis-runs' / ('AR-' + uuid.uuid4().hex)
@@ -107,6 +131,8 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
                   'selected_backend': execution['backend'], 'compiler_binding': 'unresolved',
                   'provider_plan_supplied': providers is not None},
               'execution_plan': str(run_dir / 'plan.json'), 'decisions': execution['decisions'],
+              'capability_choices': choices,
+              'user_action_required': any(c['requires_user_choice'] for c in choices),
               'stages': [], 'artifacts': {}, 'counts': {}, 'degraded': [],
               'progress': {'total': len(steps), 'completed': 0, 'failed': 0, 'blocked': 0, 'current': None}}
     started = time.monotonic()
@@ -124,7 +150,7 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
         report['artifacts'][path.relative_to(project).as_posix()] = {'sha256': digest(body), 'bytes': len(body)}
 
     def stage(name, action, *, optional=False):
-        if snapshot(source)['sha256'] != current['sha256']:
+        if source_snapshot(source)['sha256'] != current['sha256']:
             raise MigrationError('Source changed during automatic orchestration')
         stamp = time.monotonic()
         entry = {'name': name, 'status': 'running', 'step': len(report['stages']) + 1}
@@ -151,6 +177,9 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
         save()
         return result
 
+    if progress is not None:
+        progress({'stage': 'spec/source-analysis', 'status': report['status'],
+                  **report['progress'], 'capability_choices': choices})
     save()
     try:
         if providers is not None:
@@ -173,7 +202,8 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
             from .native_source_capture import selection, capture
             selected = stage('native-selection', lambda: selection(source, execution['selection'], run_dir / 'native-selection'))
             native = stage('native-source-capture', lambda: capture(source, project, selected, run_dir / 'native',
-                           need_conditionals=bool(execution['inventory']['c_conditionals']), timeout=cfg.get('timeout_seconds', 600)))
+                           need_conditionals=bool(execution['inventory']['c_conditionals'] or execution['inventory'].get('swift_conditionals')),
+                           timeout=cfg.get('timeout_seconds', 600)))
             write_json(run_dir / 'native-capture-result.json', native)
             effective_variant = native['variant']
             generated.append({'operation': 'build-settings', 'input': native['compilation']})
@@ -230,12 +260,34 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
         if cfg.get('require_official') and not guidance['official_resources']:
             raise MigrationError('Required official guidance unavailable; inspect actual Apple skill/MCP diagnostics')
         from .expertise import prepare
-        stage('expertise-plan', lambda: prepare(project))
-        candidate = stage('spec-scaffold', lambda: scaffold(project, source_sha256=current['sha256']))
+        stage('expertise-plan', lambda: prepare(project), optional=True)
+        from .source_ui_capture import execute as capture_ui, INDEX as UI_INDEX
+        ui=stage('source-ui',lambda:capture_ui(project,source,run_dir,cfg))
+        report['source_ui']=ui
+        artifact(project/UI_INDEX)
+        if ui['required'] and ui['status']!='captured':
+            report.update(status='needs_ui_evidence')
+            report['progress']['blocked']=max(0,report['progress']['total']-report['progress']['completed'])
+            report['next']=['Resolve the explicitly selected source UI scope/build/device/evidence and rerun before authoring; independent source facts are retained']
+            save()
+            return {**report,'report':str(report_path)}
+        if cfg.get('mode') == 'static':
+            # Explicit file-only scope may not launch a compiler. The removed
+            # Python declaration parser is not restored to manufacture pages.
+            candidate = stage('spec-scaffold', lambda: {
+                'schema_version': 2, 'kind': 'spec-scaffold-candidate', 'status': 'unavailable',
+                'reason': 'Explicit static scope has no official AST; provide native/replayed SwiftSyntax evidence before scaffolding',
+                'source_sha256': current['sha256'], 'spec_complete': False, 'behavior_verified': False,
+                'enterable_plan': False, 'candidates': [], 'files': {},
+                'summary': {'total_candidates': 0, 'pages': 0, 'features': 0}})
+        else:
+            candidate = stage('spec-scaffold', lambda: scaffold(project, source_sha256=current['sha256']))
         candidate_path = project / 'spec/reports/derived/spec-scaffold.json'
         write_json(candidate_path, candidate)
         artifact(candidate_path)
         if apply_scaffold:
+            if candidate.get('status') == 'unavailable':
+                raise MigrationError(candidate['reason'])
             applied = stage('apply-scaffold', lambda: apply_candidate(project, candidate))
             if applied.get('refused'):
                 raise MigrationError('Scaffold apply refused candidate files; inspect retained candidate')
@@ -245,7 +297,7 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
             write_json(path, authoring)
             artifact(path)
             report['applied'] = applied
-        if snapshot(source)['sha256'] != current['sha256'] or graph['source_sha256'] != current['sha256'] or literals['source_sha256'] != current['sha256']:
+        if source_snapshot(source)['sha256'] != current['sha256'] or graph['source_sha256'] != current['sha256'] or literals['source_sha256'] != current['sha256']:
             raise MigrationError('Source changed during analysis; fresh capture and review required')
         if config_ref and digest(Path(config_ref['path']).read_bytes()) != config_ref['sha256']:
             raise MigrationError('Analysis configuration changed during execution')
@@ -257,6 +309,8 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
             path = project / name
             if path.is_file():
                 closure[name] = digest(path.read_bytes())
+        from .source_ui_capture import frozen_inputs as ui_inputs
+        closure.update(ui_inputs(project,source))
         write_json(project / INPUTS, {'schema_version': 1, 'source_sha256': current['sha256'], 'files': closure})
         report['counts'] = {'source_files': len(current['files']), 'facts': len(graph['facts']),
                             'obligations': len(obligations(graph)['obligations']),
@@ -268,9 +322,20 @@ def run(project, *, variant=None, providers=None, manifest_evidence=None, apply_
             'official_topics': sorted(supplied_topics), 'fallback_topics': sorted(needed - supplied_topics),
             'primary_guidance': ('Apple' if needed and needed <= supplied_topics else 'mixed_with_declared_fallback'
                                  if supplied_topics else 'declared_third_party_or_static_fallback')}
+        report['official_execution'] = {
+            'swift_fact_input': graph.get('syntax_consumption', {}).get('swift', 'python_static_fallback'),
+            'swift_literal_input': literals.get('syntax_consumption', {}).get('swift', 'python_static_fallback'),
+            'string_decoding': literals.get('syntax_consumption', {}).get('string_decoding', 'limited_python_fallback'),
+            'compiler_binding': 'unresolved',
+            'runtime': 'source_ui_observed' if ui['status']=='captured' else 'not_run',
+            'source_ui_execution': 'actual_capture_now' if ui.get('actual_native_ui_run') else 'reused_current_capture' if ui.get('reused') else ui['status'],
+            'skill_guidance_loaded': bool(skills.get('loaded')),
+            'skill_semantic_review': 'required',
+            'mcp_successful_calls': len(mcp.get('captures', []))}
         report['status'] = 'needs_review'
         report['progress']['current'] = None
         report['next'] = ['Read the selected official guidance and current source evidence',
+                          'Read the selected native source UI observations and original images in spec-authoring; captures are scoped observations, not default values',
                           'Review candidates, unknowns, semantics, responsibility and ACs',
                           'Run spec-check and source-check --harness before plan-ir']
         save()

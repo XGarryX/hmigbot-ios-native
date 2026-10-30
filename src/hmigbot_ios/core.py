@@ -13,7 +13,8 @@ EXCLUDED = {".git", ".build", "build", "DerivedData", "Pods", "Carthage",
             "node_modules", "oh_modules", ".hvigor", ".swiftpm", ".hmigbot-ios", ".serena", "__pycache__"}
 SOURCE_SUFFIXES = {".swift", ".m", ".mm", ".h", ".c", ".cpp", ".plist",
                    ".entitlements", ".pbxproj", ".xcconfig", ".storyboard", ".xib",
-                   ".xcstrings", ".strings", ".stringsdict", ".xcprivacy"}
+                   ".xcstrings", ".strings", ".stringsdict", ".xcprivacy",
+                   ".xcscheme", ".xctestplan"}
 SOURCE_NAMES = {"Package.resolved", "Podfile", "Podfile.lock", "Cartfile.resolved",
                 "Contents.json", "contents.xcworkspacedata"}
 
@@ -113,14 +114,21 @@ def safe_child(root: Path, relative: str) -> Path:
     return child
 
 
-def source_files(root: Path):
+def source_files(root: Path, *, skip_roots=()):
     root = io_path(root).resolve()
     if not root.is_dir():
         raise MigrationError(f"Source directory does not exist: {root}")
+    skip_roots = frozenset(skip_roots)
+    if any(not isinstance(name, str) or not name or name in {'.', '..'}
+           or '/' in name or '\\' in name for name in skip_roots):
+        raise MigrationError('Snapshot exclusions must name explicit root entries')
     # Every non-generated file contributes to the fingerprint, including assets,
     # configuration and native libraries. Symlinks are refused instead of silently skipped.
     result = []
     for parent, dirs, names in os.walk(root, followlinks=False):
+        if Path(parent) == root:
+            dirs[:] = [name for name in dirs if name not in skip_roots]
+            names = [name for name in names if name not in skip_roots]
         dirs[:] = sorted(d for d in dirs if d not in EXCLUDED)
         for name in dirs + names:
             item = io_path(Path(parent) / name)
@@ -194,13 +202,22 @@ def _generated_xcode_metadata(path: Path, relative: Path) -> bool:
             and not (children[0].tail or '').strip())
 
 
-def snapshot(root: Path):
+def snapshot(root: Path, *, skip_roots=()):
     root = io_path(root).resolve()
     entries = [{"path": p.relative_to(root).as_posix(),
                 "sha256": digest(p.read_bytes()), "bytes": p.stat().st_size}
-               for p in source_files(root)]
-    return {"algorithm": "sha256", "excluded_directories": sorted(EXCLUDED),
-            "files": entries, "sha256": digest(json_bytes(entries))}
+               for p in source_files(root, skip_roots=skip_roots)]
+    result = {"algorithm": "sha256", "excluded_directories": sorted(EXCLUDED),
+              "files": entries, "sha256": digest(json_bytes(entries))}
+    if skip_roots:
+        result['excluded_root_entries'] = sorted(skip_roots)
+    return result
+
+
+def source_snapshot(root: Path):
+    """Product migration identity; snapshot() retains the full audit identity."""
+    from .source_relevance import migration_snapshot
+    return migration_snapshot(root)
 
 
 def anchor(path: str, sha256: str, line: int = 1, **location):

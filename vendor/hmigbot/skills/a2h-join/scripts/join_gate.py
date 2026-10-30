@@ -4,6 +4,24 @@ import platform
 import subprocess
 import sys
 
+# Live host readers bind one complete native log. Offline oracles use the engine.
+from pathlib import Path
+import json
+for _parent in Path(__file__).resolve().parents:
+    _runtime = _parent / 'runtime.json'
+    if _runtime.is_file():
+        _root = (_parent / json.loads(_runtime.read_text(encoding='utf-8'))['runtime_relative']).resolve()
+        if (_root / 'src/hmigbot_ios').is_dir():
+            sys.path.insert(0, str(_root / 'src'))
+            break
+    if (_parent / 'src/hmigbot_ios').is_dir():
+        sys.path.insert(0, str(_parent / 'src'))
+        break
+from hmigbot_ios.host_join import maybe_main
+_scope_result = maybe_main('join_gate', sys.argv[1:])
+if _scope_result is not None:
+    raise SystemExit(_scope_result)
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _OS = {"Darwin": "macos", "Linux": "linux", "Windows": "windows"}.get(platform.system())
 _ARCH = "arm64" if platform.machine().lower() in ("arm64", "aarch64") else "x64"
@@ -16,9 +34,7 @@ _EXE = os.path.join(_DIST, "_entry" + (".exe" if _OS == "windows" else ".bin"))
 if not os.path.exists(_EXE):
     sys.stderr.write("no bundled binary for %s-%s at %s\n" % (_OS, _ARCH, _EXE))
     sys.exit(2)
-if _OS == "macos":  # idempotent; failure must not block execution
-    subprocess.run(["xattr", "-dr", "com.apple.quarantine", _DIST],
-                   check=False, capture_output=True)
+# Quarantine preparation is owned by the explicit project boundary.
 os.environ.setdefault("ARKTS_SKILL_DIR", _HERE)  # let bundled lib modules locate the real scripts/ dir
 _argv = [_EXE, "join_gate", *sys.argv[1:]]
 if _OS == "windows":

@@ -10,32 +10,123 @@ from pathlib import Path
 import platform
 import stat
 
-from .core import MigrationError, digest, json_bytes, read_json, write_json
+from .core import MigrationError, digest, json_bytes, read_json, safe_child, write_json
 from .macos_permissions import _root, _target, _tree, _quarantined, ensure_runtime_permissions
 
 REPORT = 'spec/reports/init-environment.json'
 MANIFEST = 'runtime-entrypoints.json'
 
 
-def inspect(project, runtime):
+def permission_options(source, project, host, mcp):
+    """Explain capabilities before they run, without inventing OS authorization."""
+    def entry(name, purpose, reads, writes, available, alternatives, authorization):
+        return {'capability': name, 'purpose': purpose, 'reads': reads, 'writes': writes,
+                'capability_available': available, 'authorized': None,
+                'actually_invoked': False, 'result': 'not_run',
+                'authorization_steps': authorization, 'options': alternatives,
+                'authorization_note': 'Reuse existing explicit task and host authorization; do not repeat already authorized steps'}
+    options = [entry('source_analysis', 'Read the chosen iOS source to establish migration facts',
+                  [str(source)], [], os.access(source, os.R_OK),
+                  [{'id': 'read_source', 'difference': 'Enables source-backed analysis within this directory'},
+                   {'id': 'environment_only', 'difference': 'Environment diagnosis/reporting continues; source conclusions remain not_run'}],
+                  'Grant the host/agent read access only to the selected source directory when not already authorized'),
+            entry('project_outputs', 'Write this migration project configuration, evidence and generated outputs',
+                  [str(project)], [str(project)], os.access(project, os.W_OK),
+                  [{'id': 'project_write', 'difference': 'Allows the requested outputs inside this project'},
+                   {'id': 'choose_writable_output', 'difference': 'Use an explicitly writable project/cache path; changing cwd does not change sandbox access'}],
+                  'Authorize the selected target directory through the host, or choose an already writable target; no source-write scope is implied'),
+            entry('native_source_capture', 'Capture the selected iOS compiler/build context with Xcode CLI',
+                  [str(source), 'Installed Xcode toolchain/SDK'], ['Selected task build/cache/evidence directories'],
+                  host.get('capabilities', {}).get('ios.build') == 'available',
+                  [{'id': 'native_cli', 'difference': 'Produces actual Xcode/compiler evidence; may execute the selected project build steps'},
+                   {'id': 'static_or_replay', 'difference': 'Static or current bound evidence can be inspected; missing native proof remains unresolved'}],
+                  'Use the existing build authorization and writable task cache; resolve any license/SDK prompt manually through official Xcode/CLI steps'),
+            entry('xcode_mcp', 'Read applicable Xcode project or official documentation context',
+                  ['Only the authorized project and actual advertised read tools'], [],
+                  mcp.get('tool_access', {}).get('capability_available'),
+                  [{'id': 'enable', 'difference': 'Adds MCP context; needs service plus agent/project authorization'},
+                   {'id': 'skip', 'difference': 'Continues current xcodebuild/xcrun/Swift/Clang CLI evidence without MCP'}],
+                  'Choose --mcp enable --prepare or --mcp skip; if needed enable manually in Xcode settings and approve only the intended agent/project'),
+            entry('target_build', 'Compile the chosen HarmonyOS product using its actual target SDK',
+                  [str(project), 'Selected target SDK'], ['Target build artifacts and task cache'],
+                  host.get('capabilities', {}).get('harmony.build') == 'available',
+                  [{'id': 'target_sdk', 'difference': 'Allows actual target compilation when its SDK is available'},
+                   {'id': 'source_only', 'difference': 'Source analysis and reporting continue; target compilation remains not_run'}],
+                  'Install/configure the selected official target SDK and authorize its project output/cache paths before that build'),
+            entry('device_verification', 'Perform separately requested verification on a specified device',
+                  ['Only separately authorized device evidence'], ['Only separately authorized device changes'], None,
+                  [{'id': 'existing_evidence', 'difference': 'Review current bound CLI/log evidence without controlling a device'},
+                   {'id': 'not_selected', 'difference': 'Keep device verification not_run without blocking independent source analysis or builds'}],
+                  'Initialization does not select a device; reuse the task-authorized application/test-device scope when supplied')]
+    ui = entry('application_ui_validation',
+        'Capture app/window/element images and accessible controls, then replay fixed app-test scenarios',
+        ['Explicit test app/build, selected simulator/device and scenario inputs'],
+        ['Selected application test state', 'This project spec/ref UI evidence and spec/reports/ios-progress.md'],
+        host.get('capabilities', {}).get('ios.build') == 'available',
+        [{'id': 'scoped_app_test', 'difference': 'Use official XCUITest/CLI within the already authorized app and exact device; no desktop takeover'},
+         {'id': 'bound_external_evidence', 'difference': 'Validate current app/build/scenario-bound existing images and test records without operating a device'},
+         {'id': 'static_and_build', 'difference': 'Continue source analysis/conversion/build; unrun UI checks remain specifically not_run'}],
+        'Reuse explicit app, device, scenario and build authorization; ask only for genuinely missing scope or actual OS approval. MCP and Mac desktop-screen access are not prerequisites for the independent XCUITest CLI path')
+    runtime = Path(__file__).resolve().parents[2]
+    ui.update(policy_permission='permitted_with_explicit_application_test_scope',
+              desktop_control='prohibited', recording='not_granted',
+              required_scope=['application_bundle_id', 'device_id', 'current_build', 'scenario_checkpoints'],
+              implementation_status=('adapter_present_not_execution_evidence'
+                  if (runtime / 'scripts/ios_ui_automation.py').is_file() else 'adapter_not_present'),
+              host_observation='CLI tool availability only; selected simulator/runtime has not been checked here',
+              execution_status='not_run', acceptance_status='not_established',
+              unrelated_conversion_stages_blocked=False)
+    return options + [ui]
+
+
+def inspect(project, runtime, *, entrypoints=(), mcp='ask', source_ui=None):
     from .native_pipeline import context
     from .host import detect_host_profile
     source, project = context(Path(project))
     runtime = Path(runtime).resolve(strict=True)
-    entries = read_json(runtime / MANIFEST)
-    if entries.get('schema_version') != 1 or not isinstance(entries.get('entries'), list):
-        raise MigrationError('Invalid controlled runtime entrypoint manifest')
-    missing, executable, roots = [], [], set()
+    if not isinstance(entrypoints, (list, tuple)) or any(not isinstance(v, str) or not v for v in entrypoints):
+        raise MigrationError('Selected runtime entrypoints must be explicit relative paths')
+    selected = list(dict.fromkeys(entrypoints))
+    manifest_error = None
+    try:
+        entries = read_json(runtime / MANIFEST)
+        if (entries.get('schema_version') != 1 or not isinstance(entries.get('entries'), list)
+                or any(not isinstance(v, str) for v in entries['entries'])):
+            raise MigrationError('Invalid controlled runtime entrypoint manifest')
+    except (MigrationError, OSError, ValueError, TypeError) as exc:
+        if selected:
+            raise MigrationError('Cannot admit selected runtime entrypoints: ' + str(exc)) from exc
+        entries, manifest_error = {'entries': []}, str(exc)
+    if not set(selected) <= set(entries['entries']):
+        raise MigrationError('Selected entrypoint is outside the controlled runtime manifest')
+    missing, executable, roots, advisories = [], [], set(), []
     controlled = runtime.is_relative_to(project.resolve())
     for relative in entries['entries']:
-        path = _target(runtime, relative)
-        # Known entries never authorize a link or hard-link outside the runtime.
-        _tree(runtime, path)
-        if not stat.S_ISREG(path.stat().st_mode):
-            raise MigrationError('Controlled entrypoint must be a regular file: ' + relative)
+        required = relative in selected
+        try:
+            path = safe_child(runtime, relative)
+            if not path.is_file():
+                raise MigrationError('Runtime entrypoint is missing or not a regular file: ' + relative)
+            if not required:
+                # Full payload integrity belongs to install/release auditing.
+                # Per-call admission below remains strict for the actual tool.
+                executable.append({'path': relative, 'selected': False, 'status': 'present'})
+                continue
+            path = _target(runtime, relative)
+            _tree(runtime, path)
+            if not stat.S_ISREG(path.stat().st_mode):
+                raise MigrationError('Controlled entrypoint must be a regular file: ' + relative)
+        except (MigrationError, OSError) as exc:
+            if required:
+                raise MigrationError('Selected runtime entrypoint unavailable: ' + relative + '; ' + str(exc) +
+                                     '; restore/install this selected payload before its call, or continue independent static/CLI work without it') from exc
+            advisories.append({'path': relative, 'status': 'unavailable', 'blocking': False, 'reason': str(exc),
+                               'options': [{'id': 'continue_selected_work', 'difference': 'This backend is not selected; current independent CLI/static work continues'},
+                                           {'id': 'restore_when_needed', 'difference': 'Install or restore only this payload before selecting its capability'}]})
+            continue
         if not os.access(path, os.X_OK):
             missing.append(relative)
-        executable.append({'path': relative, 'sha256': digest(path.read_bytes()),
+        executable.append({'path': relative, 'selected': True, 'sha256': digest(path.read_bytes()),
                            'mode': stat.S_IMODE(path.stat().st_mode)})
         roots.add(path.parent if path.name in {'_entry.bin', 'Python', '_entry.exe'} else path)
     quarantine = []
@@ -43,19 +134,33 @@ def inspect(project, runtime):
         for path in sorted(roots):
             quarantine.extend(_quarantined(_tree(runtime, path)))
     host = detect_host_profile()
+    from .xcode_mcp import prepare as prepare_mcp, resolve_choice, choice_card
+    choice, origin = resolve_choice(project, mcp)
+    mcp_status = prepare_mcp(choice=choice, apply=False)
+    mcp_status['choice_origin'] = origin
+    mcp_status['choice_card'] = choice_card(mcp_status,
+        applicable=mcp_status.get('status') != 'not_applicable')
+    from .source_ui_capture import choice_card as ui_choice
+    ui=ui_choice(project,source,selected=source_ui)
     return {'schema_version': 1, 'kind': 'init_environment', 'project': str(project),
             'runtime': str(runtime), 'controlled_runtime': controlled,
-            'entrypoints': executable, 'missing_execute': missing,
+            'entrypoints': executable, 'selected_entrypoints': selected,
+            'advisories': advisories, 'manifest_error': manifest_error, 'missing_execute': missing,
             'quarantined_paths': sorted(set(quarantine)),
             'capabilities': {'static_source_read': os.access(source, os.R_OK),
                              'native_source_capture': host['source'],
-                             'target_build': 'requires_validate', 'device_verification': 'not_run'},
+                             'target_build': 'requires_validate', 'device_verification': 'not_run',
+                             'xcode_mcp': mcp_status, 'source_ui_capture':ui},
+            'permission_preflight': permission_options(source, project, host, mcp_status),
+            'capability_choices': [mcp_status['choice_card'],ui],
+            'user_action_required': mcp_status['choice_card']['requires_user_choice'] or ui['requires_user_choice'],
+            'permission_preflight_scope': 'Subsequent conversion capabilities; permission probes and preparation metadata are separate actual actions',
             'status': 'preparation_required' if missing or quarantine else 'ready',
             'actions': [], 'product_verified': False}
 
 
-def run(project, runtime, *, prepare=False):
-    receipt = inspect(project, runtime)
+def run(project, runtime, *, prepare=False, entrypoints=(), mcp='ask', source_ui=None):
+    receipt = inspect(project, runtime, entrypoints=entrypoints, mcp=mcp,source_ui=source_ui)
     root, runtime = Path(receipt['project']), Path(receipt['runtime'])
     if not prepare:
         return receipt
@@ -77,9 +182,18 @@ def run(project, runtime, *, prepare=False):
         if not target.is_relative_to(runtime):
             raise MigrationError('Quarantine target escaped controlled runtime')
         receipt['actions'].append(ensure_runtime_permissions(root, target))
-    checked = inspect(root, runtime)
+    choice = receipt['capabilities']['xcode_mcp']['choice']
+    checked = inspect(root, runtime, entrypoints=entrypoints, mcp=choice,
+                      source_ui=receipt['capabilities']['source_ui_capture']['selected'])
     receipt.update(status=checked['status'], missing_execute=checked['missing_execute'],
                    quarantined_paths=checked['quarantined_paths'])
+    from .xcode_mcp import prepare as prepare_mcp
+    receipt['capabilities']['xcode_mcp'] = prepare_mcp(choice=choice, apply=True)
+    receipt['capabilities']['xcode_mcp']['choice_origin'] = receipt['capability_choices'][0]['choice_origin']
+    receipt['capabilities']['xcode_mcp']['choice_card']['choice_origin'] = receipt['capability_choices'][0]['choice_origin']
+    receipt['capability_choices'] = [receipt['capabilities']['xcode_mcp']['choice_card'],checked['capabilities']['source_ui_capture']]
+    receipt['capabilities']['source_ui_capture']=checked['capabilities']['source_ui_capture']
+    receipt['user_action_required'] = any(c['requires_user_choice'] for c in receipt['capability_choices'])
     write_json(root / REPORT, receipt)
     return receipt
 

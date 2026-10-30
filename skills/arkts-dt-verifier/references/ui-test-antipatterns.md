@@ -203,7 +203,7 @@ it('P0007_UI_INTERACT_click_link_icon_launches_url_IMPL_MISSING', 0, async () =>
 
 // ✅ 期望 RED — assertComponentExist 找不到就抛错
 it('P0001_UI_NAV_to_SettingPage_IMPL_MISSING', 0, async () => {
-  // spec 写"工具栏 settings 按钮 → SettingScreen"
+  // spec 写"工具栏 settings 按钮 → SettingActivity"
   // 推导期望 id：`browser_toolbar_settings_btn`
   // 当前 manifest 里没这个 id（BrowserToolbar 子组件 .id 没注入）
   // 真实装后 → 这条转 GREEN；目前必 RED 暴露 spec gap

@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-data-layer
-  short_description: 生成 ArkTS/HarmonyOS 数据层代码（V2 优先，API 12+）。当用户需要创建数据模型、网络请求服务、ID…
-  default_prompt: 请使用 $arkts-data-layer，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

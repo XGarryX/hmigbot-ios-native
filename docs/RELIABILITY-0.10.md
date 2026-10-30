@@ -7,8 +7,8 @@
 源与目标必须互不包含。以下在发行包根执行；安装后脚本位于工作区 `.hmigbot-ios/plugin/scripts/`。
 
 ```powershell
-python scripts/a2h_ios.py init --source 'D:/Projects/cuike-ios' --project 'D:/Projects/cuike-harmony'
-python scripts/a2h_ios.py source-analysis --project 'D:/Projects/cuike-harmony' --apply-scaffold
+python scripts/a2h_ios.py init --source 'D:/Projects/sample-ios' --project 'D:/Projects/sample-harmony'
+python scripts/a2h_ios.py source-analysis --project 'D:/Projects/sample-harmony' --apply-scaffold
 ```
 
 `source-analysis` 校验或首次建立源索引、初始化 v2 harness、采集 facts/obligations/literals、派生规格候选。它返回小回执，完整产物留在工程内：
@@ -27,8 +27,8 @@ python scripts/a2h_ios.py source-analysis --project 'D:/Projects/cuike-harmony' 
 只需要候选时：
 
 ```powershell
-python scripts/a2h_ios.py spec-scaffold --project 'D:/Projects/cuike-harmony' --output 'D:/Projects/cuike-harmony/spec/reports/derived/spec-scaffold.json' --brief
-python scripts/a2h_ios.py spec-scaffold --project 'D:/Projects/cuike-harmony' --apply 'D:/Projects/cuike-harmony/spec/reports/derived/spec-scaffold.json'
+python scripts/a2h_ios.py spec-scaffold --project 'D:/Projects/sample-harmony' --output 'D:/Projects/sample-harmony/spec/reports/derived/spec-scaffold.json' --brief
+python scripts/a2h_ios.py spec-scaffold --project 'D:/Projects/sample-harmony' --apply 'D:/Projects/sample-harmony/spec/reports/derived/spec-scaffold.json'
 ```
 
 有执行计划时，本入口拒绝改动基线。源码改变必须保留旧索引，走已有 `facts`、`source-refresh --review` 和受审 `replan` 流程；相同大小/mtime 的内容变化同样失效。
@@ -54,11 +54,11 @@ facts 对每个当前文件只保留一份 bytes/text/lines，首次读取即核
 在完整迁移的首次必要工作之前启动，直到构建、修复、等待及独立验证全部结束后再完成。开始前的工程目标准备与必要基线工作也应纳入计时范围。
 
 ```powershell
-python scripts/a2h_ios.py usage-start --project 'D:/Projects/cuike-harmony' --run-id 'cuike-run-001'
-python scripts/a2h_ios.py usage-record --project 'D:/Projects/cuike-harmony' --input 'D:/Projects/call-usage.json'
-python scripts/a2h_ios.py usage-summary --project 'D:/Projects/cuike-harmony'
-python scripts/a2h_ios.py usage-check --project 'D:/Projects/cuike-harmony'
-python scripts/a2h_ios.py usage-finish --project 'D:/Projects/cuike-harmony' --run-id 'cuike-run-001'
+python scripts/a2h_ios.py usage-start --project 'D:/Projects/sample-harmony' --run-id 'sample-run-001'
+python scripts/a2h_ios.py usage-record --project 'D:/Projects/sample-harmony' --input 'D:/Projects/call-usage.json'
+python scripts/a2h_ios.py usage-summary --project 'D:/Projects/sample-harmony'
+python scripts/a2h_ios.py usage-check --project 'D:/Projects/sample-harmony'
+python scripts/a2h_ios.py usage-finish --project 'D:/Projects/sample-harmony' --run-id 'sample-run-001'
 ```
 
 默认账本为 `spec/reports/derived/usage-budget.json`。可用 `--ledger` 指向 derived 子目录下同名文件，为新运行保留独立账本。开始拒绝覆盖；完成后调用记录不可追加。默认运行额度 19.9M，20M 严格不通过，时间上限 7200 秒。运行中 `usage-check` 为 UNKNOWN/退出 3；完成且证据充分才 PASS/退出 0；明确超限为 FAIL/退出 2。0.11.0 的 `can_continue` 同时考虑显式在途预留；它仍不会自动为未来调用估算/预留。见 [显式预留与结算](USAGE-RESERVATIONS.md)。
@@ -68,7 +68,7 @@ python scripts/a2h_ios.py usage-finish --project 'D:/Projects/cuike-harmony' --r
 ```json
 {
   "call_id": "worker1-attempt1",
-  "run_id": "cuike-run-001",
+  "run_id": "sample-run-001",
   "stage": "convert",
   "agent": "worker1",
   "provider": "openai",
@@ -89,7 +89,7 @@ python scripts/a2h_ios.py usage-finish --project 'D:/Projects/cuike-harmony' --r
 派发新批次时可显式连接同一运行账本：
 
 ```powershell
-python scripts/a2h_ios.py next-batch --project 'D:/Projects/cuike-harmony' --usage-ledger 'spec/reports/derived/usage-budget.json' --usage-run-id 'cuike-run-001'
+python scripts/a2h_ios.py next-batch --project 'D:/Projects/sample-harmony' --usage-ledger 'spec/reports/derived/usage-budget.json' --usage-run-id 'sample-run-001'
 ```
 
 两个选项必须同时提供。调度器在原 `next_batch` 更新控制状态之前，核对账本的工程和运行身份，并检查已登记用量、当前耗时、时钟及结束状态；未知、额度耗尽、超时或已结束均拒绝新派发。`land-results` 仍可收回已有工作的结果。此连接按次显式选择，未选择时保留旧调度行为；调用者须在每次 `next-batch` 传入这两个选项。它不采集宿主遗漏的调用、不自动预留并发调用额度，也不终止已经运行的模型请求；0.11.0 的显式usage-reserve/record/release由调用宿主接线，泛检查会考虑现有预留。
@@ -100,7 +100,7 @@ python scripts/a2h_ios.py next-batch --project 'D:/Projects/cuike-harmony' --usa
 
 [分阶段超时与截止时间](runtime-timeouts.md) 可覆盖原调度的 60 秒和结构流水线的 180 秒执行限制，并保留超时前的原始输出。默认值兼容旧行为；这些执行保护与用量账本分别使用，不自动证明两小时达标。
 
-三类中性宿主评估（本地过程记录：`../evaluations/wb-0.9.1/neutral/README.md`） 补充 Binding/导航状态、UIKit 事件/资源与异步取消/持久化/异常的回归。正常业务和变异守卫分别统计，空操作坏候选作为正式输入会被真实行为消费者拒绝。宿主 PASS 只覆盖给定逻辑用例，不能替代真机 UI、源执行或完整源分析链。
+宿主逻辑回归只覆盖给定用例，不能替代真机 UI、源执行或完整源分析链。
 
 [规模基准](fact-capture-benchmark.md) 可在 100k、200k、500k 合成源码上测 facts 采集的时间、内存及逻辑读取量；它不运行模型、编译、转换或视觉/功能验收，不能外推端到端两小时/20M 达标。
 

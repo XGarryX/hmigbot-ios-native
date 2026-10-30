@@ -44,7 +44,7 @@ def import_token_lines(tokens):
     return {token.line for token in tokens if token.kind != 'string' and token.value == 'import'}
 
 
-def preview_source_lines(path: Path):
+def preview_source_lines(path: Path, *, tokens=None, project=None, source=None):
     """Only Swift source can carry the supported SwiftUI Preview scopes.
 
     Resources retain their ordinary obligations. In particular, plist metadata
@@ -53,11 +53,14 @@ def preview_source_lines(path: Path):
     """
     if path.suffix != '.swift':
         return set()
-    return preview_lines(path.read_text(encoding='utf-8-sig'))
+    if tokens is None and project is not None:
+        from .swift_native import project_syntax, source_tokens
+        tokens = source_tokens(source, path.relative_to(source).as_posix(), project_syntax(project, source))
+    return preview_lines(path.read_text(encoding='utf-8-sig'), tokens=tokens)
 
 
-def preview_lines(text):
-    tokens = tokenize(text)
+def preview_lines(text, *, tokens=None):
+    tokens = tokenize(text) if tokens is None else tokens
     result = set()
     for i, token in enumerate(tokens):
         if token.kind == 'string':

@@ -1,6 +1,6 @@
 ---
 name: a2h-plan
-description: "iOS→HarmonyOS 迁移第二步（Plan）：读已过门禁的 spec/baseline/（Swift/ObjC、SwiftUI/UIKit 源规格），产出 UI 转换计划 ui-plan.md、indexed-v1 功能计划 feature-plan.md、base-plan 与逐 slice 只读调度账本，经 plan-check/plan-ir 冻结计划 IR 与六件 blueprint，在唯一审批门确认后交 a2h-execute。当用户说“生成执行计划”“生成 plan”“怎么做这个迁移”“为 spec 生成 plan”“拆分迁移任务”“下一步怎么做”时使用；兼容旧触发语“契约生成”“审批门/审批迁移计划”。不要用于：域理解与规格生成（用 a2h-spec）、执行迁移代码（用 a2h-execute）；spec/baseline/ 未就绪时提示先跑 a2h-spec。"
+description: "iOS→HarmonyOS 迁移第二步（Plan）：读已过门禁的 spec/baseline/（Swift/ObjC、SwiftUI/UIKit 源规格），产出 UI 转换计划 ui-plan.md、indexed-v1 功能计划 feature-plan.md、base-plan 与逐 slice 只读调度账本，经 plan-ir 校验并冻结计划 IR 与六件 blueprint，在唯一审批门确认后交 a2h-execute。当用户说“生成执行计划”“生成 plan”“怎么做这个迁移”“为 spec 生成 plan”“拆分迁移任务”“下一步怎么做”时使用；兼容旧触发语“契约生成”“审批门/审批迁移计划”。不要用于：域理解与规格生成（用 a2h-spec）、执行迁移代码（用 a2h-execute）；spec/baseline/ 未就绪时提示先跑 a2h-spec。"
 metadata:
   type: pipeline
   domain: migration
@@ -25,11 +25,11 @@ metadata:
 
 ## 0. 定位与纪律
 
-- **前置**：`spec/baseline/` 就绪 **且** `spec/ui-coverage-report.md` 最近一次 PASS，`spec-check` 与 `source-check --harness` 双门 exit 0，`spec/decision-ledger.md` 有 D 条目。缺任一项 → 提示先跑 a2h-spec，不代跑。
+- **前置**：`spec/baseline/` 就绪 **且** `spec/ui-coverage-report.md` 最近一次 PASS，正式 `source-check --harness`（内含 spec contract）exit 0，`spec/decision-ledger.md` 记录适用决策或有据 N/A，不为满足条数虚构 D 条目。缺任一项 → 提示先跑 a2h-spec，不代跑。
 - **输入**：`spec/baseline/{ui-manifest,feature-index,feature-base,ui/page_NNNN,features/FNNN}.md` 及其 `contract_refs`/`impl:` 引用闭包、`spec/.a2h/{open-findings,requirements-index}.json`、`spec/decision-ledger.md`。
 - **输出**：`spec/baseline/plans/{ui-plan,feature-plan,base-plan,coverage-matrix}.md`、`spec/baseline/plans/slices/slice-NN-<fid>.md`、`spec/placeholder-registry.md`、冻结的 `spec/blueprint/` 六件、`spec/waves/plan-<wave>.json` + `prompts/`。
-- **唯一交互点 = §8 审批门**（用户明确说 确认/通过/继续 才落 approved）；其余禁交互追问，机械检查由 exit code 判定（0=PASS，非0=FAIL）。
-- **第一条可见输出必须是一行阶段计划**（findings 检查 → 输入门槛 → P0 裁决 → P1 三写 → 覆盖率 → plan-check → plan-ir → 审批门），然后才执行本表。
+- **交互只处理新的不可推断产品取舍**；已有开发/执行授权直接沿用，§8 提供可审阅摘要，不重复索取阶段批准。技术事实先查证，机械检查保留真实 exit code。
+- **第一条可见输出必须是一行阶段计划**（findings 检查 → 输入门槛 → P0 裁决 → P1 三写 → 覆盖率 → plan-ir 校验并冻结 → 审批门），然后才执行本表。
 - **稳定 ID 定额（硬约束）**：page `page_NNNN`、feature `F\d+`、AC `F\d+-AC\d+`、决策 `D-*` 稳定不复用；计划项 item_id `UI:PAGE-0001 / BASE:Base-N / SLICE:F001:3b / FV:FV-1/2` 全名唯一。**禁止**自造编号（PKT-* 类）、**禁止**重排 slice 编号改变 F-ID 下的动作身份。
 - **profile 硬约束**：新 Plan 用 `spec_contract_version: 2`；已冻结 profile 2 的项目**禁止**降级绕过计划门禁；contract_hash 落定后改契约必须重生成 plan 并显式 replan，`next-batch` 对 hash 不一致 exit 非0。
 
@@ -37,17 +37,18 @@ metadata:
 
 | 步 | 命令 | 产物 | exit 语义 | FAIL 处置 |
 |---|---|---|---|---|
-| ① 上游门禁(只读确认) | `python <runtime>/scripts/a2h_ios.py spec-check --project <target>`；`python <runtime>/scripts/a2h_ios.py source-check --harness --project <target>` | 门禁报告 | 0=PASS；非0=FAIL | 回 a2h-spec 修，本阶段不代跑 |
+| ① 上游输入(只读确认) | 读取 a2h-spec 的规格与实际完整 harness 报告，不重复执行 spec-check/harness | 上游实际检查记录；plan-ir 将正式复核当前输入 | 缺真实规格回 a2h-spec；旧报告不代表当前输入通过 | 只修有因果关系的缺件 |
 | ② P0 裁决 + P1 三写 | A∥B∥C 派发（§3.0） | 双计划 MD + 局部责任表 + plan items JSON | 按 Join 收口 | 收口后 join gate 验产物 |
 | ③ AC 级对账 | `python <skills>/a2h-plan/scripts/lint_plan_coverage.py --project-root <target>` | `spec/.a2h/plan-coverage.json` | 0=PASS；非0=FAIL | 🔴 未认领/过期 digest 清零后重跑（§7.3） |
-| ④ 计划校验 | `python <runtime>/scripts/a2h_ios.py plan-check --project <target> --input <planRequest.json>` | `request_validated`（不落计划产物） | 0=PASS；2=FAIL | 按 §0.2 阶梯修输入重跑 |
+| ④（可选）计划预览诊断 | `python <runtime>/scripts/a2h_ios.py plan-check --project <target> --input <planRequest.json>` | `request_validated`（不落计划产物） | 0=PASS；2=FAIL | 按 §0.2 阶梯修输入重跑 |
 | ⑤ 生成计划 IR | `python <runtime>/scripts/a2h_ios.py plan-ir --project <target> --input <planRequest.json>` | `spec/waves/plan-<wave>.json` + `spec/blueprint/` 六件 + prompts | 0=生成；2=FAIL | 修 MD/计划重跑；**禁止**手改 waves/blueprint |
-| ⑥ 审批门 | 主会话呈报 Gate 摘要，用户裁决 | 审批记录 | — | modify/reject → 回 ②/③/④ |
+| ⑥ 计划摘要与授权 | 主会话呈报覆盖、实际缺陷与未决产品取舍；复用已有授权 | 审阅记录 | — | 仅真实新产品取舍需用户选择；技术恢复直接推进 |
 | ⑦（规格变更后）显式重排 | `python <runtime>/scripts/a2h_ios.py replan --project <target> --input <planRequest.json>` | 归档旧控制件 + 新 plan | 0=重排；2=FAIL | 需 `replan_review{reviewer,reason}`；禁继承旧 success |
 
 - `<planRequest.json>` = 主会话按 plan-delivery-contract 生成的 typed plan request：`schema_version=2`、`wave∈{understand,domains}`、`graph_sha256` 钉当前 fact graph、`tasks[]`（id/role/ownership/ac_ids/fact_ids/goal/parents/plan_item_refs/verification）、`decisions[]`、`max_parallel∈1..8`。role 必须命中 `agents-codex/*.toml`；ownership 精确路径、禁通配符。
 - **现有prompt_scope接线**：生成request前读 [决策上下文范围](references/prompt-scope.md) 与 [typed request示例](templates/plan-request-template.json)，把每条决策完整保存在冻结blueprint；仅经作者/计划合同明确采用的 `prompt_scope.task_ids/ac_ids/fact_ids` 可缩小prompt内联范围。无scope的全局/跨模块决策继续发给所有任务，机器推导只作候选；无直接fact引用不代表可以删共享约束。scope不改变AC、写权或验收义务。
-- ⑥ 后交接 a2h-execute：`python <runtime>/scripts/a2h_ios.py next-batch --project <target> --wave <wave> [--usage-ledger … --usage-run-id …]`（可带用量预算前置检查）。
+- 新合同可复用已成功的 harness 结果：仅在 assert_pinned、原六件 contract_hash、当前源/原生证据、消费输入、规则及原结果摘要全部相同后复用，并标明 `not_actual_call_now=true`。旧合同、缺收据或任何不符都完整复检；编译/条件证据新鲜度始终实时验证。这是减少重复比较，不继承编译或运行行为 PASS。
+- ⑥ 后交接 a2h-execute：`python <runtime>/scripts/a2h_ios.py execution-contract --project <target> --apply`，通过后按 Garry indexed 阶段执行。plan-ir 在本阶段仍负责 git 冻结合同，不启动旧 domains 四拍调度。
 
 ## 0.2 无人值守处置阶梯（E266，适用于 ①③④⑤⑦ 每个门禁 FAIL）
 
@@ -59,7 +60,7 @@ metadata:
 
 ## 0.6.0 控制面入口
 
-实施计划须消费已通过 spec-check 与 source-check --harness 的规格。公开目标接口、状态、值域和平台差异依据 [规格交付合同](../a2h-spec/references/spec-delivery-contract.md)；plan 逐条提取对接点并分配文件/handler写权，不临场补造业务合同。contract_refs 的共享接口与决策账本进入 domains 冻结输入。
+实施计划须消费已通过完整 source-check --harness（内含 spec contract）的规格；plan-ir 会校验当前输入，不在前置流程重复调用相同检查。公开目标接口、状态、值域和平台差异依据 [规格交付合同](../a2h-spec/references/spec-delivery-contract.md)；plan 逐条提取对接点并分配文件/handler写权，不临场补造业务合同。contract_refs 的共享接口与决策账本进入 domains 冻结输入。
 
 新生成的规格与计划使用 `spec_contract_version: 2`。生成或消费计划前读取 [Plan 交付合同](references/plan-delivery-contract.md)：该合同限定全部 indexed-v1 产物、MD 提纲、Plan items JSON 投影、typed task 来源映射、精确输入闭包及状态解释；模板负责形态，harness 检查实际映射，不能分别生成两套合法但不对应的计划。
 
@@ -69,9 +70,7 @@ metadata:
 
 原计划覆盖检查后，将具体任务、所有权、依赖、fact/AC 和决策交给 plan-ir。生成的 blueprint/plan/prompts 冻结，不将执行态写回计划。审批沿用已有授权，不重复要求阶段批准。
 
-0.7.0 的 domains 计划还冻结 spec/ref 下的 expertise-plan/reviews、provenance 和 MCP
-采集索引/原始产物。任务引用已审阅源语义与 tool_evidence_ids；新增或修正源结论先回
-spec 过门，再显式 replan，不在执行任务中应用上游现代化建议。
+domains 计划只冻结实际消费的事实、配置、AC、任务与明确引用证据闭包。未引用笔记、资料审阅元数据和历史 MCP attempt 不使计划失效；选中的原生配置、条件编译与工具证据必须绑定。新增或修正被消费源结论回 spec 过门并显式 replan。
 
 
 
@@ -91,9 +90,9 @@ spec 过门，再显式 replan，不在执行任务中应用上游现代化建�
 | 情况 | 行动 |
 |---|---|
 | 有 `owner_stage: plan` 的条目 | 先处理这些，再做本轮正常工作；处理完重跑 `scripts/lint_plan_coverage.py` 确认消失 |
-| 有 `owner_stage` 属**上游阶段**且 `severity: blocking` 的条目 | 🔴 **拒绝开工**，列出条目并提示用户回到该阶段（a2h-spec） |
-| 条目标记 `escalate: true`（同一问题连续 3 轮） | 🔴 停止自动重试，按 a2h-spec `templates/decision-card.md` §连续未收敛 出决策卡 |
-| 本阶段 section 标记 `halted`（进度停滞 3 轮 / 累计 10 轮） | 🔴 **停止修复尝试**，按 decision-card §连续未收敛 出决策卡；用户裁决后 `--clear-halt <决策ID>` 解除，再继续 |
+| 有上游当前有效的真实产品/源合同阻断 | 按 finding 的对象、消费者和任务依赖阻断受影响部分；独立诊断、构建和报告继续，不按整个队列拒绝开工 |
+| 条目标记 `escalate: true`（同一路径多次无进展） | 停止该技术重试路径，读取原错误与恢复条件；可执行替代方案继续，不因次数生成产品决策卡 |
+| 本阶段 section 标记 `halted` | 仅暂停该 section 的修复策略；修复真实缺陷或指定新的 `repair_strategy` 后重验。产品审批只用于真实的新产品取舍，预算/授权边界保留 |
 | 无条目 | ✅ 正常开工 |
 
 路由不靠猜：每个 linter 比对两份产物，**哪一侧缺条目就由哪一侧负责**。责任无法机械判定时
@@ -220,7 +219,7 @@ UI 计划负责调度所有页面的 UI 转换工作，按优先级和 confidenc
 1. 同一优先级内，confidence: high 的页面排在前面（confidence 是**分批输入**，读 ui-manifest，**不输出成列**）；low 页行内标 ⚠️ 需人工补充数据（异常才显性）
 2. P0 → P1 → P2 顺序编排批次；**批内页数无上限**（批 = 优先级的自然分组，批内全并行派发、并发由 runtime 自然限流；若 Stage 1 收口编译修复负载过重，可项目级重引软上限）
 3. **页面依赖不约束分批**——导航 / 嵌入目标未建一律由 FWD-REF 机制兜底，且批内无编译（统一编译在 execute §3d 收口），跨批依赖零编译代价，无需依赖排序（**不输出逐页可并行列**——批内默认全并行，单写者纪律保证）
-4. **单页 Batch**——真实范围仅 1 页或首批无前批可合并时允许 size-1，记录真实页数及原因；其他孤页并入前批，保留原优先级。禁止凑造页面。
+4. **单页 Batch**——size-1 合法，按真实依赖和负载选择；不要求并前批或另交例外审批。禁止凑造页面。
 
 **Step 3/4/5 已并入上表**（无 per-page agent 估算——每页恒 1 converter；结算检查点每 Batch 末尾注入，批内无编译——统一编译在 execute §3d 收口）。
 
@@ -343,7 +342,7 @@ chain-auth 是**横切**链路的逐层装配契约（L0–L7），owner 分散�
 - 有依赖关系的 Slices → 依赖方在前，被依赖方在后
 - 并行组用 `parallel_group: N` 标注
 
-**组容量 = 组内 slice 数，上限 `GROUP_HARD_LIMIT = 5`**（小项目可放宽到 8、超大项目收紧到 3；全 complex 组可判断式收紧，不设阈值）：a2h-execute 按 parallel_group 批粒度并行，plan 期控住 group-closer 收尾负载；超出强制拆为子组（如 `parallel_group: 2` 拆成 `2a` / `2b`，各配独立 group-closer；**子组 worker 波合并并行、closer 按字母序链式串行**——拆组只为控 closer 负载，worker 互依为零；closer 禁并行：编译门全局 + 状态账本单写者）。拆分时保持「无 `depends_on` 互依」不变。**size-1 组默认禁止（消除优先于默认上限）**：先拉同层无互依 slice 并组——并组后超默认上限时**先用放宽档吸收**（小项目 ≤8；消 size-1 的优先级高于默认 5，仅超放宽档才判不可并）；不行则附挂相邻组（stub 延后者挂最末组，宿主组不得依赖它，标 `（附挂）`、不自配 closer；**附挂不计入组内 slice 数**——上限保护的是 closer 收尾负载，附挂者无 closer）；仅拓扑根类无法处置时保留，Summary 注一句理由。Step 4.0b 的「延后」不豁免本条。
+**组容量与 size-1 均为调度建议，不是代码转换门禁。** 按真实依赖、写权和 closer 负载分组；单切片、串行降级或局部重试可直接使用 size-1，不要求拼组、附挂或产品审批。并发共享文件仍为唯一 writer；真实依赖和写冲突须先消除。默认建议每组不超过 5，负载允许可调整，不以机械容量阻断正确计划。
 
 **隐式关系兜底**（拓扑序只认显式 `depends_on`，两类隐式关系另补规则、确定可复现）：
 - **共享容器页**（ui-manifest 类型标 `hub` / 零自有 AC 的纯 Tab 容器，如 HomePage）→ owning_slice 归**拓扑序最早、承载其任一 Tab 的切片**，**不得归更晚组**（壳须在最早 Tab 切片就建好，否则早组 Tab 无壳可填、排期倒挂）；首启弹窗等壳自有逻辑与余 Tab 一律走 cross_slice_edit / §7 嵌入归属前向填充。
@@ -475,7 +474,7 @@ Plan 生成完毕后，必须执行覆盖率校验，确保所有 V1 功能都�
 | 组件嵌入归属率 | = 100% | 阻断（ui-manifest 子组件表 ∪ page_NNNN.md 嵌入关系未在 Slice `wires:` embed 条目中体现） |
 | 数据链路层扇出完整率（chain-auth 存在时） | = 100% | 阻断（§5.1 某层无 `data_chain_refs:` 落点） |
 | 分层校验 5 项（校验算法第 11 项） | 全部 PASS | 阻断（索引对应 / spec_refs 存在 / 快照 / 零复述 / 状态交叉任一失败） |
-| Batch 优先级单调性 + 无 size-1 批 | 批序 P0→P1→P2 单调，每页对应真实优先级；单页范围/首批无前批的 size-1 有明确原因，其余孤页并前批，禁止虚构页面 | 阻断 |
+| Batch 调度建议 | 保留真实优先级、依赖与写权；size-1 合法，不要求为凑批改变范围或补审批 | 提示；仅真实依赖/写冲突阻断 |
 </HARD-GATE>
 
 输出文件：`spec/baseline/plans/coverage-matrix.md`
@@ -488,13 +487,11 @@ registry 由 Step 4.1 在 plan 生成过程中**直接写入**（`spec/` 根目�
 
 ---
 
-## 7.2 grill #2 — 技术侧决策清零（HARD-GATE）
+## 7.2 适用的技术与产品决策核验
 
-> checklist：`../a2h-spec/references/migration-decision-categories.md` C0–C17。前置：a2h-spec Phase C 的范围与差异决策已核验，`spec/decision-ledger.md` 含 D0 产出定位且状态 `approved`。
+读取 [决策核验](references/grill-2-decision-gates.md)，复用已有批准与当前源/SDK事实。技术问题可查证并自动恢复；`complex`、第三方依赖、类别编号或仍有无关 uncertainties 本身不触发访谈或阻断。`grill-with-docs` 仅在用户明确要求方案访谈时使用，不作为转换前置。
 
-§7 覆盖率校验通过后、§8 门控之前，**立即调用 `grill-with-docs`** Skill（传技术侧类目 C6–C11/C13–C14/C17）。**HARD-GATE**：每个 `thirdparty-sdk` placeholder 必有 C8 决策、每个 complex Slice 必有 C7 决策、`api-inventory.json` 的 `uncertainties[]` 无 `open` 遗留（C17，v1.3），否则阻断。
-
-完整调用模式 / 前置检查 / 必问 vs 自答分流 / grill 流程（含 Step 0 用户预知收集）/ HARD-GATE 校验 → **MUST 读** [references/grill-2-decision-gates.md](./references/grill-2-decision-gates.md)。
+仅对尚未确定且实际影响本次 AC、目标接口、权限需求或所选任务的事项记录对象、后果、消费者和恢复条件，阻断对应消费者。真实平台行为取舍才给用户具体选择；适用性未知不能自动当作通过，真实遗漏不能因省略访谈而消失。不要求每个复杂 Slice 新增 C7、每个依赖新增 C8 或全工程未知项机械清零。
 
 ---
 
@@ -539,18 +536,18 @@ python3 scripts/lint_plan_coverage.py --project-root $PROJECT_ROOT
 
 ---
 
-## 7.4 计划 IR 生成（plan-check → plan-ir）与显式 replan
+## 7.4 计划 IR 校验并生成（plan-check 为可选预览）与显式 replan
 
-覆盖率（§7）、grill#2（§7.2）、AC 对账（§7.3）全部清零后依序：
+覆盖率（§7）、适用决策核验（§7.2）、AC 对账（§7.3）满足本次实际合同后依序：
 
-1. **计划校验（不落盘）**：`python <runtime>/scripts/a2h_ios.py plan-check --project <target> --input <planRequest.json>` — 只做 MD→typed JSON 对账与 schema/门禁校验，返回 `request_validated`，不写任何计划产物。exit 0 才进第 2 步。
-2. **生成计划 IR（冻结）**：`python <runtime>/scripts/a2h_ios.py plan-ir --project <target> --input <planRequest.json>` — 写 `spec/waves/plan-<wave>.json`、`spec/blueprint/` 六件、`prompts/`，钉 `contract_hash` 与 `prompt_hashes`。domains 波会重跑 harness 门禁；`graph_sha256` 必须等于当前 fact graph。已有 plan 不可变（`Existing plan is immutable`），改规格走 replan。
+1. **可选计划预览（不落盘）**：`python <runtime>/scripts/a2h_ios.py plan-check --project <target> --input <planRequest.json>` — 只做 MD→typed JSON 对账与 schema/门禁校验，返回 `request_validated`，不写任何计划产物。仅需先看诊断时使用；正常流程直接运行第 2 步，plan-ir 包含相同校验。
+2. **生成计划 IR（冻结）**：`python <runtime>/scripts/a2h_ios.py plan-ir --project <target> --input <planRequest.json>` — 写 `spec/waves/plan-<wave>.json`、`spec/blueprint/` 六件、`prompts/`，钉 `contract_hash` 与 `prompt_hashes`。domains 波实际运行完整 harness，并把成功检查的规则、源、消费输入摘要和原结果引用冻结；`graph_sha256` 必须等于当前 fact graph。已有 plan 不可变（`Existing plan is immutable`），改规格走 replan。
 3. **显式 replan（规格/契约变更后）**：`python <runtime>/scripts/a2h_ios.py replan --project <target> --input <planRequest.json>` — `<planRequest.json>` 必须带 `replan_review{reviewer,reason}`；先归档旧 `spec/state`、`spec/blueprint`、`spec/waves`、dispatch 收据到 `spec/.a2h/history/replan-<hex>` 再重生成；在飞任务必须先 land 或显式终止。**禁止**把旧 success 沿用到重排后的工程。
-4. exit 语义：plan-check/plan-ir/replan 0=成功、2=FAIL（JSON 含 status/error 原文）；FAIL 按 §0.2 阶梯处置，最多 2 轮，禁停机呈报人工。plan-ir 成功即 contract 冻结：此后改契约/计划必须重生成并复跑 plan-check/plan-ir。
+4. exit 语义：plan-check/plan-ir/replan 0=成功、2=FAIL（JSON 含 status/error 原文）；FAIL 按 §0.2 阶梯处置，最多 2 轮，禁停机呈报人工。plan-ir 成功即 contract 冻结：此后改契约/计划必须显式 replan，由 plan-ir 完整校验；plan-check 仍是可选诊断。
 
 ## 8. 门控
 
-双计划 **+ grill #2** 检查完成后（先在 §7.4 完成 plan-check → plan-ir 冻结计划 IR）按当前授权推进；尚未授权执行时再请求同时确认plan与decision-ledger。摘要输出模板（UI/功能计划概览 + 覆盖率 + Placeholder Registry + 骨架审计预演 + grill #2决策 + briefs落点 + 可调整项）见 [templates/gate-output-template.md](./templates/gate-output-template.md)。
+双计划与适用决策核验完成后（先在 §7.4 通过 plan-ir 的完整校验并冻结计划 IR）按当前授权推进；尚未授权执行时再请求同时确认plan与decision-ledger。摘要输出模板（UI/功能计划概览 + 覆盖率 + Placeholder Registry + 骨架审计预演 + grill #2决策 + briefs落点 + 可调整项）见 [templates/gate-output-template.md](./templates/gate-output-template.md)。
 
 审批摘要必须附 **§7.3 AC 级对账结果**（🔴 未认领清单为空才可直接确认）。用户可直接确认 / 修改后确认 → 进入 a2h-execute（execute 按 ledger 查表执行，不再交互式追问）；或要求重新生成 → a2h-plan 重新执行。
 
@@ -573,7 +570,7 @@ python3 scripts/lint_plan_coverage.py --project-root $PROJECT_ROOT
 | 生成/检查/消费 `spec_contract_version=2` 的 Plan 产物前；item_id / plan items / 任务输入闭包 / 受管进度豁免 / capability-declarations | references/plan-delivery-contract.md |
 | §3.0 编排派发（P1 三写 A∥B∥C） | references/plan-dispatch.md |
 | §4 suggested_skills 标注、SDK 业务类别映射、meta.json 强绑规则（IS-1）、风格追加 | references/skill-binding-rules.md |
-| §7.2 grill#2 技术侧决策清零 | references/grill-2-decision-gates.md + ../a2h-spec/references/migration-decision-categories.md |
+| §7.2 适用技术与产品决策核验 | references/grill-2-decision-gates.md + ../a2h-spec/references/migration-decision-categories.md |
 | `source_platform=ios`、source_anchors/ios-semantics 到原双计划的衔接 | references/ios-source-protocol.md |
 | 输入闭包/spec 抽取歧义（gate C 之后） | ../a2h-spec/references/spec-delivery-contract.md |
 | harness v2 协议（机器门禁与状态写者） | ../ios-source-analysis/references/harness-v2.md |
@@ -594,7 +591,7 @@ python3 scripts/lint_plan_coverage.py --project-root $PROJECT_ROOT
 
 - **闸门**：①–⑥ 步全部 exit 0 且 §8 审批门落 approved，阶段 A 才算完成。
 - **移交产物清单**：`spec/baseline/plans/`（ui-plan / feature-plan / base-plan / slices / coverage-matrix）、`spec/placeholder-registry.md`、`spec/blueprint/` 六件、`spec/waves/plan-{understand,domains}.json` 及 `prompts/`、`spec/.a2h/plan-coverage.json`。
-- **下一步**：进入 `a2h-execute`，从 `plan-<wave>.json` 用 `next-batch --wave <wave>` 起步（同会话可直接续跑）。规划态**不**回写执行态；执行态变更只能回原状态账本与 brief。
+- **下一步**：进入 `a2h-execute`，用 `execution-contract --project <target> --apply` 重验冻结输入后起步（同会话可直接续跑）。规划态**不**回写执行态；执行态变更只能回原状态账本与 brief。
 
 ## 阶段证据
 
@@ -611,3 +608,10 @@ python3 scripts/lint_plan_coverage.py --project-root $PROJECT_ROOT
 ```
 
 标记 `a2h-plan` 阶段水位（写 stage-marks fact，受授权门控、尽力而为）。token 用量由宿主生命周期采集，本步不采集。**忽略其退出码，绝不阻断流水线。**
+
+
+## 0.13.5 页面交付与稳定依赖补充
+
+写完UI/Base/Slice计划而尚未执行plan-ir冻结时，运行 `python3 <runtime>/scripts/a2h_ios.py ui-delivery draft --project <target> --apply`，从已著述页面规格导出组件、状态、弹窗与交互清单。读取清单核对generator/assembler/verifier归属；在冻结前填写各非page单元的target_bindings（真实计划路径/符号，状态渲染绑定），经ui-delivery check验证再交原plan-ir；不能用同一页面壳符号充数。参考状态/区域只绑定实际已有材料，缺失保持gap。正式冻结由原plan-ir校验并消费清单；不得在执行期回填正式计划。没有UI义务时not_applicable。
+
+F03/F06/F07派发依赖与集中构建试点按 [依赖派发规程](../a2h-execute/references/dependency-dispatch.md) 编写可冻结的dispatch_policy_version块，明确实际输入路径、producer、checkpoint和编译安排。独立任务按parents和ownership判断；读最终路由/公共导出必须等待closer，稳定接口提前发布不得由后续closer再修改。Base-7、Stage3实际构建与FV最终构建保持有效。

@@ -2,7 +2,7 @@
 
 > 本文件是 a2h-execute SKILL.md §1.1 + §2 启动必读 的**完整执行规范**。SKILL.md 仅保留摘要 + 指针；执行到该步时 **MUST Read 本文件全文**。
 > 三道闸协同：闸 1（本 HARD-GATE）+ 闸 2（`spec/decision-ledger.md`）+ 闸 3（项目指令文件决策段，由 a2h-spec Step C4.8b 同步）。
-> **`PROJECT_INSTRUCTIONS_FILE`** 指项目根 `AGENTS.md`。正确性不依赖宿主自动注入，启动时显式读取。
+> 宿主别名 **`PROJECT_INSTRUCTIONS_FILE`**：Codex → 项目根 `AGENTS.md`；Codex → 项目根 `AGENTS.md`。下文统一用此别名；正确性不依赖宿主对该文件的自动注入，必须显式 Read。
 
 ## 启动必读
 
@@ -38,8 +38,8 @@ execute 阶段的歧义应在 a2h-spec / a2h-plan 的 grill 嵌入点已经清�
 执行规则：
 - ledger 命中 → 按之执行，**严禁询问用户**
 - ledger 未命中 → fail-fast，把缺口写入 `spec/migration-report.md` 的「决策缺口」段（schema 见下），**严禁交互式追问**；阻断当前 Stage / Slice / Batch，由下一轮 grill 补齐
-- ledger 与其他文档冲突 → 仅在approved决策明确指向该动作/范围且版本与冻结输入一致时按该D-ID执行；未明确覆盖的冲突按_common.md记录两端、源证据与受影响AC回Spec。不能用笼统策略决定行为完成时点。
-- Plan 待修订项 → 内容变更由原作者同步计划并重过门/replan；执行不能靠散文覆盖已冻结任务。
+- ledger 与其他文档冲突 → **ledger 优先**
+- Plan 待修订项段落 → 直接按本表覆盖 plan 原文，不再核对 plan 当前措辞
 
 ## 决策缺口段 schema（写入 spec/migration-report.md）
 

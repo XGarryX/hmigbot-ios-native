@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-truncation-fix
-  short_description: 修复 ArkTS/HarmonyOS 应用中 UI 内容截断、布局溢出、多设备适配不良等问题（V2 优先，API 12+）…
-  default_prompt: 请使用 $arkts-truncation-fix，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

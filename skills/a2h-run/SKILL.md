@@ -31,7 +31,7 @@ description: "运行原生 iOS→HarmonyOS 的 a2h-spec → a2h-plan → a2h-exe
 0.7.0 的 spec 阶段先按 ios-source-analysis 的 external-expertise 规程生成专业资料清单，
 由分析 owner 读取上游原文并提交源观察。MCP 仅在配置且真实可用时采集；所有证据进入
 原语义/AC/覆盖门禁。0.6.0 baseline 首次续跑也须采用 expertise-plan，不能继承旧门禁通过。
-使用已有授权自动推进；新的不可推断产品决策才请求用户选择，先完成可审阅材料。
+使用已有授权自动推进；首次能力路径选择、真实权限缺口和新的不可推断产品决策向开发者说明差异并收取选择。`capability_choices` 的 pending 不能被成功退出码或“继续流程”吞掉；已有选择不重复询问。
 失败按原 `spec/.a2h/open-findings.json` 回流责任阶段，不能将失败步骤记为成功后继续验收。
 独立工作可继续，依赖失败输入的部分保持 blocked。不要将“部分可用”写成整轮完成。
 初始化区分源分析配置门（init/harness-init）与目标构建准入（validate）；目标SDK/hvigor未就绪时可继续真实源分析，构建与设备阶段保留blocked/未执行。仅发现Xcode可用不证明原生provider、符号绑定或运行观察已经执行。
@@ -53,3 +53,10 @@ description: "运行原生 iOS→HarmonyOS 的 a2h-spec → a2h-plan → a2h-exe
 给目标项目路径、实现范围、构建产物、已验证行为和待验证清单。
 无 Mac 可完成静态源理解；无设备不能给设备/视觉通过结论。
 工具辅助脚本不调用 LLM，不会独立完成任意应用的语义迁移；宿主按技能执行分析与实现。
+
+
+## 0.13.5 重跑与可核验优化
+
+固定本轮真实iOS源、配置、迁移范围及验收要求后，按 [全流程实际计量](references/execution-measurements.md) 在环境准备前启动独立run。已有预算/授权沿用；未知缓存记unknown，不猜冷热，不为了技术可查事项新增审批。源分析/规格继续用原官方能力和事实链。Plan冻结前从页面规格生成ui-delivery库存和真实依赖发布规则。Execute自动使用stage1滚动补位、独立Base并行、稳定Slice依赖与唯一资源/回写收口；具体入口在a2h-execute开头。Verify失败按其repair-and-recheck消费者执行原检查。
+
+结束时将当前原质量报告绑定到计量run，生成summary.md；在同一份spec/reports/ios-progress.md报告本轮F项实际触发、计量产物、失败/未执行与恢复点。无旧可比计量时只给当前耗时，不编造“比以前快百分之几”；UI行为、构建和完整迁移验收仍按真实证据分别报告。不要自动选择未指定应用工程或替用户重跑它。

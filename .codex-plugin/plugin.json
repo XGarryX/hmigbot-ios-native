@@ -1,7 +1,7 @@
 {
   "name": "hmigbot-ios",
-  "version": "0.13.0",
-  "description": "Self-contained HMigBot fork: native iOS source understanding in the original a2h spec/plan/execute/verify/retrospect pipeline.",
+  "version": "0.13.7",
+  "description": "iOS source analysis and HarmonyOS conversion workflow for macOS Apple Silicon, with selected native tools and evidence.",
   "author": {
     "name": "Local developer"
   },
@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "HMigBot iOS 原生迁移",
     "shortDescription": "在原a2h流水线中将iOS源代码迁移为原生鸿蒙。",
-    "longDescription": "内置完整 HMigBot 资源；原生理解 iOS 工程、UI 与功能语义，沿原 a2h 五阶段实现并验证 ArkTS/ArkUI 目标。",
+    "longDescription": "读取iOS源码与实际构建上下文，生成规格、计划及ArkTS/ArkUI实现，并按实际范围核验。当前发行支持macOS Apple Silicon。",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [],

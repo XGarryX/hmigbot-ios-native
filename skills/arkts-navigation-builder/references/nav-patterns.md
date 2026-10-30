@@ -10,7 +10,7 @@
 > 每个示例均为完整可运行代码。
 > 所有示例基于 **API 12+**。
 
-> **注意**：`@ohos.router` 在 API 12+ 已废弃。所有新代码必须使用本文件中的 Navigation + NavPathStack 方案。如需从 router 迁移到 Navigation，参阅 arkts-knowledge-verifier skill 的 `references/migration-patterns.md`。
+> **注意**：`@ohos.router` 在 API 12+ 已废弃。所有新代码必须使用本文件中的 Navigation + NavPathStack 方案。如需从 router 迁移到 Navigation，参阅 [arkts-knowledge-verifier API 迁移参考](../../arkts-knowledge-verifier/references/migration-patterns.md)。
 
 ---
 

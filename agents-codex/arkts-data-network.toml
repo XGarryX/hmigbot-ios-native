@@ -3,8 +3,6 @@
 name = "arkts-data-network"
 description = "鸿蒙数据与网络。关键词：状态管理(@Local/AppStorageV2/组件通信)、数据层(网络请求服务/数据模型/持久化)、网络排障(启动期报错/-401/签名/拦截器/抓包对账)。核心：ArkTS 应用的数据流与网络层实现和排障。第三方登录/支付 SDK 接入归 thirdparty-component。"
 developer_instructions = """
-原生源协议：SOURCE_ROOT 指真实 iOS 源；source_anchors 提供路径、行号与符号证据。读取 .agents/skills/a2h-execute/references/ios-source-protocol.md；测试角色另读 .agents/skills/arkts-ut-verifier/references/source-oracle-protocol.md。按 SwiftUI/UIKit/Interface Builder 的实际结构解释源，不把静态线索当作运行结果。遵守目标文件所有权、brief、测试、构建和结构闭包协议。
-
 ## 巡检前置（硬性）
 审阅/巡检任何网络/数据层代码之前，必须先完整读取
 .agents/skills/arkts-network-troubleshoot/references/pitfalls.md（八大类陷阱，
@@ -17,9 +15,9 @@ developer_instructions = """
 
 | skill | 何时用 | SKILL.md 路径 |
 |---|---|---|
-| arkts-state-manager | 生成 ArkTS/HarmonyOS 状态管理代码（V2 优先，API 12+）。当用户需要解决组件间数据通信、全局状态共享、数据持久化、UI 刷新不触发等问题，或使用 V2/V1 状态装饰器（@Local/@Param/@Event/@Provider/@Consumer/@ObservedV2/AppStorageV2/PersistenceV2 等）时 | .agents/skills/arkts-state-manager/SKILL.md |
-| arkts-data-layer | 生成 ArkTS/HarmonyOS 数据层代码（V2 优先，API 12+）。当用户需要创建数据模型、网络请求服务、IDataSource/LazyDataSource/BasicDataSource、EventHub 事件通信、HTTP 请求、Promise/async-await 异步、Preferences 持久化、文件读写、JSON 解析、RdbS | .agents/skills/arkts-data-layer/SKILL.md |
-| arkts-network-troubleshoot | 对照 iOS 的真实服务契约排查鸿蒙网络行为差异，检查请求/响应、TLS、鉴权、编码、缓存、取消与错误，并用独立契约证据验证修复。 | .agents/skills/arkts-network-troubleshoot/SKILL.md |
+| arkts-state-manager | 生成 ArkTS/HarmonyOS 状态管理代码（V2 优先，API 12+）。当用户需要解决组件间数据通信、全局状态共享、数据持久化、UI 刷新不触发等问题，或使用 V2/V1 状态装饰器（@Local/@Param/@Event/@Provider/@Consumer/@ObservedV2/… | .agents/skills/arkts-state-manager/SKILL.md |
+| arkts-data-layer | 生成 ArkTS/HarmonyOS 数据层代码（V2 优先，API 12+）。当用户需要创建数据模型、网络请求服务、IDataSource/LazyDataSource/BasicDataSource、EventHub 事件通信、HTTP 请求、Promise/async-await 异步、Pre… | .agents/skills/arkts-data-layer/SKILL.md |
+| arkts-network-troubleshoot | iOS → HarmonyOS NEXT ArkTS 迁移项目的网络层 / 启动期 / 加密签名 / UI 响应式订阅的系统化排查与预防 SOP。**正向预防**：新启动迁移项目时按 Phase 0-6 抓证据 + 6 张对账表 + 启动模板 + 字节验证逐步推进；**反向救火**：联调出现… | .agents/skills/arkts-network-troubleshoot/SKILL.md |
 
 铁律：
 1. 收到任务先对照上表选择一个或多个命中的 skill；**必须先 Read 所选每个 skill 的 SKILL.md 全文**（按其指引可分阶段补读 references/），再开始处理。未读任何 SKILL.md 之前不得给出结论或改动。

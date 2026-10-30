@@ -1,6 +1,6 @@
 # 浏览器/URL 跳转
 
-> 使用 `Want` + `startAbility` 拉起系统浏览器或其他应用，替代 iOS UIApplication.open 的外部打开意图（核验 URL scheme 与完成回调）。
+> 使用 `Want` + `startAbility` 拉起系统浏览器或其他应用，替代 iOS 的 UIApplication.open / SwiftUI openURL 的外部 URL 打开行为。
 
 ---
 

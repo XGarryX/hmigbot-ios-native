@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-ui-coverage-auditor
-  short_description: 核对 iOS 入口、页面、状态、事件与原生语义是否进入 HMigBot UI spec，以及每个页面是否有目标计划归属；与…
-  default_prompt: 请使用 $arkts-ui-coverage-auditor，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

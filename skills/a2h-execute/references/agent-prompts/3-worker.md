@@ -16,17 +16,14 @@
 
   使用 Skill: {suggested_skills}   ← 每个 skill 以 `$<name>` 形式显式调用（领域 skill 未开隐式路由，裸名不会自动加载）
   输入来源: {task_input_source}
-  冻结来源与AC: {plan_item_refs} / {ac_ids}
-  精确规格与合同闭包: {spec_refs_with_sections} / {contract_refs_closure}
+  涉及既有UI页面时: 读取 `spec/baseline/plans/ui-delivery.json` 中本任务相关组件/状态/交互义务和 `ui-delivery-contract.md`，复用已有组件及完整状态。纯Base无UI任务不新增UI交付要求；不得为接业务删除已有弹窗、错误态或参考材料缺口。
   输出位置: {task_output_path}
 
-  iOS 源码路径: {source_root}
+  iOS 源码路径: {ios_source_dir}
   HarmonyOS 项目路径: {harmony_project_dir}
 
   验收标准:
   {task_acceptance_criteria}
-
-  输入消费、预算分批与冲突回流按_common.md；返回consumed_refs/unread_refs/contract_conflicts，未读影响AC不报完成。
 
   占位规则：合法占位的 marker 形态与 kind 枚举权威定义在
   `a2h-plan/templates/placeholder-registry-template.md`。Base worker 阶段常用 kind:

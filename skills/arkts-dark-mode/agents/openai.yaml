@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-dark-mode
-  short_description: ArkTS 深色模式场景下的根因定位与修复（V2 优先，兼容 V1）：硬编码颜色（#RRGGBB / 0x / Color…
-  default_prompt: 请使用 $arkts-dark-mode，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

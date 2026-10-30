@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-multi-device
-  short_description: ArkTS 跨设备与断点适配的根因定位与修复（V2 优先，兼容 V1）：布局/尺寸/间距在不同设备（手机/平板/2in1/…
-  default_prompt: 请使用 $arkts-multi-device，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

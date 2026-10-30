@@ -66,7 +66,7 @@ A nonblocking classification requires the same `project_scope` derivation, no pa
 script/rule/external-product bridge, no per-file compiler flags, supported unconditional configuration,
 and only the bounded known SDK import names. Unknown settings, modules, headers and compiler/search/link
 bridges keep the original issue blocking. This is a narrow static configuration profile, not effective
-Xcode settings evaluation. Known BUNDLE_PREFIX/CUIKE_APP_GROUP metadata does not permit arbitrary macros.
+Xcode settings evaluation. Only actual product metadata references may resolve known scalar build settings; arbitrary macros are not whitelisted.
 
 Each recursively read xcconfig/include has a canonical local path and SHA256; missing optional includes
 have explicit absence evidence, even in an inventory-excluded directory. Macro/conditional includes,

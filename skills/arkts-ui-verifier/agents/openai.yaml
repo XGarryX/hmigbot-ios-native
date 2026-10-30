@@ -1,5 +1,0 @@
-interface:
-  display_name: arkts-ui-verifier
-  short_description: 以 iOS 源码为主要行为依据、UI Spec 为参考，为鸿蒙可见页面设计、生成并执行 ArkXTest UiTest，
-    …
-  default_prompt: 请使用 $arkts-ui-verifier，按本技能的输入、执行步骤和验收条件完成当前任务。

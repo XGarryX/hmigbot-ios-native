@@ -8,15 +8,21 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import re
+import unicodedata
 
 from .core import MigrationError, digest, json_bytes, read_json, safe_child
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG_PATH = ROOT / 'schemas/spec-plan-artifacts.json'
 SCHEMA_PATH = ROOT / 'schemas/spec-artifacts.schema.json'
-SOURCE_REF = re.compile(r'(?P<path>[^:\n;|`]+?\.(?:swift|mm|m|h|storyboard|xib|plist|entitlements|xcstrings|strings|json|pbxproj|xcconfig|xcprivacy)):(?P<line>\d+)(?:-(?P<end>\d+))?')
+SOURCE_REF = re.compile(r'(?P<path>[^:\n;；|`]+?):(?P<line>\d+)(?:-(?P<end>\d+))?(?![\w])')
 NA = re.compile(r'^\s*(?:not_applicable|N/A|不适用)\s*[:：]', re.I)
-UNKNOWN = re.compile(r'(?im)^\s*(?:unknown|TBD|TODO|待确定|待补充)\s*[:：]|\b(?:TBD|TODO)\b')
+UNKNOWN = re.compile(r'(?im)^\s*(?:unknown|TBD|TODO|待确定|待补充)\s*[:：]')
+HEADER_ALIASES = {'字段': {'字段名', 'field'}, '类型': {'数据类型', 'type'},
+                  '说明': {'描述', 'description'}, '源证据': {'源码证据', 'source evidence'},
+                  '源路径': {'源码路径', 'source path'}, '源路径/入口': {'源码路径/入口'},
+                  '排除原因': {'排除理由'}, '决策引用': {'决策依据'},
+                  'ID': {'标识', '标识符'}, '状态': {'status'}}
 
 
 def _primary_feature(path):
@@ -43,11 +49,35 @@ def canonical_headers(requirement, headers):
     """
     expected = requirement.get('headers', [])
     aliases = requirement.get('header_aliases', {})
+    def normalized(value):
+        return re.sub(r'[\s/]+', '', unicodedata.normalize('NFKC', value.strip('` '))).casefold()
     if len(headers) != len(expected) or any(
-            actual != canonical and actual not in aliases.get(canonical, [])
+            normalized(actual) not in {normalized(value) for value in
+                {canonical} | set(aliases.get(canonical, [])) | HEADER_ALIASES.get(canonical, set())}
             for actual, canonical in zip(headers, expected)):
         return None
     return list(expected)
+
+
+def static_page_metadata(source, page, text):
+    """Derive static provenance from the page's sole authored file anchors.
+
+    These are file identities, not invented declaration coordinates or runtime
+    observations. Page semantics keep their independent facts/AC consumers.
+    """
+    from .native_pipeline import source_paths
+    paths = source_paths(text)
+    if not paths:
+        raise MigrationError('Static page needs its canonical source_anchors; no extra metadata copy is required')
+    files = []
+    for relative in paths:
+        path = safe_child(source, relative)
+        if not path.is_file():
+            raise MigrationError('Page source anchor is missing: ' + relative)
+        files.append({'path': relative, 'sha256': digest(path.read_bytes())})
+    return {'kind': 'static-page-source-projection', 'page_id': re.match(r'page_\d+', page.stem)[0],
+            'source_files': files, 'runtime': 'not_run', 'screenshot': None,
+            'scope': 'File provenance from canonical page anchors; no declaration or runtime observation inferred'}
 
 
 def contract_version(project):
@@ -64,8 +94,9 @@ def revision(project=None):
     resources += list((ROOT / 'skills/a2h-spec/templates').glob('*.md'))
     resources += [ROOT / 'skills/a2h-spec/references' / name for name in (
         'spec-delivery-contract.md', 'artifact-contracts.md', 'action-contracts.md', 'spec-content-review.md')]
+    from .contract_identity import rule_digest
     return digest(json_bytes({'profile': contract_version(project) if project else 2,
-                              'resources': {p.relative_to(ROOT).as_posix(): digest(p.read_bytes()) if p.is_file() else None
+                              'resources': {p.relative_to(ROOT).as_posix(): rule_digest(p) if p.is_file() else None
                                             for p in sorted(resources)}}))
 
 
@@ -344,22 +375,32 @@ def validate_json(value, definition):
 
 def _anchor(source, anchor):
     path = safe_child(source, anchor['path'])
-    lines = path.read_text(encoding='utf-8-sig').splitlines()
-    if not 1 <= anchor['line'] <= len(lines):
+    from .source_relevance import classify, support_candidate
+    from .source_scope import source_anchor_info
+    if support_candidate(anchor['path']) and classify(source).get(anchor['path'], {}).get('role') == 'repository_support':
+        raise MigrationError('Repository support material cannot establish a product source claim: ' + anchor['path'])
+    info = source_anchor_info(path)
+    if type(anchor['line']) is not int or not 1 <= anchor['line'] <= info['line_count']:
         raise MigrationError('Source line outside file: ' + anchor['path'])
+    if info['coordinate_kind'] == 'resource_document' and anchor.get('source_sha256', anchor.get('sha256')) != info['source_sha256']:
+        raise MigrationError('Resource document coordinate requires its current source_sha256: ' + anchor['path'])
 
 
 def _evidence(source, text):
-    matches = list(SOURCE_REF.finditer(text))
+    matches = [match for match in SOURCE_REF.finditer(text)
+               if match['path'].strip() not in {'sha256', 'source_sha256'}]
     if not matches:
         raise MigrationError('Provide a real source path:line and a reason')
+    sha = re.search(r'\b(?:source_)?sha256\s*[:=]\s*[`\"\']?([0-9a-f]{64})', text)
     for match in matches:
-        _anchor(source, {'path': match['path'].strip(), 'line': int(match['line'])})
+        location = {'path': match['path'].strip(), 'line': int(match['line']),
+                    'source_sha256': sha[1] if sha else None}
+        _anchor(source, location)
         if match['end']:
             end = int(match['end'])
             if end < int(match['line']):
                 raise MigrationError('Source range ends before it starts')
-            _anchor(source, {'path': match['path'].strip(), 'line': end})
+            _anchor(source, {**location, 'line': end})
     return [(match['path'].strip(), int(match['line']), int(match['end'] or match['line'])) for match in matches]
 
 
@@ -410,6 +451,7 @@ def check_artifacts(project, source, fail, inputs):
     """Append findings through the existing caller and record consumed inputs."""
     from .spec_contract import acceptance, contract_refs, declared_symbols, references, sections
     project, source = Path(project), Path(source)
+    from .source_relevance import inventory_roles
     features = {re.match(r'F\d+', p.name)[0]: p for p in (project / 'spec/baseline/features').glob('F*.md') if _primary_feature(p)}
     acs, all_docs = {}, {}
     for path in (project / 'spec/baseline').rglob('*.md'):
@@ -522,7 +564,14 @@ def check_artifacts(project, source, fail, inputs):
                     try:
                         if requirement.get('allow_na') is False:
                             raise MigrationError('This section is required for every visible page')
-                        _evidence(source, body)
+                        reason = NA.sub('', body, count=1).strip()
+                        if not reason or re.fullmatch(r'(?:none|n/?a|无|不适用|unknown|TBD|TODO)[.!。\s]*', reason, re.I):
+                            raise MigrationError('State a concrete applicability reason, not an empty placeholder')
+                        citations = [match for match in SOURCE_REF.finditer(body)
+                                     if any(char in match['path'] for char in './\\')
+                                     or safe_child(source, match['path'].strip()).is_file()]
+                        if citations or re.search(r'\bsource\s*[:：]|源(?:依据|证据)\s*[:：]', body, re.I):
+                            _evidence(source, body)
                     except (MigrationError, OSError, UnicodeError) as exc:
                         fail('ARTIFACT_NA_EVIDENCE', section_subject, str(exc))
                     continue
@@ -530,6 +579,31 @@ def check_artifacts(project, source, fail, inputs):
                     continue
                 table = next((table for table in markdown_tables(body)
                               if canonical_headers(requirement, table['headers']) is not None), None)
+                if table:
+                    table = {**table, 'headers': canonical_headers(requirement, table['headers'])}
+                if requirement['title'] == '排除项' and table and not table['rows']:
+                    continue  # No excluded product capability needs an invented approval/source citation.
+                if table and any(header in {'源路径', '源路径/入口'} for header in table['headers']):
+                    # Repository inventory rows never create product duties or
+                    # exclusion approvals. Referenced/bundled support material
+                    # has already been promoted by the shared relevance service.
+                    path_index = next(i for i, header in enumerate(table['headers']) if header in {'源路径', '源路径/入口'})
+                    def inventory_path(row):
+                        value = row[path_index].strip('` ') if len(row) > path_index else ''
+                        return re.sub(r':\d+(?:(?:-|\.\.)\d+)?$', '', value)
+                    paths = []
+                    for row in table['rows']:
+                        try:
+                            safe_child(source, inventory_path(row))
+                            paths.append(inventory_path(row))
+                        except MigrationError:
+                            pass  # One malformed row cannot hide errors in other rows.
+                    source_roles = inventory_roles(source, paths)
+                    rows = [row for row in table['rows'] if len(row) <= path_index or
+                            source_roles.get(inventory_path(row), {}).get('role') != 'repository_support']
+                    if table['rows'] and not rows:
+                        continue
+                    table = {**table, 'rows': rows}
                 if not table or not table['rows'] or any(len(row) != len(table['headers']) or any(not cell.strip() for cell in row) for row in table['rows']):
                     fail('ARTIFACT_TABLE', section_subject, 'Use the exact catalog headers and at least one complete data row, or an evidenced applicable N/A')
                     continue
@@ -557,11 +631,23 @@ def check_artifacts(project, source, fail, inputs):
                 page_id = re.match(r'page_\d+', path.stem)[0]
                 meta = project / ('spec/baseline/ui-snapshots/' + page_id + '/meta.json')
                 if not meta.is_file():
-                    fail('ARTIFACT_MISSING', meta.relative_to(project).as_posix(), 'Each page requires typed source/runtime metadata')
+                    try:
+                        static_page_metadata(source, path, text)
+                    except (MigrationError, OSError, UnicodeError) as exc:
+                        fail('ARTIFACT_META_EVIDENCE', subject, str(exc))
                     continue
                 consume(meta)
                 try:
-                    value = read_json(meta); validate_json(value, 'page_meta'); inspect_json(value, subject)
+                    value = read_json(meta)
+                    if isinstance(value, dict):
+                        value = dict(value)
+                        if 'source_refs' not in value and isinstance(value.get('source_anchors'), list):
+                            value['source_refs'] = [anchor['path'] + ':' + str(anchor['line'])
+                                for anchor in value['source_anchors'] if isinstance(anchor, dict) and 'path' in anchor and 'line' in anchor]
+                        if 'source_anchors' not in value and isinstance(value.get('source_refs'), list):
+                            ranges = [item for ref in value['source_refs'] for item in _evidence(source, ref)]
+                            value['source_anchors'] = [{'path': relative, 'line': start} for relative, start, _ in ranges]
+                    validate_json(value, 'page_meta'); inspect_json(value, subject)
                     if value['page_id'] != page_id:
                         raise MigrationError('Metadata page_id does not match its page')
                 except (MigrationError, OSError, UnicodeError, KeyError, TypeError) as exc:
@@ -570,11 +656,10 @@ def check_artifacts(project, source, fail, inputs):
                     ranges = []
                     for ref in value['source_refs']:
                         ranges.extend(_evidence(source, ref))
-                    for anchor in value['source_anchors']:
-                        if not any(path == anchor['path'] and start <= anchor['line'] <= end for path, start, end in ranges):
-                            raise MigrationError('source_refs and source_anchors must identify overlapping source evidence')
-                    if {path for path, _, _ in ranges} != {anchor['path'] for anchor in value['source_anchors']}:
-                        raise MigrationError('source_refs and source_anchors must identify the same source files')
+                    page_sources = {item['path'] for item in static_page_metadata(source, path, text)['source_files']}
+                    evidence_sources = {relative for relative, _, _ in ranges} | {anchor['path'] for anchor in value['source_anchors']}
+                    if not evidence_sources <= page_sources:
+                        raise MigrationError('Metadata evidence must stay inside this page\'s canonical source_anchors')
                     if 'semantics_ref' in value:
                         relative, _, ident = value['semantics_ref'].partition('#')
                         semantics = safe_child(project, relative)
@@ -641,13 +726,13 @@ def check_artifacts(project, source, fail, inputs):
                     consume(decision)
                     # Do not broaden source exclusion semantics. Only the existing
                     # reviewed Preview disposition is executable in this harness.
-                    from .source_scope import preview_lines
+                    from .source_scope import preview_source_lines
                     coverage = read_json(project / 'spec/baseline/ios-coverage.json')
                     facts = read_json(project / 'spec/baseline/ios-facts.json')['facts']
                     mappings = {row['obligation_id']: row for row in coverage['mappings']}
                     for anchor in value['source_anchors']:
                         source_path = safe_child(source, anchor['path'])
-                        if anchor['line'] not in preview_lines(source_path.read_text(encoding='utf-8-sig')):
+                        if anchor['line'] not in preview_source_lines(source_path, project=project, source=source):
                             raise MigrationError('Production action exclusion is not supported by the current source-disposition contract; retain blocking scope review')
                         relevant = [fact for fact in facts if fact['anchor']['path'] == anchor['path'] and fact['anchor']['line'] == anchor['line']]
                         if not relevant:

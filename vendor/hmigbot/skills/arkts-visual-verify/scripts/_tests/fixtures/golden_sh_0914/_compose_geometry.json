@@ -1,9 +1,0 @@
-{
- "body_sha256": "e01e6db1fdc40ac0de2ff9f9ffcc6d8ea19ff06593afcee83169ef5b8df913dd",
- "label_band_h": 60,
- "size": [
-  620,
-  700
- ],
- "why": ".sh 侧实跑冻结；.py 侧必须画布同尺寸、标签带以下逐像素相同"
-}

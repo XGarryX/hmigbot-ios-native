@@ -147,6 +147,7 @@ struct HomePage {
 
 ### R6.1c-2 ViewModel 默认**不写单例**（**MUST**——客户 2026-05 校准）
 
+> **客户反馈**：见到工程里 `HomeViewModel / StarBurstViewModel / SettingsViewModel / NetworkViewModel ...` 这类 page-scope ViewModel 普遍写了 `private static instance` + `getInstance()` + `clearInstance()` 三件套。这是 **错误套用全局单例**，不符合 ArkTS V2 状态管理模型，且会导致：
 >   - 同一页面多次进入复用旧状态（残留搜索词、滚动位置、过期数据）
 >   - @Trace 字段跨页面相互污染
 >   - clearInstance 时机模糊，往往忘记调用 → 内存泄漏
@@ -156,6 +157,7 @@ struct HomePage {
 | ViewModel 类型 | 是否允许单例 | 例 |
 |---|---|---|
 | **Page-scope**（绑定单页生命周期） | ❌ MUST 删 | `HomePageVM` / `LoginPageVM` / `SettingsPageVM` |
+| **Tab/Fragment-scope**（绑定 Tab 内某 Fragment） | ❌ MUST 删 | `MineFragmentVM` / `HomeFragmentVM` |
 | **跨页全局共享** | ✅ 允许 | `IonBusiness` / `MembershipRefresher` / `UseCountManager` (业务无 page 绑定的 manager) |
 | **AppStorageV2 connect 模型**（通过 `AppStorageV2.connect(ViewModel, () => new ViewModel())` 共享） | ✅ 推荐 | 替代 getInstance 的鸿蒙原生方式 |
 

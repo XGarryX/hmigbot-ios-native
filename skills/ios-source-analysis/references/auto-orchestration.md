@@ -9,6 +9,7 @@
 3. 当前完整编译证据匹配所选范围时回放；Mac/Xcode 工程缺证据时实际采集一次构建，供成员、配置和 Clang AST 共用。存在 C-family 条件但没有匹配条件证据时，auto 在原生宿主自动补采；replay 保持缺失。
 4. 有 Swift 和兼容工具链时构建 Swift 官方库的 SwiftSyntax 适配器；SwiftPM 实际执行 dump-package；按输入选择 IB、资产和本地化分析。失败保留原始命令、stdout/stderr，不把可用标签写成执行成功。
 5. 真实输出交给原 facts/literals、expertise-plan 和规格候选消费。业务语义、AC 和产品决策继续由原作者审阅；不会自动批准。
+6. 已明确选择源端 UI 策略时，source-ui 步骤在规格候选前实际调用 XCUITest 或校验复用当前证据，随后由 spec-authoring 的对应页面消费原图/原生树；首次选择及协议见 [源端 UI 采集](source-ui-capture.md)。缺范围只限制相应采集，模拟器观察独立于源编译 SDK。
 
 显式 providers 或 variant 保留调用者确定的范围。底层 facts 入口仍可独立使用；普通工作流以 source-analysis 为入口。
 
@@ -21,6 +22,7 @@
 - evidence 支持 build/compilation/conditional/manifest，路径必须在 target/spec/ref 下；明确指定的坏证据直接拒绝，不能悄悄换路径。多个有效构建范围需要输入，不能任选。
 - official_skills 默认 true；require_official 默认 false，设 true 时未取得当前官方资料将阻断；timeout_seconds 为 1..3600，默认 600。
 - mcp_server 可指向 stdio 配置，env 只接受 MCP_XCODE_PID、MCP_XCODE_SESSION_ID；第三方服务保留第三方身份。
+- mcp 可为 ask/enable/skip，`source-analysis --mcp` 可传入当前会话的明确选择；已保存项目选择自动沿用，默认 ask 不覆盖它。pending 在 JSON 和可读 stderr 中明确展示，由主控收取选择后才连接 MCP；CLI 的独立工作可继续。选择状态不等于服务、工程授权或实际调用成功。
 
 ## 进度与恢复
 

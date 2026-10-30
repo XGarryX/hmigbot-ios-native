@@ -1,4 +1,2 @@
-interface:
-  display_name: hmos-sdk-docs
-  short_description: 查询随包 HMigBot 的鸿蒙 SDK 文档快照与官方在线资料，核验目标库版本、权限、初始化和接口；库选型交 arkts…
-  default_prompt: 请使用 $hmos-sdk-docs，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

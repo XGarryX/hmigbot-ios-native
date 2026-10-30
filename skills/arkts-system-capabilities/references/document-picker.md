@@ -1,6 +1,6 @@
 # 文件管理器 DocumentViewPicker
 
-> 使用 `@kit.CoreFileKit` 的 `picker` 模块拉起系统文件管理器，替代 iOS UIDocumentPickerViewController 的导入/导出语义。
+> 使用 `@kit.CoreFileKit` 的 `picker` 模块拉起系统文件管理器，替代 iOS 的 UIDocumentPickerViewController 的打开/导出流程及对应安全作用域资源访问。
 
 ---
 
@@ -15,7 +15,7 @@ import { common } from '@kit.AbilityKit';
 
 ## 唤起文件管理器（选择文件）
 
-> iOS 源参考：UIDocumentPickerViewController 的打开/导入流程，保留安全作用域与访问期限
+> 对应 iOS：UIDocumentPickerViewController 打开/导入行为
 
 ### 基础用法
 
@@ -64,7 +64,7 @@ function openFileManagerWithFilter(context: common.UIAbilityContext): void {
 
 ## 唤起文件管理器（保存文件）
 
-> iOS 源参考：UIDocumentPickerViewController 的导出流程，保留目标选择和取消行为
+> 对应 iOS：UIDocumentPickerViewController 导出行为
 
 ### 基础用法
 

@@ -1,10 +1,14 @@
 ---
 name: arkts-codebase-config
-description: "专门用于回答ArkTS语言的Harmony应用代码仓中功能配置/权限/开关类问题的技能。专注于回答配置项的定义位置、读取位置、默认值及覆盖路径等问题。例如：\"这个能力受哪个flag控制？\"、\"如何开启这个功能？\"、\"这个权限在哪里配置？\"。当问题涉及模块配置（module.json5）、应用配置（app.json5）、权限配置、FeatureFlag、常量配置、资源配置、系统功能开关，或全局状态相关配置（V1: AppStorage / @StorageLink / @StorageProp / PersistentStorage；V2: AppStorageV2 / PersistenceV2）时使用此技能。本技能同时识别 ArkTS V1（@Component / @State / @Prop 等）与 V2（@ComponentV2 / @Local / @Param 等）装饰器代码。"
+description: '专门用于回答ArkTS语言的Harmony应用代码仓中功能配置/权限/开关类问题的技能。专注于回答配置项的定义位置、读取位置、默认值及覆盖路径等问题。例如："这个能力受哪个flag控制？"、"如何开启这个功能？"、"这个权限在哪里配置？"。当问题涉及模块配置（module.json5）、应用配置（app.json5）、权限配置、FeatureFlag、常量配置、资源配置、系统功能开关，或全局状态相关配置（V1: AppStorage / @StorageLink / @StorageProp / PersistentStorage；V2: AppStorageV2 / PersistenceV2）时使用此技能。本技能同时识别 ArkTS V1（@Component / @State / @Prop 等）与 V2（@ComponentV2 / @Local / @Param 等）装饰器代码。'
 metadata:
   type: codebase
   domain: general
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # HarmonyOS配置问答
 
 本技能专注于回答ArkTS语言的Harmony应用代码仓中功能配置、权限、开关类问题。

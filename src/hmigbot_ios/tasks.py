@@ -1,5 +1,6 @@
 """Evidence contracts for atomic operations performed by the coding agent."""
 from pathlib import Path
+from .core import source_snapshot
 from .core import SCHEMA, MigrationError, digest, json_bytes, read_json, safe_child, snapshot, write_new_tree
 
 
@@ -13,7 +14,7 @@ def create_task(atom_id, source, output):
         raise MigrationError('Task output must not overlap source')
     atom = matches[0]
     task = {'schema_version': SCHEMA, 'atom_id': atom_id, 'operation': atom['operation'],
-            'source_sha256': snapshot(source)['sha256'], 'status': 'pending',
+            'source_sha256': source_snapshot(source)['sha256'], 'status': 'pending',
             'source_anchors_ref': [], 'decisions': [], 'outputs': [], 'verification': [], 'unresolved': []}
     write_new_tree(output, {'task.json': json_bytes(task)})
     return {'status': 'created', 'task': str(output / 'task.json'), 'atom_id': atom_id}
@@ -26,7 +27,7 @@ def check_task(source, task_path):
     ids = {a['id'] for a in read_json(Path(__file__).with_name('capabilities.json'))['atoms']}
     if task.get('atom_id') not in ids:
         raise MigrationError('Unknown task atom')
-    current = snapshot(source.resolve())
+    current = source_snapshot(source.resolve())
     if current['sha256'] != task.get('source_sha256'):
         raise MigrationError('Task source fingerprint is stale')
     source_files = {f['path']: f['sha256'] for f in current['files']}

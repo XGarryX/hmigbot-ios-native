@@ -1,8 +1,8 @@
 {
   "schema_version": "hmigbot-ios/1",
-  "tool_version": "0.13.0",
+  "tool_version": "0.13.7",
   "design_date": "2026-09-24",
-  "note": "Canonical independent capabilities come from canonical_catalog; the 62 atoms below are internal checklist references and never added to the semantic count.",
+  "note": "Original a2h pipeline with bundled HMigBot resources; 62 atoms are internal reference only.",
   "atoms": [
     {
       "id": "A01",
@@ -509,12 +509,19 @@
       ],
       "implementation": "可调用",
       "skill": "ios-source-analysis",
-      "status": "checklist_reference",
-      "execution_mode": "original_a2h_pipeline_with_ios_source",
-      "command": null,
-      "automation_status": "agent_executed",
-      "automation_scope": "Codex executes this domain-specific procedure and records actual artifacts; no universal deterministic converter is claimed",
-      "application_acceptance": "requires_per_project_evidence"
+      "status": "scoped_official_adapter",
+      "execution_mode": "Apple_XCTest_XCUIAutomation_and_Xcode_CLI",
+      "command": "python scripts/ios_ui_automation.py run --prepared <project-evidence-directory>",
+      "automation_status": "implemented_scoped_adapter",
+      "automation_scope": "Explicit simulator UDID, app bundle/current build and fixed scenario/checkpoints; app screenshots and accessible controls only. The catalog does not establish per-project execution or acceptance.",
+      "application_acceptance": "requires_per_project_evidence",
+      "capability_states": {
+        "policy": "permitted_in_explicit_application_test_scope",
+        "implementation": "ios_ui_automation adapter",
+        "host_availability": "observed by preflight and actual CLI invocation",
+        "execution": "per-run actual call receipts only",
+        "acceptance": "independent scenario assertions and review; no catalog PASS"
+      }
     },
     {
       "id": "C04",
@@ -531,12 +538,19 @@
       ],
       "implementation": "可调用",
       "skill": "ios-source-analysis",
-      "status": "checklist_reference",
-      "execution_mode": "original_a2h_pipeline_with_ios_source",
-      "command": null,
-      "automation_status": "agent_executed",
-      "automation_scope": "Codex executes this domain-specific procedure and records actual artifacts; no universal deterministic converter is claimed",
-      "application_acceptance": "requires_per_project_evidence"
+      "status": "scoped_official_adapter",
+      "execution_mode": "Apple_XCTest_XCUIAutomation_and_Xcode_CLI",
+      "command": "python scripts/ios_ui_automation.py run --prepared <project-evidence-directory>",
+      "automation_status": "implemented_scoped_adapter",
+      "automation_scope": "Explicit simulator UDID, app bundle/current build and fixed scenario/checkpoints; app screenshots and accessible controls only. The catalog does not establish per-project execution or acceptance.",
+      "application_acceptance": "requires_per_project_evidence",
+      "capability_states": {
+        "policy": "permitted_in_explicit_application_test_scope",
+        "implementation": "ios_ui_automation adapter",
+        "host_availability": "observed by preflight and actual CLI invocation",
+        "execution": "per-run actual call receipts only",
+        "acceptance": "independent scenario assertions and review; no catalog PASS"
+      }
     },
     {
       "id": "C05",
@@ -1131,11 +1145,11 @@
       ],
       "implementation": "复用并适配",
       "skill": "a2h-verify",
-      "status": "checklist_reference",
+      "status": "scoped_evidence_comparison",
       "execution_mode": "original_a2h_pipeline_with_ios_source",
-      "command": null,
-      "automation_status": "agent_executed",
-      "automation_scope": "Codex executes this domain-specific procedure and records actual artifacts; no universal deterministic converter is claimed",
+      "command": "python scripts/ui_validation_evidence.py pair --source <ios-manifest> --target <harmony-manifest> --current <current-bindings>",
+      "automation_status": "implemented_offline_comparison",
+      "automation_scope": "Current-bound paired checkpoints and structure/image screening; optional observations-only keeps configuration gaps explicit; no business or complete migration PASS.",
       "application_acceptance": "requires_per_project_evidence"
     },
     {
@@ -1233,6 +1247,7 @@
     "a2h-run-zh",
     "a2h-spec",
     "a2h-verify",
+    "app-relationship-tree",
     "arkts-accessibility",
     "arkts-ad",
     "arkts-animation-builder",
@@ -1268,7 +1283,6 @@
     "arkts-payment",
     "arkts-project-scaffolder",
     "arkts-router-verify",
-    "arkts-scenario-runner",
     "arkts-spec-evolver",
     "arkts-state-manager",
     "arkts-structural-closure",
@@ -1277,10 +1291,8 @@
     "arkts-truncation-fix",
     "arkts-ui-alignment",
     "arkts-ui-coverage-auditor",
-    "arkts-ui-verifier",
     "arkts-ut-verifier",
     "arkts-video-playback",
-    "arkts-visual-verify",
     "arkts-webview",
     "arkts-webview-manager",
     "commit",
@@ -1290,11 +1302,14 @@
     "hmos-fix-build-errors",
     "hmos-sdk-docs",
     "ios-api-inventory",
+    "ios-fact-tree",
     "ios-feature-analyzer",
     "ios-project-inspector",
     "ios-resources-convert",
     "ios-source-analysis",
     "ios-ui-analyzer",
+    "ios-ui-graph-builder",
+    "ios-ui-graph-query",
     "ios-ui-to-arkui",
     "migbot-increment-applying",
     "migbot-increment-archive",
@@ -1311,6 +1326,7 @@
     "rq-codebase",
     "rq-parse",
     "skill-checker",
+    "swiftui-fact-tree",
     "tdd-enforcer"
   ],
   "pipeline": [
@@ -1332,5 +1348,26 @@
     "policy": "Apple guidance and read-only MCP first, official CLI/compiler evidence; explicit fallback; device remote control excluded",
     "progress": "spec/reports/derived/source-analysis.json",
     "independent_capability_increment": 0
+  },
+  "release_profile": "macos-arm64",
+  "execution_evidence": "Capability declaration only; actual source/target verification is reported per invocation",
+  "application_ui_validation": {
+    "policy": "rules/app-ui-validation-boundary.md",
+    "usage": "docs/APP-UI-VALIDATION.md",
+    "desktop_takeover": "prohibited",
+    "recording": "not_granted",
+    "backends": {
+      "ios": "scripts/ios_ui_automation.py prepare/run/validate; explicit simulator and app scope",
+      "harmonyos": "scripts/harmony_ui_automation.py prepare/run; official emulator CLI when supported, Hypium fallback with selected test HAP",
+      "paired_evidence": "scripts/ui_validation_evidence.py validate/pair/impact/benchmark"
+    },
+    "scope_note": "Allowed, installed/available, implemented, actually invoked and accepted are distinct states. No backend is automatically executed by capability discovery.",
+    "deferred_legacy_skills": [
+      "arkts-scenario-runner",
+      "arkts-ui-verifier",
+      "arkts-visual-verify",
+      "ios-screenshot-analyzer"
+    ],
+    "preview": "Component evidence is permitted; actual rendering requires a supported official host tool and selected component/configuration. CLI app screenshots are not relabeled as Preview execution."
   }
 }

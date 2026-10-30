@@ -235,6 +235,9 @@ class VFXCreateViewModel extends BaseViewModel {
 ## R6.1c-2 ViewModel 单例反模式（**MUST** — 2026-05 客户校准）
 
 ```bash
+# Page/Fragment-scope VM 不能写单例三件套
+grep -rnE 'private\s+static\s+instance.*(Page|Fragment)?ViewModel' --include='*.ets' <root>
+grep -rnE 'static\s+getInstance\(\)\s*:\s*\w+(Page|Fragment)?ViewModel' --include='*.ets' <root>
 grep -rnE 'static\s+clearInstance\(\)' --include='*.ets' <root> | grep -i ViewModel
 ```
 

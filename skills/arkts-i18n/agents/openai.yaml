@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-i18n
-  short_description: ArkTS/HarmonyOS 国际化（i18n）技能（V2 优先，API 12+）。当用户需要添加多语言支持、实现动态语…
-  default_prompt: 请使用 $arkts-i18n，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

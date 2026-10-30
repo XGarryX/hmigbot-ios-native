@@ -1,6 +1,6 @@
 ---
 name: arkts-pattern-library
-description: "生成 ArkTS/HarmonyOS 常见业务功能的完整实现方案（V2 优先，API 12+）。当用户需要实现搜索、列表详情页、登录注册、下拉刷新/加载更多、Tab 内容切换、个人中心、设置页、主题切换、空状态、骨架屏、播放器 UI、下载管理 UI、Feed 详情页，或任何完整业务功能时，务必触发此 skill。即使只说\"做个搜索\"\"写个列表页\"也应触发。这是综合模式库，与其他 skill 配合使用。仅单个组件或技术点（非完整业务功能）→ arkts-component-builder / arkts-navigation-builder。"
+description: 生成 ArkTS/HarmonyOS 常见业务功能的完整实现方案（V2 优先，API 12+）。当用户需要实现搜索、列表详情页、登录注册、下拉刷新/加载更多、Tab 内容切换、个人中心、设置页、主题切换、空状态、骨架屏、播放器 UI、下载管理 UI、Feed 详情页，或任何完整业务功能时，务必触发此 skill。即使只说"做个搜索""写个列表页"也应触发。这是综合模式库，与其他 skill 配合使用。仅单个组件或技术点（非完整业务功能）→ arkts-component-builder / arkts-navigation-builder。
 metadata:
   type: domain
   domain: ui
@@ -10,6 +10,10 @@ metadata:
   - arkts-v2
   - business-feature
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS Pattern Library — 综合功能模式库（V2 优先）
 
 ## API 版本与项目策略

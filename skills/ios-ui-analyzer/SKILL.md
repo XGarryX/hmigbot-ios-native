@@ -11,13 +11,22 @@ metadata:
   - source-evidence
 ---
 
-> **调用关系**：本 skill 是 `ios-source-analysis` 组织的四类源分析之一（UI 主责），结果由 `a2h-spec` 收口。若宿主支持 subagent，按 `ios-ui-analyzer` 角色名派发本技能（`fork_turns:"none"`，任务书写清 page 候选、源锚点、输出契约）；不派发时主会话顺序执行。遵守 **Join 协议（收口五条款）**：① 循环 wait——完成唯一合法信号是 `agent_status=completed`，绝不是产物文件存在；② 死句柄与验收——连续 3 次超时后 `list` 核对，completed≠验收通过，join 点跑门禁验产物；③ 收口锚点——最终报告前收口全部句柄；④ 放行≠遗弃；⑤ fire-and-forget 仅正文显式声明的派发免收口。**派发纪律**：`task_name` 唯一（带 page-id/round/scope 后缀）；派发前写清预期产物清单给 join 门对账；**谁派谁收**（sub-agent 不能嵌套外派后退出）；契约产物必须出自承担任务的子代理，禁止派发方代写占位产物。本 skill 只读源、写分析事实，**不派发下级迁移 worker、不写目标代码**。
+> **调用关系**：本 skill 是 `ios-source-analysis` 组织的四类源分析之一（UI 主责），结果由 `a2h-spec` 收口。若宿主支持 subagent，按 `ios-ui-analyzer` 角色名派发本技能（`fork_turns:"none"`，任务书写清 page 候选、源锚点、输出契约）；不派发时主会话顺序执行。遵守 **Join 协议（收口五条款）**：① 循环 wait——完成依据按 [a2h-join](../a2h-join/SKILL.md)：本轮可信宿主 `completed` 或经过身份与时序核验的原生 `FINAL_ANSWER`；产物存在不能代替完成；② 死句柄与验收——连续 3 次超时后 `list` 核对，completed≠验收通过，join 点跑门禁验产物；③ 收口锚点——最终报告前收口全部句柄；④ 放行≠遗弃；⑤ fire-and-forget 仅正文显式声明的派发免收口。**派发纪律**：`task_name` 唯一（带 page-id/round/scope 后缀）；派发前写清预期产物清单给 join 门对账；**谁派谁收**（sub-agent 不能嵌套外派后退出）；契约产物必须出自承担任务的子代理，禁止派发方代写占位产物。本 skill 只读源、写分析事实，**不派发下级迁移 worker、不写目标代码**。
 >
 > 路径约定：`$IOS_SRC` 从 `<target>/.migbot/config.json` 的 `ios` 字段读取；`<target>` = 鸿蒙目标根（源工程与目标工程必须分离）；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。产物落 `<target>/spec/ref/` 与 `<target>/spec/baseline/`，**禁落会话临时目录**。本 skill 自有文件：`references/analysis-v2.md`（逐页执行步骤与正反例）、`scripts/run.py`（runtime 定位，等价 `python <runtime>/scripts/a2h_ios.py`）、`agents/openai.yaml`。
 
 # ios-ui-analyzer — iOS 界面、状态与导航事实
 
 适用的 Apple 官方技能与 Xcode MCP 优先。先读取 `spec/ref/ios-expertise-plan.json` 与 `ios-official-analysis.json` 中为本类选择的资源，按原始摘要完成审阅；官方资料、只读 MCP、CLI 和编译器分别记录来源、用途、读写范围及实际结果。无官方证据时记录降级原因，保持相关 unknown；不把第三方资料或自编规程称为 Apple 官方。设备远程控制不在默认调用范围，界面授权由用户自行完成。
+
+
+### 官方分析的执行责任（0.13.1）
+
+当 `ios-expertise-plan.json` 为当前主题选择 Apple 资源时，对应主题的分析过程由导出 skill 的适用规程承担：逐项执行其相关参考的审阅步骤，沿真实源码记录观察、未决项和影响；本技能保留迁移输出字段、归属和门禁合同。不得仅确认已读资料后继续用自编经验替代官方审阅。SwiftUI 使用 swiftui-specialist 的相关结构、状态、身份、环境或文本章节；App Intents 使用 app-intents-specialist 的执行模型、实体/参数、结果及快捷短语章节；文档型 SwiftUI 与 C bounds 仅在实际源输入适用时执行对应导出 skill。没有覆盖该主题的官方 skill 时明确保留自编/第三方分析，不伪称官方执行。
+
+每条 Apple 源观察用 `expertise-review` 写入 `official_basis` 数组，字段为固定资源的 `path`、`sha256`、实际适用的 `section` 与具体 `application`。同时保留 `source`、`interpretation`、`unknowns`。只有资源确认、没有资源规则如何应用到源码的记录将被拒绝；此合同核验不替代对模型判断的独立复核。官方语义规程不能批准产品取舍或目标平台替代。
+
+Swift 文件的词法/声明结构优先消费当前 facts 中固定的 SwiftParser/SwiftSyntax 产物，不能为了旧 Python 闭合语法可接受而改写源文件。编译上下文由实际 Xcode CLI 产物或经过校验的同源回放承担；MCP 不可用保留原错误和未决项。远程控制、界面读取及权限修改不在此分析范围。
 
 ## 0. 定位与纪律
 
@@ -196,7 +205,7 @@ metadata:
 ## 6. 交互证据与收口
 
 - 为用户可触发事件记录：前置态 → 动作 → 状态变更 → 可观察 UI/导航/副作用。跨页/异步动作引用 `../a2h-spec/references/action-contracts.md` 的动作 ID，**禁止在页面重写另一套取消/完成语义**。
-- 源码初值优先于 Preview；预览专用假数据、mock Environment、截图仅用于标注。**没有 iPhone 录制不生成运行观察结论（runtime=not_run）；没有运行时截图不伪造（screenshot=null，runtime=not_run 合法）**。
+- 源码初值与 Preview 固定样例分开，应用实际截图按当前场景标注。**没有指定应用的实际测试或可核验运行证据，不生成运行观察结论（runtime=not_run）；不以录屏为前置条件，没有运行时截图不伪造（screenshot=null 合法）**。
 - 有设备证据时须含版本、设备、入口、动作、时间与文件引用；运行截图只能补充该场景观察，不能取代约束/状态分析。
 - 输出每页：framework/language、入口、source_anchors（path/role/symbol/line）、组合、有序 modifier、状态所有权、事件链、导航/返回、布局、variants/accessibility、unknown。事实不完整写 unknown 与补证步骤，**不生成假布局文件**。
 - 动态字符串、无障碍名称、RTL、键盘/focus、手势冲突、深色模式逐项交代。

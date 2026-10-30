@@ -15,6 +15,7 @@
 Stage 1 全部 Batch 完成后（§3d 收口第一步），建立入口配置：
 
 1. 读取 `entry/src/main/resources/base/profile/main_pages.json`
+2. 将 App/Scene 入口对应的 ArkTS 页面（入口页）加入 `"src"` 数组，并**删除 `"pages/Index"` 条目**（DevEco 默认模板，无业务价值；见 §2 配套清理）
 3. **`"src"` 数组最终只保留入口页一项**——NavDestination 子页面通过入口页 `pageMap` 路由，**不在 `main_pages.json` 逐页登记**（这是 Navigation 模型与旧 router 模型的关键差异）
 4. **同步修改 EntryAbility.ets 的 `loadContent` 调用**：
    - 读取 `entry/src/main/ets/entryability/EntryAbility.ets`

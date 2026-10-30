@@ -1,3 +1,5 @@
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
+
 ---
 id: {{ id }}
 type: {{ type }}                    # feature | bugfix | optimization
@@ -76,8 +78,8 @@ opt_out_approved_by: null              # explosion=true 时必填（由用户审
 - page_id: page_xxxx
   state_label: descriptive_state_name
   hmos_entry_path: 冷启 → ...
-  source_reference: ActivityName / FragmentName, state=...
-  iOS_entry_path: 冷启 → ...
+  ios_reference: ActivityName / FragmentName, state=...
+  ios_entry_path: 冷启 → ...
 
 ### 合并记录（Step 9.5 回写）
 <!--
@@ -125,6 +127,7 @@ execute 完成后，Step 9.5 基于实际 git diff 重扫产出清单 B，
 <!-- 仅当 ## 回归范围 非空时填充；纯新增功能跳过 -->
 - 调用 skill: arkts-dt-verifier --filter <feature_acs + page_acs>
 - baseline AC 索引: entry/src/ohosTest/ets/test/tdd-ac-index.md
+- 跑测设备: 目标 hdc {device_id} / 实际原生源设备 {source_device_id}
 - 结果: feature_acs X/N GREEN, page_acs Y/M GREEN
 - 退化条目: <空> | <列出 RED/ERROR 的 AC + 原因>
 - 报告: docs/dt-verification-report.md
@@ -135,7 +138,7 @@ execute 完成后，Step 9.5 基于实际 git diff 重扫产出清单 B，
 - 视觉真值：同期 iOS 应用（不做 HMOS 改前 baseline 截图）
 - 对 affected_visual_pages 每条状态：
   - HMOS 走 hmos_entry_path → 截图（after）
-  - iOS 走 iOS_entry_path → 截图（reference）
+  - iOS 走 ios_entry_path → 截图（reference）
   - 多模态对比，判定标准（叠加语义）：
     - baseline（iOS）有的 UI 元素在 HMOS 必须存在 + 位置/样式不变（允许像素级微差）
     - HMOS 新增元素允许（属于本次新增功能）
@@ -147,6 +150,7 @@ execute 完成后，Step 9.5 基于实际 git diff 重扫产出清单 B，
 
 ### 设备探测（Step 11 前置，必跑）
 - hdc list targets: <stdout 原文>
+- 源端原生设备检查: <实际工具/命令与 stdout，缺失写原因>
 
 ### 总结
 - status: verifying → done / verifying(visual-pending) / failed

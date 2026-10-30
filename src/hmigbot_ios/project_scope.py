@@ -5,6 +5,7 @@ build settings do not remove sources, and unresolved membership fails closed.
 """
 from pathlib import Path, PurePosixPath
 
+from .core import source_snapshot
 from .core import MigrationError, digest, safe_child, snapshot
 from .xcode import OpenStep, synchronized_membership
 
@@ -50,7 +51,7 @@ def resolve(source: Path, variant: dict, *, _context=False) -> dict:
     path = safe_child(source, project_path)
     if path.name != 'project.pbxproj' or path.parent.suffix != '.xcodeproj':
         raise MigrationError('project_path must name an actual .xcodeproj/project.pbxproj')
-    snap = snapshot(source)
+    snap = source_snapshot(source)
     if not path.is_file():
         raise MigrationError(f'Project does not exist: {project_path}')
     try:

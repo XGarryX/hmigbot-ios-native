@@ -1,4 +1,2 @@
-interface:
-  display_name: a2h-execute
-  short_description: iOS→ArkTS 迁移代码的三阶段执行引擎（Pipeline 第三步）：按 ui-plan.md/feature-pla…
-  default_prompt: 请使用 $a2h-execute，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: true

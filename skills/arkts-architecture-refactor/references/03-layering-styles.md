@@ -31,7 +31,7 @@ ets/
 | 反例 | 正例 |
 |---|---|
 | `.png` 图标 | `.svg` 矢量 |
-| `.png` 位图 | `.webp` 3x（设计稿尺寸 × 3，仅在项目显式采用 3x 资源策略时适用，源比例依 Asset Catalog/布局核验） |
+| `.png` 位图 | `.webp` 3x（设计稿尺寸 × 3，对应 iOS xxhdpi） |
 | `.gif` 动画 | `.webp` 动画（对齐 iOS）|
 | 直接用不同色版的图 | 单色 webp + `colorFilter(ColorUtils.hexToColorMatrix(hex))` —— **客户必查样例** |
 
@@ -89,7 +89,7 @@ struct ThemedIcon {
 | `color_dialog_cancel_bg` / `color_dialog_cancel_text` | 对话框取消按钮 |
 | `color_dialog_disable_bg` | 对话框按钮禁用 |
 
-> 全平台同名很重要：源平台/HarmonyOS 用同一套 token 才能高效迁移。重命名时对比 iOS Color Asset/设计令牌 的命名约定。
+> 全平台同名很重要：iOS/iOS/HarmonyOS 用同一套 token 才能高效迁移。重命名时对比 iOS `colors.xml` 的命名约定。
 
 ### 字体 weight
 

@@ -2188,7 +2188,12 @@ class EvidenceIndex:
         a missing source edge or broaden the already resolved target authority.
         """
         parsed=re.fullmatch(r'\s*([\w$]+)\.([\w$]+)(?:\(\))?\s*(→|←|->|<-)\s*([\w$]+)\.([\w$]+)(?:\(\))?\s*',description)
-        if parsed is None: return self.fail('Unsupported declarative integration syntax')
+        if parsed is None:
+            return {**self.fail('Unsupported declarative integration description; this field is a binding protocol, not ArkTS source code'),
+                'failed_check':'C2_DECLARATIVE_DESCRIPTION_UNSUPPORTED',
+                'supported_description':'Component.member -> Owner.member (or <-), with optional empty ()',
+                'repair_action':'Describe the existing exact endpoint pair in the plan and rerun the structural checker; @Param declarations, assignments and arbitrary calls alone do not prove a same-instance data path. Do not rewrite correct product code merely to match this description.'}
+
         if callback_bindings is not None and not isinstance(callback_bindings,list):
             return self.fail('Malformed declarative callback contract input')
         keys={'owner','kind','producer','event','binding','consumer','input'}

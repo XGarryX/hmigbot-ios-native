@@ -9,8 +9,10 @@ import re
 import xml.etree.ElementTree as ET
 
 from . import __version__
+from .core import source_snapshot
 from .core import SCHEMA, MigrationError, anchor, digest, snapshot
 from .swiftui import tokenize, parse_view
+from .swift_native import SwiftEvidenceError
 
 SERVICES = {
     "URLSession": "network", "Alamofire": "network", "CoreData": "persistence",
@@ -26,9 +28,23 @@ SERVICES = {
 
 def analyze(root: Path):
     root = root.resolve()
-    source = snapshot(root)
+    source = source_snapshot(root)
     facts, issues, pages, languages, frameworks = [], [], [], Counter(), set()
     fact_ids = set()
+    swift_files = {f['path']: (root / f['path']).read_bytes().decode('utf-8')
+                   for f in source['files'] if Path(f['path']).suffix == '.swift'}
+    if any(digest(swift_files[f['path']].encode('utf-8')) != f['sha256']
+           for f in source['files'] if f['path'] in swift_files):
+        raise MigrationError('Source changed before SwiftSyntax inventory')
+    swift_syntax, swift_error, parsing = {}, None, []
+    if swift_files:
+        from .swift_native import parse_sources
+        try:
+            swift_syntax = parse_sources(swift_files)
+        except SwiftEvidenceError:
+            raise
+        except (ValueError, OSError, TypeError, KeyError) as exc:
+            swift_error = str(exc)
 
     def add(kind, value, file, line=1, evidence="structured_static", **location):
         ref = anchor(file["path"], file["sha256"], line, **location)
@@ -55,17 +71,57 @@ def analyze(root: Path):
                 lang = {".swift": "Swift", ".m": "Objective-C", ".mm": "Objective-C++",
                         ".h": "C-family-header", ".cpp": "C++", ".c": "C"}[suffix]
                 languages[lang] += 1
-                text = path.read_text(encoding="utf-8-sig")
-                tokens = tokenize(text, skip_pragma_marks=suffix != ".swift")
+                text = swift_files[file['path']] if suffix == '.swift' else path.read_text(encoding="utf-8-sig")
+                native = swift_syntax.get(file['path']) if suffix == '.swift' else None
+                weak, parse_record = False, None
+                if suffix == '.swift':
+                    parse_record = {'path': file['path'], 'backend': 'SwiftSyntax',
+                                    'status': 'parsed', 'syntax_verified': True,
+                                    'attempts': [{'backend': 'SwiftSyntax', 'status': 'parsed'}]}
+                    parsing.append(parse_record)
+                    if native is None and swift_error is None:
+                        raise SwiftEvidenceError('SwiftSyntax inventory omitted source: ' + file['path'])
+                    if native is None or native.get('parse_has_error') is not False:
+                        official_error = swift_error if swift_error is not None else json.dumps(native.get('diagnostics', []), ensure_ascii=False)
+                        issue('swift_syntax_unavailable' if native is None else 'swift_syntax_error',
+                              official_error, file)
+                        parse_record.update(backend='weak_python', status='weakly_parsed', syntax_verified=False,
+                            attempts=[{'backend': 'SwiftSyntax', 'status': 'failed', 'error': official_error}])
+                        try:
+                            from .weak_swiftui import weak_tokens
+                            tokens = weak_tokens(text)
+                        except MigrationError as exc:
+                            parse_record['status'] = 'failed'
+                            parse_record['attempts'].append({'backend': 'weak_python', 'status': 'failed', 'error': str(exc)})
+                            issue('weak_parse_failed', str(exc), file)
+                            pages.append({'status': 'unsupported', 'path': file['path'], 'sha256': file['sha256'],
+                                          'reason': str(exc), 'parsing': parse_record})
+                            continue
+                        weak = True
+                        parse_record['attempts'].append({'backend': 'weak_python', 'status': 'weakly_parsed'})
+                        issue('weak_parse_used', 'Official parsing failed; weak Python results are unverified drafts', file)
+                    else:
+                        from .swift_native import tokens_for
+                        tokens = tokens_for(native, text)
+                    for node in ([] if weak else native['nodes']):
+                        value = node['value']
+                        if node['kind'] == 'import':
+                            frameworks.add(value['module'])
+                            add('import', value, file, node['line'], 'SwiftSyntax')
+                        elif node['kind'] in {'type', 'function'}:
+                            add('declaration', {'kind': value.get('kind', 'func'), 'name': value['name'],
+                                               'language': lang}, file, node['line'], 'SwiftSyntax')
+                else:
+                    tokens = tokenize(text, skip_pragma_marks=True)
                 for i, token in enumerate(tokens):
                     if token.kind == "string":
                         continue
-                    if token.value == "import" and i + 1 < len(tokens):
+                    if (suffix != '.swift' or weak) and token.value == "import" and i + 1 < len(tokens):
                         framework = tokens[i + 1].value
                         if framework not in {"<", '"'} and tokens[i + 1].kind == "identifier":
                             frameworks.add(framework)
                             add("import", {"module": framework}, file, token.line, "lexical_hint")
-                    if token.value in {"struct", "class", "enum", "protocol", "func", "interface", "implementation"} and i + 1 < len(tokens):
+                    if (suffix != '.swift' or weak) and token.value in {"struct", "class", "enum", "protocol", "func", "interface", "implementation"} and i + 1 < len(tokens):
                         if tokens[i + 1].kind == "identifier":
                             add("declaration", {"kind": token.value, "name": tokens[i + 1].value,
                                                 "language": lang}, file, token.line, "lexical_hint")
@@ -80,14 +136,23 @@ def analyze(root: Path):
                         frameworks.add("SwiftUI")
                     if "View" in values:
                         try:
-                            view = parse_view(text)
-                            page = {"status": "convertible_subset", "path": file["path"],
-                                    "sha256": file["sha256"], "view": view}
-                            add("ui_tree", view, file, evidence="restricted_parser")
+                            if weak:
+                                from .weak_swiftui import parse_weak_view
+                                view = parse_weak_view(tokens)
+                            else:
+                                view = parse_view(text, syntax=native)
+                            page = {"status": "weak_draft_subset" if weak else "convertible_subset", "path": file["path"],
+                                    "sha256": file["sha256"], "view": view, 'parsing': parse_record}
+                            add("ui_tree", view, file, evidence="weak_python_ArkUI_rule" if weak else "SwiftSyntax_AST_ArkUI_rule")
+                        except SwiftEvidenceError:
+                            raise
                         except MigrationError as exc:
                             page = {"status": "unsupported", "path": file["path"],
-                                    "sha256": file["sha256"], "reason": str(exc)}
-                            issue("swiftui_rule_gap", str(exc), file)
+                                    "sha256": file["sha256"], "reason": str(exc), 'parsing': parse_record}
+                            if weak:
+                                parse_record['status'] = 'failed'
+                                parse_record['attempts'][-1].update(status='failed', error=str(exc))
+                            issue("weak_parse_failed" if weak else "swiftui_rule_gap", str(exc), file)
                         pages.append(page)
                     if any(tokens[i].value == "#" and tokens[i + 1].value in {"if", "elseif"}
                            for i in range(len(tokens) - 1)):
@@ -139,17 +204,25 @@ def analyze(root: Path):
                 add("build_project", {"format": "Xcode", "effective_configuration": "unresolved"}, file)
             elif path.name == "pubspec.yaml" or path.suffix in {".unity", ".dart"}:
                 issue("non_native_route", "Cross-platform component requires a separate adapter", file)
+        except SwiftEvidenceError:
+            raise
         except (OSError, ValueError, ET.ParseError, plistlib.InvalidFileException) as exc:
             issue("unreadable_source", str(exc), file)
     if not languages and not pages:
         raise MigrationError("No native iOS source or Interface Builder files were found")
     issue("effective_build_unresolved", "Inventory is repository-wide; active target/scheme and compiler symbols are not resolved")
     issue("runtime_unverified", "Source/target build, runtime behavior and device checks have not been executed")
+    if source_snapshot(root)['sha256'] != source['sha256']:
+        raise MigrationError('Source changed during native inventory')
     return {"schema_version": SCHEMA, "tool_version": __version__, "source_platform": "ios",
             "source_root": str(root), "source_snapshot": source,
             "inventory": {"languages": dict(languages), "frameworks": sorted(frameworks),
                           "files": len(source["files"]), "facts": len(facts)},
             "facts": facts, "pages": pages, "issues": issues,
+            'parsing': {'policy': 'official_then_weak',
+                        'status': 'failed' if any(p['status'] == 'failed' for p in parsing) else
+                                  'degraded' if any(p['backend'] == 'weak_python' for p in parsing) else 'parsed',
+                        'files': parsing},
             "analysis_level": "repository_static", "migration_status": "not_verified"}
 
 
@@ -157,9 +230,11 @@ def migration_plan(report):
     tasks = []
     for index, page in enumerate(report["pages"], 1):
         tasks.append({"id": f"UI-{index:04}", "source_path": page["path"],
-                      "operation": "generate_and_validate" if page["status"] == "convertible_subset" else "implement_mapping",
+                      "operation": "generate_weak_draft_and_validate" if page['status'] == 'weak_draft_subset' else
+                                   "generate_and_validate" if page["status"] == "convertible_subset" else "implement_mapping",
                       "status": "planned", "rule": page.get("view", {}).get("rule"),
                       "reason": page.get("reason"), "source_anchors_ref": [anchor(page["path"], page["sha256"])],
+                      'parsing': page.get('parsing'),
                       "verification": ["target_build", "source_behavior_comparison", "visual_comparison"]})
     for fact in report["facts"]:
         if fact["kind"] in {"platform_service", "dependency", "asset_catalog", "localization", "declaration_config"}:
@@ -182,7 +257,8 @@ def render_report(report, plan):
              "", "这是仓库静态分析。未解析生效构建配置，未证明行为等价。", "",
              "| 文件 | 处理状态 | 说明 |", "| --- | --- | --- |"]
     for page in report["pages"]:
-        reason = page.get("reason", "可生成规则覆盖范围内的 ArkUI 草稿，仍需编译与双端验证")
+        reason = page.get("reason", "官方解析失败后的弱解析草稿，未验证 Swift 语法；仍需编译与双端验证"
+                          if page['status'] == 'weak_draft_subset' else "可生成规则覆盖范围内的 ArkUI 草稿，仍需编译与双端验证")
         clean = lambda s: s.replace("|", "\\|").replace("\n", " ")
         lines.append(f"| {clean(page['path'])} | {page['status']} | {clean(reason)} |")
     lines += ["", f"迁移计划包含 {len(plan['tasks'])} 项待处理操作。", "", "## 未决项", ""]

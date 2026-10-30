@@ -1,6 +1,7 @@
 """Compatibility candidate adapter to the sole native gate content producer."""
 from pathlib import Path
 import os,re
+from .core import source_snapshot
 from .core import MigrationError,digest,json_bytes,read_json,safe_child,snapshot
 from .native_pipeline import context
 from .source_candidates import discover_candidates, classify_type, _top_level_types
@@ -10,7 +11,7 @@ def _reviewed_snapshot(source, project, expected_sha256=None):
     if not index_path.is_file():
         raise MigrationError('Source index missing: run source-index/refresh and review before scaffolding')
     index = read_json(index_path)
-    current = snapshot(source)
+    current = source_snapshot(source)
     if index.get('source_sha256') != current['sha256'] or index.get('files') != current['files']:
         raise MigrationError('Source changed or source index files disagree; re-review the source baseline before scaffolding')
     if expected_sha256 is not None and expected_sha256 != current['sha256']:
@@ -21,7 +22,10 @@ def scaffold(project, *, source_sha256=None):
     from .gate_artifacts import render_spec_inputs
     source, project = context(project)
     index, current = _reviewed_snapshot(source, project, source_sha256)
-    candidates = discover_candidates(source, index)
+    from .swift_native import project_conditions, project_syntax
+    syntax = project_syntax(project, source)
+    conditions = project_conditions(project, source)
+    candidates = discover_candidates(source, index, swift_syntax=syntax, conditional=conditions)
     if not any(c['is_ui'] for c in candidates):
         raise MigrationError('Scaffold found no UI surface candidate; author features/pages manually rather than fabricating them')
     rendered = render_spec_inputs(project)

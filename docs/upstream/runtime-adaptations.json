@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "tool_version": "0.13.7",
+  "changes": [
+    {
+      "path": "vendor/hmigbot-1.7.0/skills/a2h-execute/scripts/_a2h_findings.py",
+      "source_manifest": "docs/upstream/scheduler-1.7.0-manifest.json",
+      "source_sha256": "67a7ba2a72db155fa07f584b7add77ba28ab17a6eb886cf4542d5a09232519a8",
+      "sha256": "1d70311b8b1d33943ed7d7d231f8273c580e2fe5f8dd690873c415be625dc426",
+      "kind": "python_rule_adaptation",
+      "reason": "Same reviewed causal finding queue used by all selected stage consumers; preserve source manifest as original provenance"
+    }
+  ]
+}

@@ -1,10 +1,12 @@
 ---
 name: arkts-architecture-refactor
-description: "把现有的 HarmonyOS / ArkTS 应用按照《鸿蒙客户端原生开发规范》(develop_rule.docx) 进行结构化重构。规则覆盖六大类——工程拆分(壳/features/components 三段式)、私仓接入(lib_common/lib_network/lib_widget/lib_payment/lib_starburst/lib_umeng/lib_hmiap + .ohpmrc)、代码分层(components/constants/pages/viewmodel/bean/util)、静态资源(webp 3x/svg/colorFilter)、公共样式(color.json 命名规范、UI weight、AppStorageV2 pagePadding)、其他规范(状态管理 v2、Repeat 替代 LazyForEach、BaseViewModel、Navigation+RouterUtils 路由、RequestUtil/ExternalReqUtil + AbortController 网络、PreferenceUtil/@ohos/dataorm 持久化、WindowModel 安全距、GridRow/GridCol 断点、build-profile buildProfileFields)。务必在以下场景触发：(1) 用户提到\"把这个鸿蒙项目按规范重构 / 整改 / 迁移到新架构\"、\"接入私仓 lib_xxx\"、\"按 develop_rule 改造工程结构\"、\"拆 business 子模块\"、\"v1 状态升级到 v2\"、\"接入 RouterUtils/RequestUtil\"、\"统一 color.json\"、\"加 AbortController\"、\"BaseViewModel\"； (2) 用户给出一个鸿蒙 HAP/HSP 工程并请求架构合规性检查或差距报告； (3) 即使用户只说\"按规范重构\"、\"重构这个 HarmonyOS app\"、\"对齐 AI 工程的架构\"，只要上下文明显是 HarmonyOS/ArkTS 项目改造，也应触发。"
+description: 把现有的 HarmonyOS / ArkTS 应用按照《鸿蒙客户端原生开发规范》(develop_rule.docx) 进行结构化重构。规则覆盖六大类——工程拆分(壳/features/components 三段式)、私仓接入(lib_common/lib_network/lib_widget/lib_payment/lib_starburst/lib_umeng/lib_hmiap + .ohpmrc)、代码分层(components/constants/pages/viewmodel/bean/util)、静态资源(webp 3x/svg/colorFilter)、公共样式(color.json 命名规范、UI weight、AppStorageV2 pagePadding)、其他规范(状态管理 v2、Repeat 替代 LazyForEach、BaseViewModel、Navigation+RouterUtils 路由、RequestUtil/ExternalReqUtil + AbortController 网络、PreferenceUtil/@ohos/dataorm 持久化、WindowModel 安全距、GridRow/GridCol 断点、build-profile buildProfileFields)。务必在以下场景触发：(1) 用户提到"把这个鸿蒙项目按规范重构 / 整改 / 迁移到新架构"、"接入私仓 lib_xxx"、"按 develop_rule 改造工程结构"、"拆 business 子模块"、"v1 状态升级到 v2"、"接入 RouterUtils/RequestUtil"、"统一 color.json"、"加 AbortController"、"BaseViewModel"； (2) 用户给出一个鸿蒙 HAP/HSP 工程并请求架构合规性检查或差距报告； (3) 即使用户只说"按规范重构"、"重构这个 HarmonyOS app"、"对齐 AI 工程的架构"，只要上下文明显是 HarmonyOS/ArkTS 项目改造，也应触发。
 ---
-# arkts-architecture-refactor
 
-适用边界：仅在当前项目明确采用该企业规范与私仓时使用。随包未包含企业 docx 或私仓凭据；不存在时报告缺少规范，不套用历史客户的授权与决定。通用迁移由 a2h-plan 和原 ArkTS 领域技能实施。
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
+# arkts-architecture-refactor
 
 把已有 HarmonyOS 应用按公司《鸿蒙客户端原生开发规范》整改成 “壳工程 + business features + components” 三段式架构，并接入私仓底层库。
 
@@ -139,7 +141,7 @@ audit 不强制逐条扫语法（依赖 IDE 提示），但 plan/execute 阶段�
 
 ### 权威基线（单点真理）
 
-**用户当前提供的 `develop_rule.docx`**（"鸿蒙客户端原生开发规范"）**是所有规则的最终权威**——规则方向、严格度判定、客户校准都以 docx 为准。
+**[`~/Desktop/HUAWEI/wfhc/features/develop_rule.docx`](~/Desktop/HUAWEI/wfhc/features/develop_rule.docx)**（"鸿蒙客户端原生开发规范"）**是所有规则的最终权威**——规则方向、严格度判定、客户校准都以 docx 为准。
 
 **优先级**：`docx 文字 + 客户校准记录` > `AI/Scan 双 baseline 实证` > `agent 自由判断`。
 
@@ -234,7 +236,7 @@ audit 不强制逐条扫语法（依赖 IDE 提示），但 plan/execute 阶段�
 
 ### 2026-04 客户反馈触发的对称性反思（横向补全）
 
-> **核心权威基线**：所有规则严格度的最终依据是 用户当前提供的 `develop_rule.docx`（"鸿蒙客户端原生开发规范"）。AI/Scan 双 baseline 是规则**容忍度边界**的实证，docx 是**规则方向**的权威。两者冲突时以 docx 为准 + 客户最新校准记录覆盖（见 [customer-checklist.md](./references/customer-checklist.md)）。
+> **核心权威基线**：所有规则严格度的最终依据是 [`~/Desktop/HUAWEI/wfhc/features/develop_rule.docx`](~/Desktop/HUAWEI/wfhc/features/develop_rule.docx)（"鸿蒙客户端原生开发规范"）。AI/Scan 双 baseline 是规则**容忍度边界**的实证，docx 是**规则方向**的权威。两者冲突时以 docx 为准 + 客户最新校准记录覆盖（见 [customer-checklist.md](./references/customer-checklist.md)）。
 
 > 客户反馈的三条问题（VM 错位、资源囤壳、HttpClient 造轮子）共享三个根因模式。skill 已横向补全到全谱（详见 [audit-patterns.md § 对称性原则](./references/audit-patterns.md)）：
 
@@ -542,7 +544,7 @@ Phase 3 execution-log 里所有标了 `BEHAVIOR_RISK` 的步骤（v1→v2 状态
 
 4. **判定**：用以下任一方式判定首屏非空（按可用性降序）：
    - **A. 像素差异法**：截图 vs 启动闪屏图（已知系统 splash）的像素差大于阈值（默认 5%）→ PASSED
-   - **B. 委派 `arkts-visual-verify`** 做与 iOS 端的视觉对比 → 拿到差异分级
+   - **B. 委派 `arkts-visual-verify`** 做与 iOS 源端的视觉对比 → 拿到差异分级
    - **C. UI 树审计**：`hdc shell uitest dumpLayout` 输出非空且根节点 child 数 > 0 → PASSED
 
 5. **失败处理**：
@@ -656,7 +658,7 @@ docs/decisions/
 ## 影响
 - **代码**: 实际改了哪些文件
 - **架构合规性**: 偏离了规范文档哪条规则、规范是否允许豁免
-- **行为对齐**: 与基线（feat 分支 / iOS 端）是否一致
+- **行为对齐**: 与基线（feat 分支 / iOS 源端）是否一致
 - **依赖图**: oh-package.json5 是否变更
 ```
 

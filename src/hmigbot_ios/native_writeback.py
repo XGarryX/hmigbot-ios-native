@@ -8,19 +8,25 @@ from __future__ import annotations
 
 import argparse
 import copy
+from contextlib import contextmanager
+import platform
+import types
 from pathlib import Path
 import re
 import subprocess
 import sys
 
-from .artifact_contract import markdown_sections, markdown_tables
-from .core import MigrationError, io_path, read_json, safe_child
+from .core import MigrationError, digest, io_path, read_json, safe_child
 from .plan_contract import _core_index_tables, structural_digest
+from .registry_contract import ID_PATTERN
 
 UI = 'spec/baseline/ui-manifest.md'
 FEATURE = 'spec/baseline/feature-index.md'
 REGISTRY = 'spec/placeholder-registry.md'
 CLAIMS = 'spec/.a2h/impl-claims.json'
+
+# Garry ios.32 open helpers; changed bytes require explicit reviewed adaptation.
+HELPER_SHA256 = {'registry_table_format': '671593f9f1ce12e703627717b2b4fc08ab4db55e433272de484e71dd1648f7d6', 'feature_status_writeback': '09bb545ebae45e81901b0466edc03167055f534e87076cd913f2e0aabe3538fc'}
 
 
 def _object(value, allowed, label):
@@ -64,6 +70,8 @@ def _index(project, relative):
         rows[identity] = dict(zip(table['headers'], row))
     if not rows:
         raise MigrationError('Empty native core index: ' + relative)
+    if relative == UI and table['authored_headers'][table['headers'].index('状态')] != '状态':
+        raise MigrationError('UI writeback requires authored status header 状态; review the header migration before the original writer')
     if relative == UI and table['authored_headers'][0] != '序号':
         raise MigrationError('UI writeback requires authored header 序号 with stable page_#### values; '
                              'review the upstream header migration and replan before execution. '
@@ -71,31 +79,15 @@ def _index(project, relative):
     return text, rows
 
 
-def _registry(project):
-    raw = _read(project, REGISTRY)
+def _registry(project, *, raw=None, allow_groups=False):
+    raw = _read(project, REGISTRY) if raw is None else raw
     if raw is None:
         raise MigrationError('Registry missing: ' + REGISTRY)
     text = raw.decode('utf-8-sig')
-    headings = markdown_sections(text)
-    tables = []
-    for table in markdown_tables(text):
-        prior = [item for item in headings if item['line'] < table['line']]
-        if prior and prior[-1]['title'] == '注册表' and table['headers'] == [
-                'P-ID', 'location', 'trigger_condition', 'status', 'kind', 'resolve_by']:
-            tables.append(table)
-    if len(tables) != 1:
-        raise MigrationError('Registry requires one complete native 注册表 table')
-    table, rows = tables[0], {}
-    for cells in table['rows']:
-        if (len(cells) != len(table['headers']) or any(not cell for cell in cells)
-                or not re.fullmatch(r'P-[A-Za-z0-9_-]+', cells[0]) or cells[0] in rows):
-            raise MigrationError('Invalid, incomplete or duplicate registry ID')
-        rows[cells[0]] = dict(zip(table['headers'], cells))
-    # Removing just data rows pins the complete surrounding text and headers.
-    lines = text.splitlines()
-    row_lines = set(table['row_lines'])
-    structure = '\n'.join(line for number, line in enumerate(lines, 1) if number not in row_lines)
-    return structure, rows
+    # Both ordinary and explicitly formatted readbacks consume every group.
+    # The legacy keyword remains accepted for existing callers, not for omission.
+    from .registry_contract import parse
+    return parse(text)
 
 
 def _claim_identity(claim):
@@ -122,10 +114,17 @@ def preflight(project, manifest):
     checks, touched = [], set()
     for key, relative, desired_states, valid_states in (
             ('ui_manifest', UI, ('converted', 'verified'), {'pending', 'converted', 'verified'}),
-            ('feature_index', FEATURE, ('implemented',), {'pending', 'implemented', 'verified'})):
+            ('feature_index', FEATURE, ('implemented', 'verified'), {'pending', 'implemented', 'verified'})):
         if key not in manifest:
             continue
         operations = _object(manifest[key], desired_states, key)
+        if key == 'feature_index' and 'verified' in operations:
+            if manifest.get('mode') != 'final':
+                raise MigrationError('feature_index.verified is a final-mode field')
+            _plain_path(project, FEATURE)
+            ident = manifest.get('id')
+            if not isinstance(ident, str) or not ident.strip() or any(c in ident for c in '\r\n\0'):
+                raise MigrationError('Final verified writeback requires a valid string id')
         for state, identities in operations.items():
             _strings(identities, key + '.' + state, r'page_[0-9]{4}' if relative == UI else r'F[0-9]+')
         if not any(operations.values()):
@@ -140,16 +139,27 @@ def preflight(project, manifest):
                 seen.add(identity)
                 if rows[identity]['状态'] not in valid_states:
                     raise MigrationError(key + ': invalid source progress state for ' + identity)
+                if key == 'feature_index' and state == 'verified' and rows[identity]['状态'] not in {'implemented','verified'}:
+                    raise MigrationError('Feature must be implemented before final verification: ' + identity)
                 if rows[identity]['状态'] == 'verified' and state != 'verified':
                     raise MigrationError(key + ': refusing progress downgrade for ' + identity)
                 expected[identity]['状态'] = state
         checks.append(('index', relative, structural_digest(text, artifact=relative), expected))
         touched.add(relative)
     if 'registry' in manifest:
-        operations = _object(manifest['registry'], ('resolve', 'retag'), 'registry')
-        structure, rows = _registry(project)
+        operations = _object(manifest['registry'], ('resolve', 'retag', 'ensure_table_headers'), 'registry')
+        if 'ensure_table_headers' in operations and type(operations['ensure_table_headers']) is not bool:
+            raise MigrationError('registry.ensure_table_headers must be a boolean')
+        formatting = operations.get('ensure_table_headers', False)
+        if formatting:
+            _plain_path(project, REGISTRY)
+            with _helpers() as (formatter, _):
+                formatted, _ = formatter.format_registry(_read(project, REGISTRY))
+            structure, rows = _registry(project, raw=formatted, allow_groups=True)
+        else:
+            structure, rows = _registry(project)
         expected = copy.deepcopy(rows)
-        for identity in _strings(operations.get('resolve', []), 'registry.resolve', r'P-[A-Za-z0-9_-]+'):
+        for identity in _strings(operations.get('resolve', []), 'registry.resolve', ID_PATTERN):
             if identity not in rows:
                 # The original protocol defines this as a replay no-op after a
                 # forward-ref row was deleted. Do not claim a new resolution,
@@ -171,7 +181,7 @@ def preflight(project, manifest):
                 raise MigrationError('Invalid, duplicate or unknown registry retag')
             seen.add((identity, column))
             expected[identity][column] = value
-        checks.append(('registry', REGISTRY, structure, expected))
+        checks.append(('registry_formatted' if formatting else 'registry', REGISTRY, structure, expected))
         touched.add(REGISTRY)
     if 'impl_claims' in manifest:
         operations = _object(manifest['impl_claims'], ('claims', 'executed_packets'), 'impl_claims')
@@ -229,8 +239,8 @@ def postflight(project, checks, before, touched, *, dry=False):
         if kind == 'index':
             text, rows = _index(project, relative)
             valid = structural_digest(text, artifact=relative) == structure and rows == expected
-        elif kind == 'registry':
-            actual_structure, rows = _registry(project)
+        elif kind in {'registry', 'registry_formatted'}:
+            actual_structure, rows = _registry(project, allow_groups=kind == 'registry_formatted')
             valid = actual_structure == structure and rows == expected
         elif kind == 'claims':
             actual = read_json(safe_child(project, relative))
@@ -250,6 +260,91 @@ def _emit(stream, content):
             stream.write(content.decode('utf-8', errors='replace'))
 
 
+def _plain_path(project, relative):
+    path = Path(project) / relative
+    for part in (path, *path.parents):
+        if part.is_symlink() or getattr(part, 'is_junction', lambda: False)():
+            raise MigrationError('Writeback path cannot traverse links: ' + relative)
+    return path
+
+
+@contextmanager
+def _helpers():
+    """Load only the selected, bundled .32 helpers; never import project code."""
+    folder = Path(__file__).resolve().parents[2] / 'vendor/hmigbot/skills/a2h-execute/scripts'
+    saved = {name: sys.modules.get(name) for name in ('registry_table_format','feature_status_writeback')}
+    loaded = []
+    try:
+        for name in saved:
+            path = folder / (name + '.py')
+            module = types.ModuleType(name);module.__file__ = str(path)
+            sys.modules[name] = module
+            raw = path.read_bytes()
+            if digest(raw) != HELPER_SHA256[name]:
+                raise MigrationError('Selected writeback helper changed: ' + name)
+            exec(compile(raw, str(path), 'exec'), module.__dict__)
+            loaded.append(module)
+        yield tuple(loaded)
+    finally:
+        for name, module in saved.items():
+            if module is None:sys.modules.pop(name,None)
+            else:sys.modules[name] = module
+
+
+def _extended(manifest):
+    return ('verified' in manifest.get('feature_index', {})
+            or manifest.get('registry', {}).get('ensure_table_headers') is True)
+
+
+def validate_summary(stdout, manifest, *, dry=False):
+    matches = re.findall(rb'(?m)^(DRY-RUN )?apply_writeback:\s*(\d+) applied / (\d+) no-op / (\d+) warn\s*$', stdout)
+    expected = [True] if dry else [True, False] if 'verified' in manifest.get('feature_index', {}) else [False]
+    if ([bool(row[0]) for row in matches] != expected or any(int(row[3]) for row in matches)):
+        raise MigrationError('Original writeback emitted warnings or no unambiguous expected result sequence')
+
+
+def run_helper(helper, argv, manifest, **kwargs):
+    """Extended fields enter the same vendor chain; legacy uses original engine."""
+    if _extended(manifest):
+        return subprocess.run([sys.executable, '-B', str(helper), *map(str, argv)], **kwargs)
+    from .portable_helper import run
+    return run(helper, argv, **kwargs)
+
+
+def chain_main(helper, argv):
+    """Selected vendor launcher: .32 explicit adapters around one original engine."""
+    if platform.system() != 'Darwin' or platform.machine().lower() not in {'arm64','aarch64'}:
+        print('writeback platform deferred: selected payload is macos-arm64',file=sys.stderr)
+        return 2
+    parser=argparse.ArgumentParser(add_help=False)
+    parser.add_argument('manifest',nargs='?');parser.add_argument('--project-root',default='.')
+    args,_=parser.parse_known_args(argv)
+    if args.manifest:
+        request=read_json(Path(args.manifest))
+        project=Path(args.project_root).resolve(strict=True)
+        preflight(project,request) # Direct vendor calls keep the same local preflight.
+        if 'verified' in request.get('feature_index',{}):_plain_path(project,FEATURE)
+    from .portable_helper import run
+    def original(arguments):
+        result=run(helper,arguments,capture_output=True)
+        _emit(sys.stdout,result.stdout);_emit(sys.stderr,result.stderr)
+        if result.returncode:return result.returncode
+        if '-h' in arguments or '--help' in arguments:return 0
+        # Adapters never promote state after a warning-only native exit 0.
+        validate_summary(result.stdout, {}, dry='--dry-run' in arguments)
+        return 0
+    try:
+        with _helpers() as (formatter, features):
+            def registry_chain(arguments):
+                result=formatter.apply_if_requested(arguments,original)
+                return original(arguments) if result is None else result
+            result=features.apply_if_requested(argv,registry_chain)
+            return registry_chain(argv) if result is None else result
+    except (MigrationError,OSError,UnicodeError,ValueError,TypeError) as exc:
+        print('Explicit writeback chain rejected: '+str(exc),file=sys.stderr)
+        return 2
+
+
 def main(argv=None, *, helper):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('manifest')
@@ -260,18 +355,13 @@ def main(argv=None, *, helper):
         project = io_path(Path(args.project_root)).resolve()
         manifest = read_json(Path(args.manifest))
         checks, before, touched = preflight(project, manifest)
-        from .portable_helper import run
-        result = run(helper, [str(Path(args.manifest).resolve()),
-                     '--project-root', str(project), *(['--dry-run'] if args.dry_run else [])], capture_output=True)
+        result = run_helper(helper, [str(Path(args.manifest).resolve()),
+                     '--project-root', str(project), *(['--dry-run'] if args.dry_run else [])], manifest, capture_output=True)
         _emit(sys.stdout, result.stdout)
         _emit(sys.stderr, result.stderr)
         if result.returncode:
             return result.returncode
-        summaries = re.findall(rb'(?m)^(?:DRY-RUN )?apply_writeback:\s*(\d+) applied / (\d+) no-op / (\d+) warn\s*$',
-                               result.stdout)
-        if len(summaries) != 1 or int(summaries[0][2]):
-            raise MigrationError('Original writeback emitted warnings or no unambiguous result; '
-                                 'inspect preserved helper output, do not count this as complete')
+        validate_summary(result.stdout, manifest, dry=args.dry_run)
         postflight(project, checks, before, touched, dry=args.dry_run)
         return 0
     except (MigrationError, OSError, UnicodeError, ValueError, TypeError) as exc:

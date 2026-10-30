@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-library-migration
-  short_description: 根据 iOS 源依赖的真实调用契约选择鸿蒙替代库、服务或 NAPI 适配；保留版本、许可、初始化、类型/句柄与生命周期约束。
-  default_prompt: 请使用 $arkts-library-migration，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

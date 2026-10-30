@@ -1,9 +1,0 @@
-{
-  "source_capture": "work\\wb-fixes-0.9.1\\evaluation-attempt-01.log",
-  "copy": "attempt-01-failure.txt",
-  "sha256": "5b3563fbb930ba87d7e1996fa03b630cc310a63eb978273dfedeb399ab83f912",
-  "operation": "land-results",
-  "exception": "MigrationError",
-  "actual_error_present": true,
-  "note": "Append-only raw runner evidence for attempt-01; original result.json remains unchanged."
-}

@@ -11,13 +11,22 @@ metadata:
   - source-evidence
 ---
 
-> **调用关系**：本 skill 是 `ios-source-analysis` 组织的四类源分析之一（功能主责），结果由 `a2h-spec` 收口。若宿主支持 subagent，按 `ios-feature-analyzer` 角色名派发（`fork_turns:"none"`，任务书写清功能候选/入口/输出契约）；不派发时主会话顺序执行。遵守 **Join 协议（收口五条款）**：① 循环 wait——完成唯一合法信号是 `agent_status=completed`；② 死句柄与验收——3 次超时后 `list` 核对，completed≠验收；③ 收口锚点——最终报告前收口全部句柄；④ 放行≠遗弃；⑤ fire-and-forget 仅正文显式声明的派发免收口。**谁派谁收**；契约产物必须出自承担任务的子代理。本 skill 只读源、写功能事实，**不派发下级 worker、不写目标代码、不决定未经授权的平台差异**。
+> **调用关系**：本 skill 是 `ios-source-analysis` 组织的四类源分析之一（功能主责），结果由 `a2h-spec` 收口。若宿主支持 subagent，按 `ios-feature-analyzer` 角色名派发（`fork_turns:"none"`，任务书写清功能候选/入口/输出契约）；不派发时主会话顺序执行。遵守 **Join 协议（收口五条款）**：① 循环 wait——完成依据按 [a2h-join](../a2h-join/SKILL.md)：本轮可信宿主 `completed` 或经过身份与时序核验的原生 `FINAL_ANSWER`，并继续验收产物；② 死句柄与验收——3 次超时后 `list` 核对，completed≠验收；③ 收口锚点——最终报告前收口全部句柄；④ 放行≠遗弃；⑤ fire-and-forget 仅正文显式声明的派发免收口。**谁派谁收**；契约产物必须出自承担任务的子代理。本 skill 只读源、写功能事实，**不派发下级 worker、不写目标代码、不决定未经授权的平台差异**。
 >
 > 路径约定：`$IOS_SRC` 从 `<target>/.migbot/config.json` 的 `ios` 读取；`<target>` = 目标根；`<runtime>` = 本包 runtime（`scripts/a2h_ios.py` 所在根）。产物落 `<target>/spec/ref/ios-feature-facts.md`（本 skill 单写）；原生语义由 a2h-spec 的 `spec-authoring` 落为 `spec/baseline/ios-semantics.json` feature 部分（机器校验）。本 skill 自有：`references/analysis-v2.md`、`scripts/run.py`。
 
 # ios-feature-analyzer — iOS 功能行为与验收事实
 
 适用的 Apple 官方技能与 Xcode MCP 优先。先读取 `spec/ref/ios-expertise-plan.json` 与 `ios-official-analysis.json` 中为本类选择的资源，按原始摘要完成审阅；官方资料、只读 MCP、CLI 和编译器分别记录来源、用途、读写范围及实际结果。无官方证据时记录降级原因，保持相关 unknown；不把第三方资料或自编规程称为 Apple 官方。设备远程控制不在默认调用范围，界面授权由用户自行完成。
+
+
+### 官方分析的执行责任（0.13.1）
+
+当 `ios-expertise-plan.json` 为当前主题选择 Apple 资源时，对应主题的分析过程由导出 skill 的适用规程承担：逐项执行其相关参考的审阅步骤，沿真实源码记录观察、未决项和影响；本技能保留迁移输出字段、归属和门禁合同。不得仅确认已读资料后继续用自编经验替代官方审阅。SwiftUI 使用 swiftui-specialist 的相关结构、状态、身份、环境或文本章节；App Intents 使用 app-intents-specialist 的执行模型、实体/参数、结果及快捷短语章节；文档型 SwiftUI 与 C bounds 仅在实际源输入适用时执行对应导出 skill。没有覆盖该主题的官方 skill 时明确保留自编/第三方分析，不伪称官方执行。
+
+每条 Apple 源观察用 `expertise-review` 写入 `official_basis` 数组，字段为固定资源的 `path`、`sha256`、实际适用的 `section` 与具体 `application`。同时保留 `source`、`interpretation`、`unknowns`。只有资源确认、没有资源规则如何应用到源码的记录将被拒绝；此合同核验不替代对模型判断的独立复核。官方语义规程不能批准产品取舍或目标平台替代。
+
+Swift 文件的词法/声明结构优先消费当前 facts 中固定的 SwiftParser/SwiftSyntax 产物，不能为了旧 Python 闭合语法可接受而改写源文件。编译上下文由实际 Xcode CLI 产物或经过校验的同源回放承担；MCP 不可用保留原错误和未决项。远程控制、界面读取及权限修改不在此分析范围。
 
 ## 0. 定位与纪律
 

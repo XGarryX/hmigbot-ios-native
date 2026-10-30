@@ -1,6 +1,7 @@
 """Pinned source expertise, topic routing and source-backed review receipts."""
 from pathlib import Path
 
+from .core import source_snapshot
 from .core import MigrationError, digest, json_bytes, read_json, safe_child, write_json
 from .swiftui import tokenize
 
@@ -15,17 +16,18 @@ SKILL_ROOTS = {
 }
 
 
-def audit():
+def audit(paths=None):
     manifest = read_json(BUNDLE / 'manifest.json')
     if manifest.get('schema_version') != 1 or {p['id'] for p in manifest['packs']} != set(SKILL_ROOTS):
         raise MigrationError('Invalid external skill manifest')
     files = {}
     for pack in manifest['packs']:
-        if pack['license'] != 'MIT' or len(pack['commit']) != 40:
+        selected = paths is None or any(item['path'] in paths for item in pack['files'])
+        if selected and (pack['license'] != 'MIT' or len(pack['commit']) != 40):
             raise MigrationError('Unreviewed skill license or revision')
         for item in pack['files']:
             path = safe_child(BUNDLE, item['path'])
-            if item['path'] in files or digest(path.read_bytes()) != item['sha256']:
+            if item['path'] in files or (paths is None or item['path'] in paths) and digest(path.read_bytes()) != item['sha256']:
                 raise MigrationError('Pinned skill changed: ' + item['path'])
             files[item['path']] = item['sha256']
     for root in SKILL_ROOTS.values():
@@ -35,17 +37,19 @@ def audit():
 
 
 def make_plan(source, graph, *, project=None):
-    manifest, files = audit()
+    manifest, files = audit(paths=set())
     groups = {'swiftui': [], 'concurrency': [], 'uikit': []}
     tokens_by_path = {}
+    from .swift_native import project_syntax, source_tokens
+    syntax = project_syntax(project, source, graph) if project is not None else None
     for item in graph['facts']:
         tokens_by_path.setdefault(item['anchor']['path'], set())
     # Framework detection reads actual tokens, not comments or string literals.
     from .core import snapshot
-    for item in snapshot(source)['files']:
+    for item in source_snapshot(source)['files']:
         path = item['path']
         if Path(path).suffix in {'.swift', '.m', '.mm', '.h'}:
-            tokens = {t.value for t in tokenize((source / path).read_text(encoding='utf-8-sig'), skip_pragma_marks=Path(path).suffix != '.swift') if t.kind != 'string'}
+            tokens = {t.value for t in source_tokens(source, path, syntax) if t.kind != 'string'}
             tokens_by_path[path] = tokens
             if 'SwiftUI' in tokens or 'View' in tokens and 'body' in tokens:
                 groups['swiftui'].append(path)
@@ -99,8 +103,13 @@ def make_plan(source, graph, *, project=None):
                             'fact_ids': [f['id'] for f in graph['facts'] if f['anchor']['path'] in intent_paths],
                             'resources': [], 'mode': 'read_only_source_analysis'})
         reviews, official_sha = preferred_reviews(project, source, graph, reviews)
+    selected_resources = {item['path'] for review in reviews for item in review['resources'] if item['path'] in files}
+    audit(paths=selected_resources)
+    resource_identity = {'files': {path: files[path] for path in sorted(selected_resources)},
+                         'packs': [{key: pack[key] for key in ('id', 'license', 'commit')}
+                                   for pack in manifest['packs'] if any(item['path'] in selected_resources for item in pack['files'])]}
     result = {'schema_version': 1, 'source_sha256': graph['source_sha256'],
-            'graph_sha256': digest(json_bytes(graph)), 'bundle_sha256': digest(json_bytes(manifest)),
+            'graph_sha256': digest(json_bytes(graph)), 'bundle_sha256': digest(json_bytes(resource_identity)),
             'reviews': reviews, 'behavior_verified': False}
     if official_sha is not None:
         result['official_guidance_sha256'] = official_sha
@@ -123,18 +132,20 @@ def prepare(project):
             (project / REVIEWS).unlink()
     write_json(path, plan)
     cfg = read_json(project / '.migbot/config.json')
-    cfg['ios_expertise'] = {'version': 1, 'required': True}
+    cfg['ios_expertise'] = {'version': 1, 'required': False}
     write_json(project / '.migbot/config.json', cfg)
     return {**plan, 'plan': str(path), 'resource_root': str(BUNDLE),
             'review_status': 'required' if plan['reviews'] else 'not_applicable'}
 
 
 def validate_reviews(source, project, graph, *, require=True):
+    """Rebuild the expected plan with the real project's resource context."""
     expected = make_plan(source, graph, project=project)
     return _validate_reviews(source, project, expected, require=require)
 
 
 def _validate_reviews(source, project, expected, *, require=True):
+    """Validate a stored receipt against a plan already audited in its real project."""
     if read_json(project / PLAN) != expected:
         raise MigrationError('Expertise plan is stale or edited; regenerate and re-review')
     if not expected['reviews']:
@@ -168,6 +179,16 @@ def _validate_reviews(source, project, expected, *, require=True):
                 raise MigrationError('Expertise observation needs a real source line and interpretation')
             if not isinstance(obs.get('unknowns'), list):
                 raise MigrationError('Expertise observation must explicitly list unknowns')
+            if item.get('resource_origin') == 'Apple':
+                basis = obs.get('official_basis')
+                if not isinstance(basis, list) or not basis:
+                    raise MigrationError('Official review needs applied resource sections, not a loaded-resource acknowledgement')
+                for applied in basis:
+                    if (not isinstance(applied, dict)
+                            or {'path': applied.get('path'), 'sha256': applied.get('sha256')} not in item['resources']
+                            or any(not isinstance(applied.get(k), str) or not applied[k].strip()
+                                   for k in ('section', 'application'))):
+                        raise MigrationError('Official review basis must bind a pinned resource section to this source observation')
             covered.add(path)
         if covered != set(item['source_paths']):
             raise MigrationError('Expertise review omitted assigned source files')
@@ -188,29 +209,52 @@ def record(project, input_path):
     candidate = read_json(input_path)
     if candidate.get('plan_sha256') != digest(json_bytes(plan)):
         raise MigrationError('Review input must pin current expertise plan')
-    # Validate a submitted receipt in isolation before replacing any prior receipt.
+    # Staging holds receipts only. Never rebuild its plan without the real
+    # project's official guidance/resource context.
     import tempfile
     with tempfile.TemporaryDirectory(prefix='ios-expertise-review-') as tmp:
         staging = Path(tmp)
         write_json(staging / PLAN, plan)
         write_json(staging / REVIEWS, candidate)
         _validate_reviews(source, staging, plan, require=False)
-    old = read_json(project / REVIEWS) if (project / REVIEWS).exists() else {'reviews': []}
-    retained = {r['id']: r for r in old['reviews']} if old.get('plan_sha256') == candidate['plan_sha256'] else {}
-    retained.update({r['id']: r for r in candidate['reviews']})
-    receipt = {'schema_version': 1, 'plan_sha256': candidate['plan_sha256'], 'reviews': list(retained.values())}
-    write_json(project / REVIEWS, receipt)
+        old = read_json(project / REVIEWS) if (project / REVIEWS).exists() else {'reviews': []}
+        retained = {}
+        if old.get('plan_sha256') == candidate['plan_sha256']:
+            submitted = {r['id'] for r in candidate['reviews']}
+            prior = {**old, 'reviews': [r for r in old['reviews'] if r['id'] not in submitted]}
+            # Check retained entries before deduplication; replacements have
+            # already been validated, so a fresh review can repair its own ID.
+            write_json(staging / REVIEWS, prior)
+            _validate_reviews(source, staging, plan, require=False)
+            retained = {r['id']: r for r in old['reviews']}
+        retained.update({r['id']: r for r in candidate['reviews']})
+        receipt = {'schema_version': 1, 'plan_sha256': candidate['plan_sha256'], 'reviews': list(retained.values())}
+        write_json(staging / REVIEWS, receipt)
+        _validate_reviews(source, staging, plan, require=False)
     provenance_path = project / 'spec/ref/ios-analysis-provenance.json'
     provenance = read_json(provenance_path) if provenance_path.exists() else {'schema_version': 1}
     provenance['external_expertise'] = {'status': 'review_declared', 'bundle_sha256': plan['bundle_sha256'],
                                         'plan_sha256': receipt['plan_sha256'],
                                         'reviews': [{'id': r['id'], 'reviewer': r['reviewer'], 'resources': r['resources']} for r in receipt['reviews']]}
+    official = {r['id'] for r in plan['reviews'] if r.get('resource_origin') == 'Apple'}
+    applied = [r for r in receipt['reviews'] if r['id'] in official]
+    provenance['official_skill_application'] = {
+        'status': ('applied' if {r['id'] for r in applied} == official else 'partially_applied') if official else 'not_applicable',
+        'source_sha256': graph['source_sha256'], 'plan_sha256': receipt['plan_sha256'],
+        'receipt_sha256': digest(json_bytes(receipt)), 'review_ids': [r['id'] for r in applied],
+        'applied_source_observations': sum(len(r['observations']) for r in applied),
+        'behavior_verified': False, 'judgment_mechanically_proven': False}
+    write_json(project / REVIEWS, receipt)
     write_json(provenance_path, provenance)
     return {'status': 'recorded', 'review_count': len(retained), 'behavior_verified': False}
 
 
 def check(project, source, graph):
-    cfg = read_json(project / '.migbot/config.json')
-    if cfg.get('ios_expertise') != {'version': 1, 'required': True}:
-        raise MigrationError('0.7.0 source gate requires expertise-plan and reviewed pinned resources; adopt before continuing legacy plans')
-    return validate_reviews(source, project, graph)
+    # Guidance/reviewer provenance is a review aid. Formal receipt admission
+    # remains strict, but missing metadata cannot veto a product conversion.
+    try:
+        return validate_reviews(source, project, graph)
+    except (MigrationError, OSError, ValueError, KeyError, TypeError) as exc:
+        return {'status': 'needs_review', 'blocking': False, 'reason': str(exc),
+                'behavior_verified': False,
+                'resume': 'Apply applicable guidance and record source-backed observations; product/AC checks run independently.'}

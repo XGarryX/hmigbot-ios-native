@@ -55,7 +55,7 @@ if (store.version < 2) {                                    // v1 → v2：加�
   store.version = 2
 }
 ```
-> 目标数据库迁移必须对应真实源 schema 和升级契约。漏写迁移 = 老用户升级后查询崩溃，务必每次改表都升 version + 写迁移分支。
+> 这是 Room `Migration` 的等价物。漏写迁移 = 老用户升级后查询崩溃，务必每次改表都升 version + 写迁移分支。
 
 ## 5. 加密（敏感库）
 

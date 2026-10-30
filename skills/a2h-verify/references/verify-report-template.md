@@ -1,54 +1,127 @@
 # 验证报告模板
 
-输出到 `spec/verify-report.md`。更新当前报告正文，状态与数字取自本次实际验证结果；不适用的明细可省略。四项总表始终保留，未选设备项填写 SKIP（用户未选择），证据填“—”，不读取旧结果充数。结束前按 [a2h-verify 阶段证据](../SKILL.md#阶段证据) 实际执行 summary、派生报告生成与 `--check`；本模板是验证范围叙述，不是 `spec/migration-report.md` 的手工写者。
+> 存储路径：`spec/verify-report.md`。由 SKILL.md §3e 调用本模板生成。
 
----
+```markdown
+# 验证报告
 
-# 迁移验证报告
+- 验证时间: YYYY-MM-DD HH:mm
+- 迁移报告: spec/migration-report.md
 
-- 工程：<工程路径>
-- 验证范围：<模块、页面、功能及排除范围>
-- 执行项：<CHECK-1/2 + 用户选择的设备项；都不选时注明仅基础检查>
-- 未选项：<CHECK-3/4 中用户未选的项目；全选时写“无”>
-- 代码与实测依据：<工作树状态/相关改动、verifier 轮次与测试包标识>
-- 本次范围结论：<PASS / FAIL / PARTIAL；有建议项时注明；仅针对执行项>
+## 验证结果总览
 
-## 同轮派生证据
+| 检查项 | 编号 | 状态 | 详情 |
+|--------|------|------|------|
+| 全量编译 | CHECK-1 | PASS/FAIL | 编译轮数: X, 剩余错误: Y |
+| 静态分析 | CHECK-2 | PASS/FAIL | ERROR: X, WARN: Y |
+| 占位符扫描 | CHECK-3 | PASS/FAIL | pending: X, 可回填未回填: Y, 未注册: Z |
+| App 身份校验 | CHECK-4 | PASS/FAIL | bundleName: X, vendor: X, version: X |
+| 页面状态审计 | CHECK-5 | PASS/FAIL | P0 converted+产物存在: X/Y, P1: Z/W |
+| 路由跳转验证 | CHECK-6 | PASS/FAIL/DEFERRED | verified: X, reopened: Y, wontfix: Z, 必崩(pushed_but_unregistered): N |
+| 视觉对齐 | CHECK-7 | PASS/FAIL-visual/FAIL-functional/DEFERRED | ALIGN: X, URL: Y, CRASH: Z（URL/CRASH>0 = FAIL-functional 阻塞门控）|
 
-| 产物/检查 | 实际路径与结果 |
-|---|---|
-| spec-summary JSON | <本轮 spec/reports/spec-summary.json 路径与摘要> |
-| migration-report Markdown | <工具生成的 spec/migration-report.md 路径> |
-| 一致性检查 | <实际 migration-report --check 命令、构建证据参数及退出码> |
-| 结构证据 | <独立 loops JSON/brief 或未执行与原因> |
+## 门控判定
 
-逐页关联、生成/编译/行为/视觉轴从同轮 summary 读取并链接，不手工重写派生报告。工具尚无可校验的逐页视觉协议时，该轴保留 not_run；本轮真实视觉结果在下面 CHECK-3 引用。全工程构建覆盖声明页面文件不等于页面可达，host 逻辑行为不等于设备 UI。旧报告、孤立回执或全局 PASS 均不能补齐未测页面。
+- V1 门控: PASS/FAIL
+- 终态编译复检: PASS/FAIL（CHECK-6 修复后的重测结果，门控以此为准）
+- 失败项: [列表]
+- P0 页面全部 converted+产物存在: YES/NO
+- CHECK-7 功能性失败（CRASH/URL）: N 项（门控要求 = 0；ALIGN 纯视觉差异不计入）
+- DEFERRED 项: N 项 [CHECK-X(原因), ...]
+  - ⚠️ N > 0 时必须保留本行并显著标注："本次门控通过是在 N 项 DEFERRED 下达成，对应能力（路由对账 / 视觉 / UT / UI）未实测，非强通过"
+- 回环修复时序标注: 第 N 轮回环修复发生在视觉实测之后 → 必须标注"视觉结论未覆盖该轮改动"（无回环或回环先于实测时写"无"）
+- §6.1 verified 回写: 已回写 N 页 / 遗留未回写 M 页 [列表] / CHECK-7 DEFERRED 未回写（三选一如实填写）
 
-## 四项结果
+## 详细结果
 
-| 编号 | 检查项 | 状态 | 结果摘要 | 证据 |
-|---|---|---|---|---|
-| CHECK-1 | 静态分析 | <状态> | <ERROR/WARN 数量> | <文件位置与复核依据> |
-| CHECK-2 | App 身份校验 | <状态> | <FAIL/WARN 与缺失输入> | <配置/资源路径> |
-| CHECK-3 | 视觉对齐 | <状态> | <功能性问题与纯视觉差异分别统计> | <report 与当前轮问题文件> |
-| CHECK-4 | 单元测试 | <状态> | <原始退出状态、实测结果与未验证点> | <ut-report 与当前轮摘要> |
+### CHECK-1: 全量编译
+- 状态: PASS/FAIL（取终态编译复检结果）
+- 首轮编译: PASS/FAIL，修复轮数: X
+- 终态编译复检（CHECK-6 修复后）: PASS/FAIL
+- 剩余错误: (如果 FAIL，列出错误)
+- 编译短路触发: YES/NO（YES 时设备段 CHECK-7 标 DEFERRED（编译未过））
 
-## 失败与建议项
+### CHECK-2: 静态分析
+| 文件 | 行号 | 检查项 | 级别 |
+|------|------|--------|------|
+| ... | ... | ... | ... |
 
-| 来源 | 级别/失败分类 | 问题 | 位置与证据 | 处理结果 |
-|---|---|---|---|---|
-| <CHECK> | <ERROR / WARN / verifier 原始分类> | <实际问题> | <路径/用例 ID> | <仍失败 / 已复测通过 / 建议项> |
+### CHECK-3: 占位符扫描（摘要视图，完整数据见 spec/placeholder-registry.md）
+| ID | 文件 | 类型 | 目标 | 状态 | 备注 |
+|----|------|------|------|------|------|
+| PH-001 | ... | navigation | ... | pending/resolved/deferred | ... |
 
-## 未验证范围
+### CHECK-4: App 身份校验
+| 检查项 | 状态 | 值 | 说明 |
+|--------|------|-----|------|
+| bundleName | PASS/FAIL | com.xxx.yyy | ... |
+| vendor | PASS/FAIL | xxx | ... |
+| versionName | PASS/WARN | x.y.z | ... |
+| app_name | PASS/FAIL | ... | ... |
+| 图标文件 | PASS/WARN | foreground: XKB, background: YKB | ... |
+| 自适应图标 | PASS/FAIL | layered_image.json | ... |
 
-此处记录已选范围内的未完成验证。用户未选项已在总表标 SKIP，不因此判 PARTIAL；已选但前置缺失的项仍为 DEFERRED，影响本次范围结论。
+### CHECK-5: 页面状态审计
 
-| 来源 | 未验证范围 | 原因 | 恢复或复检条件 |
+> 判定口径：P0 100% converted/verified 且目标 .ets 存在（verified 由 §6.1 门控后回写，不是本 CHECK 的前置要求）
+
+| 优先级 | 总数 | verified | converted | pending | skipped | converted+verified 率 |
+|--------|------|----------|-----------|---------|---------|--------|
+| P0 | X | Y | Z | W | - | (Y+Z)/X% |
+| P1 | ... | ... | ... | ... | ... | ... |
+| P2 | ... | ... | ... | ... | ... | ... |
+
+- 状态与产物不符（status=converted/verified 但 .ets 缺失）: [列表，>0 即 FAIL]
+
+### CHECK-6: 路由跳转验证（arkts-router-verify，纯静态 + 内置修复闭环）
+
+- 状态: PASS/FAIL/DEFERRED（DEFERRED 仅"拿不到 iOS 源码仓 / skill 未安装"，与设备无关）
+- 来源: `spec/verify/route/ROUTE_VERIFY_SUMMARY.md` + `spec/verify/route/fix_plan.json`
+- pushed_but_unregistered（push 了没注册 = 运行时必崩 P0）: N（PASS 要求 = 0）
+
+| 维度 | 修复项 | verified | reopened | wontfix |
+|------|--------|----------|----------|---------|
+| A1-REG 注册缺失 | X | ... | ... | ... |
+| A1 页面不存在 | X | ... | ... | ... |
+| A2 弹窗不存在 | X | ... | ... | ... |
+| B 触发控件缺失 | X | ... | ... | ... |
+| C 触发存在未绑定 | X | ... | ... | ... |
+
+- 遗留项（wontfix，附 verdict_basis）: [列表]
+- 未闭环项（reopened，断在哪）: [列表]
+
+### CHECK-7: 视觉对齐（arkts-visual-verify）
+
+- 状态: PASS / FAIL-visual / FAIL-functional / DEFERRED
+- 来源: `spec/visual-verify/report.md`（cache_stats + 各页 pass/fail）
+- 截图缓存命中率: X%
+- 功能性失败（**阻塞门控、进 §5 回环**）: CRASH: X 个, URL_MISMATCH: Y 个
+- 纯视觉差异（不阻塞门控）: ALIGN: Z 个（涉及 N 页）
+
+| 页面 | 结果 | ALIGN | URL | CRASH | 差异摘要 |
+|------|------|-------|-----|-------|---------|
+| page_0001 | pass | 0 | 0 | 0 | |
+| page_0003 | fail-visual | 3 | 0 | 0 | 标题栏配色/间距偏差 |
+| page_0015 | fail-functional | - | 0 | 1 | 打开即崩（见 CRASH_P0015_*.md）|
+
+> visual-verify 是"100% 对齐 + 一差异一文件"模型，**没有对齐度打分/阈值机制**，本表按差异文件计数呈现。
+> 差异 markdown：`spec/fix/round-{N}/ui/{ALIGN|URL|CRASH}_*.md`（N 取 `spec/fix/_state.yaml.current_round`；`spec/fix/` 由 visual-verify 独占）。CRASH/URL 由 §5 回环修复；ALIGN 由用户或后续 a2h-fixer 离线消化。
+
+
+- 状态: PASS/FAIL/DEFERRED
+- 内部 fix-loop 轮数: N（停止原因: 全 GREEN / CONVERGED / MAX_ROUNDS / NO_PROGRESS / 编译失败）
+
+| 维度 | round-0 | round-{final} | 增量 |
 |---|---|---|---|
-| <CHECK> | <页面/功能/改动> | <输入缺失、未执行、缺证据或结果已过期> | <具体条件> |
+| ut PASS | x / total | x / total | +N pp |
 
-UT 引用原报告的统计口径，区分已执行通过率与计划范围完成情况，不把未执行项计为通过。
 
-## 修复与复检结果
 
-<如有修复，说明实际修复范围、外层轮数、已完成复检和未覆盖当前改动的结论；无修复时省略本节。>
+- 状态: PASS/FAIL/DEFERRED
+- 内部 fix-loop 轮数: N（停止原因: 全 GREEN / CONVERGED / MAX_ROUNDS / NO_PROGRESS / 编译失败）
+
+| 维度 | round-0 | round-{final} | 增量 |
+|---|---|---|---|
+| ui PASS | x / total | x / total | +N pp |
+
+```

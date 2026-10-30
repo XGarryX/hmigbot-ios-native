@@ -1,3 +1,5 @@
+> **当前发行边界：旧设备/视觉后端延期，官方应用测试单独取证。** `arkts-scenario-runner`、`arkts-visual-verify`、`arkts-ui-verifier`、`ios-screenshot-analyzer`（及历史 Android 截图别名）和 `scenario-builder` / `visual-fixer` / `visual-fixer-reviewer` 尚未恢复交付，不调用或要求补装这些旧后端，也不因其缺件阻断基本转换/构建/报告。指定应用/模拟器的官方截图、控件查询和固定回放按执行交界合同及实际适配入口运行，不因旧后端延期或缺少桌面屏幕权限一概记 not_run。许可、宿主可用、已实现、实际执行与验收结果分开；缺真实后端/输入仅限制对应检查。外部原始证据核对版本、配置、范围和来源，未执行不记 PASS，真实产品失败保留。下文旧调用/目录仅为兼容映射。
+
 # iOS 迁移的目标技能绑定
 
 按 spec 行为与接口绑定；关键词只作候选，不代表 SDK 可用或行为等价。每项读取完整技能和适用参考。
@@ -30,7 +32,8 @@
 | 图片尺寸 | arkts-icon-sizing |
 | 结构/编译 | arkts-structural-closure, hmos-fix-build-errors |
 | UI/功能覆盖 | arkts-ui-coverage-auditor, arkts-feature-coverage-auditor |
-| 逻辑/交互/视觉 | arkts-ut-verifier, arkts-ui-verifier, arkts-visual-verify |
+| 逻辑 | arkts-ut-verifier（仅按本次明确选择与实际能力） |
+| 交互/视觉（延期） | arkts-ui-verifier / arkts-visual-verify 仅未来标记；当前不强绑、不派发，deferred/not_run，可消费开发者外部证据 |
 
 未有目标方案的接缝进入 decision/placeholder，不能因出现厂商名字视为适配完成。
 

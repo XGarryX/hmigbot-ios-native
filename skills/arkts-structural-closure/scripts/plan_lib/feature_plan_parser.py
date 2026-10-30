@@ -6,7 +6,7 @@ plans/slices/slice-NN-<fid>.md; each slice file holds the same `## Slice N:`
 header + blocks parsed below. Slice files are read-only scheduling ledgers —
 no checkbox / evidence fields (integration_points entries are plain
 structured pairs); anchors live in the feature spec, the slice file only
-carries `source_anchors_ref: {count, source}`.
+carries `android_source_anchors_ref: {count, source}`.
 
 Old monolith plans (slice sections without `detail:` pointers) are rejected
 with an upgrade hint — regenerate via a2h-plan; execution state lives in
@@ -22,7 +22,7 @@ Each Slice block:
     complexity: complex
     depends_on: [Slice 3]
 
-    source_anchors:
+    android_source_anchors:
       - role: util
         path: "..."
 
@@ -100,7 +100,7 @@ class SliceSpec:
     parallel_group: Optional[int] = None
     complexity: Optional[str] = None
     depends_on: list[str] = field(default_factory=list)
-    source_anchors: list[dict] = field(default_factory=list)
+    android_source_anchors: list[dict] = field(default_factory=list)
     placeholders_planned: list[dict] = field(default_factory=list)
     integration_points: list[IntegrationPoint] = field(default_factory=list)
     wires: list[WireEntry] = field(default_factory=list)
@@ -226,7 +226,7 @@ def _parse_slice(slice_text: str, header: dict) -> SliceSpec:
     if m := re.search(r"^detail\s*[:：]\s*(\S+)", slice_text, re.MULTILINE):
         spec.detail = m.group(1).strip()
     if m := re.search(
-        r"^source_anchors_ref\s*[:：]\s*\{(?P<body>[^}]*)\}",
+        r"^(?:source_anchors_ref|android_source_anchors_ref)\s*[:：]\s*\{(?P<body>[^}]*)\}",
         slice_text, re.MULTILINE,
     ):
         ref: dict = {}
@@ -236,7 +236,7 @@ def _parse_slice(slice_text: str, header: dict) -> SliceSpec:
                 ref[k.strip()] = v.strip().strip('"')
         spec.anchors_ref = ref
 
-    spec.source_anchors = _parse_anchors(slice_text)
+    spec.android_source_anchors = _parse_anchors(slice_text)
     spec.placeholders_planned = _parse_placeholders_planned(slice_text)
     spec.integration_points = _parse_integration_points(slice_text)
     spec.wires, _embed_wires = _parse_wires(slice_text)
@@ -249,7 +249,7 @@ def _parse_slice(slice_text: str, header: dict) -> SliceSpec:
 
 
 def _parse_anchors(slice_text: str) -> list[dict]:
-    block = _yaml_block(slice_text, "source_anchors")
+    block = _yaml_block(slice_text, "source_anchors") or _yaml_block(slice_text, "android_source_anchors")
     if not block:
         return []
     anchors: list[dict] = []

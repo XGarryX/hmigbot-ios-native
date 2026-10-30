@@ -262,11 +262,6 @@
       "description": "对照 iOS 源导航与页面 spec 静态核验鸿蒙入口、目的页、触发控件、参数和返回/模态状态；复用目标导航技能，运行可达性由真实场景验证。"
     },
     {
-      "name": "arkts-scenario-runner",
-      "path": "arkts-scenario-runner/SKILL.md",
-      "description": "组织 iOS 与鸿蒙应用的真实到态和操作场景；根据实际可用设备工具执行步骤并保存证据，不把脚本配置或源码推断当成已完成的点击。"
-    },
-    {
       "name": "arkts-spec-evolver",
       "path": "arkts-spec-evolver/SKILL.md",
       "description": "增量 Spec 演进管理（V2 优先，API 12+）。当用户需要补全功能、修复 Bug、性能优化、审计 spec 与代码差距、或任何 \"spec 先行\" 的变更时触发，审计/回归扫描兼容 V2/V1 两套装饰器。即使用户只说\"这个功能缺失\"\"这个有 bug\"\"检查下还缺什么\"也应触发。不适用于 baseline 初始生成（由 a2h-spec 负责）。"
@@ -307,24 +302,14 @@
       "description": "核对 iOS 入口、页面、状态、事件与原生语义是否进入 HMigBot UI spec，以及每个页面是否有目标计划归属；与真实设备视觉验证分开。"
     },
     {
-      "name": "arkts-ui-verifier",
-      "path": "arkts-ui-verifier/SKILL.md",
-      "description": "以 iOS 源码为主要行为依据、UI Spec 为参考，为鸿蒙可见页面设计、生成并执行 ArkXTest UiTest， 以黑盒方式验证页面是否能沿真实用户路径到达，以及页面功能是否产生可观察的 UI 结果。 适用于“从 spec 生成 UI 测试”“验证页面功能/导航”“统计 UI 验收通过率”“运行 UI RED/GREEN 验证”。 不验证 Repository、Service 等纯逻辑单元行为；这类需求使用 arkts-ut-verifier。"
-    },
-    {
       "name": "arkts-ut-verifier",
       "path": "arkts-ut-verifier/SKILL.md",
-      "description": "ArkTS/HarmonyOS **单元测试（逻辑层）**验证工具。按 Spec 限定范围，以 iOS 源码行为为依据， 三步流水线（测试设计 → 测试生成 → 执行）自动产出 arkxtest（`@ohos/hypium`）单元测试， 在真机/模拟器上验证，修复生产实现并按需更新、新增强断言测试。 **使用场景**： - \"验证逻辑层实现率\"、\"从 spec 生成单元测试\"、\"单元测试 TDD 验证\" - \"测量逻辑层覆盖/通过率\"、\"哪些业务逻辑没实现\" - \"逻辑层 RED/GREEN 报告\"、\"单元实现率报告\" **不验证 UI 渲染与交互**（页面 / 控件 / 导航效果）—— UI 层验证用 `arkts-ui-verifier`；修复逻辑功能包含其必要生产接线。"
+      "description": "ArkTS/HarmonyOS **单元测试（逻辑层）**验证工具。按 Spec 限定范围，以 iOS 源码行为为依据， 三步流水线（测试设计 → 测试生成 → 执行）自动产出 arkxtest（`@ohos/hypium`）单元测试， 在真机/模拟器上验证，修复生产实现并按需更新、新增强断言测试。 **使用场景**： - \"验证逻辑层实现率\"、\"从 spec 生成单元测试\"、\"单元测试 TDD 验证\" - \"测量逻辑层覆盖/通过率\"、\"哪些业务逻辑没实现\" - \"逻辑层 RED/GREEN 报告\"、\"单元实现率报告\" **不验证 UI 渲染与交互**（页面 / 控件 / 导航效果）—— 应用 UI 验证按已选定的官方应用测试与双端证据规程执行；修复逻辑功能包含其必要生产接线。"
     },
     {
       "name": "arkts-video-playback",
       "path": "arkts-video-playback/SKILL.md",
       "description": "生成 ArkTS/HarmonyOS 视频播放代码（AVPlayer 视频路径 + XComponent Surface 集成）。当用户需要实现 AVPlayer 视频播放、XComponent Surface 集成、横屏全屏播放器、视频 letterbox（保留原始宽高比）、控件 3.5s 自动隐藏、点击唤出控件、播放器返回挽留 Dialog、视频画中画 PiP 时触发。**前置依赖**：AVPlayer 状态机基础、音频播放、fd:// 协议、后台播放在 arkts-media-playback。"
-    },
-    {
-      "name": "arkts-visual-verify",
-      "path": "arkts-visual-verify/SKILL.md",
-      "description": "按 iOS 原生页面和状态对比真实 iOS 与鸿蒙截图、交互结果；复用 HMigBot fix 轮次和目标修复角色，未采集或未执行时保留缺口。"
     },
     {
       "name": "arkts-webview",
@@ -481,5 +466,6 @@
       "path": "tdd-enforcer/SKILL.md",
       "description": "TDD 执行约束 skill，在 migbot-increment-applying 阶段对每个 task 强制执行 RED-GREEN-REFACTOR 循环。 覆盖：新增功能、功能变更、缺陷修复、优化或重构。 当执行代码生成任务时触发，确保先写测试、再写实现。"
     }
-  ]
+  ],
+  "release_profile": "macos-arm64"
 }

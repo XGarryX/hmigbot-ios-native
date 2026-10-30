@@ -32,6 +32,7 @@
 - `references/ui-test-antipatterns.md` — False-GREEN 反模式必读
 - `spec/baseline/ui/page_*.md`
 
+**数据源原则**：只信任 spec（`spec/baseline/ui/page_*.md` + `spec/baseline/features/F*.md`）+ manifest。**不读 `.ets` 源码，不读 iOS `view.xml`/`meta.json` snapshot**。spec 已视为准确，测试全部基于 spec 派生。
 
 **Selector 严格优先级**：
 1. `ON.id(...)` — 来自 manifest（默认首选）

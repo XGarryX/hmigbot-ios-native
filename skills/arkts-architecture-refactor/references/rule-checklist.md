@@ -23,7 +23,7 @@
 |---|---|---|---|
 | R0.1 ArkTS 官方文档遵循 | — | **MUST**（新增） | 见客户清单"〇、ArkTS 语法基线"|
 | R4.1 webp/svg | MAY | **MUST** | 静态图必须 webp/svg |
-| R4.2 webp 3x 倍图 | MAY | **MUST** | 仅在项目显式采用 3x 资源策略时适用，源比例依 Asset Catalog/布局核验 |
+| R4.2 webp 3x 倍图 | MAY | **MUST** | 对应 iOS xxhdpi |
 | R4.3 动画 webp 不 gif | MAY | **MUST** | 对齐 iOS |
 | R4.4 单色 webp 着色样例 | — | **MUST**（新增） | 必须用 `ColorUtils.hexToColorMatrix`（私仓）+ `colorFilter` 实现 |
 | R6.1b Repeat 替代 LazyForEach | SHOULD | **MUST** | 列表必须用 Repeat |
@@ -56,7 +56,7 @@
 | **R3.1** | SHOULD | "各业务代码类**应按照**模块功能进行拆分放置...**以下是实例**：components/constants/pages/viewmodel/bean/util" | **不要按目录名拼写判违规**。检测：(a) 是否有混业务现象（比如 dialogue 页面和 mine 页面同处一个 pages/ 下却语义关联很重）；(b) 是否单文件超大（>500 行 + 多 public 方法），违反"职责单一" |
 | **R3.2** | SHOULD | "应保证类职责单一性" | 单 .ets > 500 行 或单 class > 10 public 方法标 warning |
 | **R4.1** | **MUST**（客户升级） | "静态图片资源，**统一**采用 webp/svg 格式" | 静态图必须 webp/svg；**新增**资源不得 png/jpg；存量 png 列入资源迁移待办，标 P1 |
-| **R4.2** | **MUST**（客户升级） | "webp 图片**应**采用 3 倍图，仅在项目显式采用 3x 资源策略时适用，源比例依 Asset Catalog/布局核验" | 抽样验证 webp 像素尺寸 ≥ 3× 设计稿（无法静态判定时仅 P2 提示，但客户验收要点） |
+| **R4.2** | **MUST**（客户升级） | "webp 图片**应**采用 3 倍图，对应 iOS xxhdpi" | 抽样验证 webp 像素尺寸 ≥ 3× 设计稿（无法静态判定时仅 P2 提示，但客户验收要点） |
 | **R4.3** | **MUST**（客户升级） | "动画资源**应统一**采用 webp 格式实现，**避免**使用 gif（对齐 iOS）" | grep `*.gif`，命中 → P1 必改 |
 | **R4.4** | **MUST**（客户新增） | "对于 webp 格式图片如需改动着色，**可采用** lib-common（私仓）/ ColorUtils（私仓）类的 hexToColorMatrix 方法配合组件 colorFilter 方法实现" | 需要不同色版的图标场景必须用此样例（详见 [`03-layering-styles.md` § 单色 webp 着色](./03-layering-styles.md)）；预生成多色版本 → P1 |
 | **R5.1-a** | MAY（已降级） | 规范列的 19 个通用 token 是**跨平台同名建议**，不是必填白名单 | **AI 实证**：business_common 仅 2 个 token（cancel_btn_bg/common_page_bg），products/phone 用 app_theme/text_color/btn_*_Color 等自有命名——都不算违规 |

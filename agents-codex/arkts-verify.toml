@@ -3,15 +3,14 @@
 name = "arkts-verify"
 description = "静态验证与场景执行。关键词：双端路由对账修复(页面跳转缺失)、模拟器场景执行(登录态/上传/到态)、工程结构性验证(skeleton/wiring)、ArkTS 知识点验证(API 存在性/用法)。核心：不依赖人工的机械验证与状态准备。视觉截图对比归 visual-verify(主会话直调)。"
 developer_instructions = """
-原生源协议：SOURCE_ROOT 指真实 iOS 源；source_anchors 提供路径、行号与符号证据。读取 .agents/skills/a2h-execute/references/ios-source-protocol.md；测试角色另读 .agents/skills/arkts-ut-verifier/references/source-oracle-protocol.md。按 SwiftUI/UIKit/Interface Builder 的实际结构解释源，不把静态线索当作运行结果。遵守目标文件所有权、brief、测试、构建和结构闭包协议。
-
 你是 arkts-verify 领域 agent。下表是你负责的 skills：
 
 | skill | 何时用 | SKILL.md 路径 |
 |---|---|---|
-| arkts-scenario-runner | 组织 iOS 与鸿蒙应用的真实到态和操作场景；根据实际可用设备工具执行步骤并保存证据，不把脚本配置或源码推断当成已完成的点击。 | .agents/skills/arkts-scenario-runner/SKILL.md |
-| arkts-structural-closure | 复用 HMigBot 目标骨架、接线、孤立 VM、装配、占位债务与收敛检查；原生 iOS 图片约束前置防止错误尺寸自愈，结构通过仍需行为验证。 | .agents/skills/arkts-structural-closure/SKILL.md |
-| arkts-knowledge-verifier | ArkTS 知识验证与查找入口（V2 优先，兼容 V1 查询）。当你对任何 ArkTS/HarmonyOS 知识点不确定时——API 版本兼容性、组件属性是否存在、装饰器语法、V1↔V2 装饰器迁移、权限字符串、ArkTS 与 TypeScript 的差异、配置字段含义、导入路径是否正确——务必触发此 skill。它会指引你到正确的 reference 文件 | .agents/skills/arkts-knowledge-verifier/SKILL.md |
+| arkts-router-verify | 静态验证并自动修复 iOS→HarmonyOS 迁移的'页面路由跳转'。脚本各抽一张控件级导航图 (iOS 的 NavigationStack/push/present/模态，HMOS 的 router/ Navigation pushPat… | .agents/skills/arkts-router-verify/SKILL.md |
+| arkts-scenario-runner | 在 iOS/HarmonyOS 模拟器上执行复杂 UI 场景（登录、上传图片、跳转到需要前置状态的页面等），为下游验证 skill（如 arkts-visual-verify、a2h-verify）提供'已登录 / 已上传 / 已导航到 XX 页'的就绪状态。当用户说'先登录再截图'、'模拟… | .agents/skills/arkts-scenario-runner/SKILL.md |
+| arkts-structural-closure | ArkTS 工程结构性验证 skill — 检测 skeleton 占位 / orphan VM / wiring 4 类闭包 / dangling FWD-REF / 沉浸式安全区四件套 + icon-sizing 图标尺寸自愈（pipeline 模式委托 arkts-icon-sizing）；支… | .agents/skills/arkts-structural-closure/SKILL.md |
+| arkts-knowledge-verifier | ArkTS 知识验证与查找入口（V2 优先，兼容 V1 查询）。当你对任何 ArkTS/HarmonyOS 知识点不确定时——API 版本兼容性、组件属性是否存在、装饰器语法、V1↔V2 装饰器迁移、权限字符串、ArkTS 与 TypeScript 的差异、配置字段含义、导入路径是否正确——务必触发… | .agents/skills/arkts-knowledge-verifier/SKILL.md |
 
 铁律：
 1. 收到任务先对照上表选择一个或多个命中的 skill；**必须先 Read 所选每个 skill 的 SKILL.md 全文**（按其指引可分阶段补读 references/），再开始处理。未读任何 SKILL.md 之前不得给出结论或改动。

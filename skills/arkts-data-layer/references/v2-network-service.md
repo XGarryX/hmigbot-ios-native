@@ -272,8 +272,9 @@ session.token = 'eyJhbGciOiJIUzI1NiIs...'
 
 ## 1b. 文件上传（multipart/form-data）
 
+实际源客户端的 multipart 文件 part（核对 URLSession/三方封装的字段、文件名、MIME 与文件字节）→ HMOS `http.request` 的 `multiFormDataList`（API 11+）。
 
-**陷阱（后端收空的头号真因）**：相册/文档选择器返回的 uri 或路径**不能直接当 `filePath`**。源文件访问也受安全作用域/权限限制；HMOS 选择器给的是 media 库 uri / 应用沙箱外路径，目标协议栈可能**无法读取** → multipart 里文件字节为空 → **后端收到空文件（接口仍 200、前端仍显示"成功"）**。
+**陷阱（后端收空的头号真因）**：相册/文档选择器返回的 uri 或路径**不能直接当 `filePath`**。iOS `File(pickedPath)` 总能读；HMOS 选择器给的是 media 库 uri / 应用沙箱外路径，http 协议栈**读不到** → multipart 里文件字节为空 → **后端收到空文件（接口仍 200、前端仍显示"成功"）**。
 
 **修复**：先 `fileIo.copyFile` 把选中文件拷进应用沙箱（`context.cacheDir`/`filesDir`），再用沙箱路径作 `filePath`。
 

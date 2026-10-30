@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-multi-window
-  short_description: ArkTS 窗口形态切换场景下的根因定位与修复（V2 优先，兼容 V1）：分屏（PRIMARY/SECONDARY）、自由…
-  default_prompt: 请使用 $arkts-multi-window，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

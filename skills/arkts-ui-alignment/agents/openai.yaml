@@ -1,5 +1,2 @@
-interface:
-  display_name: arkts-ui-alignment
-  short_description: 将 iOS UI 设计迁移到 ArkTS/HarmonyOS 的等价实现。当用户需要匹配 iOS 原生界面 视觉效果、把
-    …
-  default_prompt: 请使用 $arkts-ui-alignment，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

@@ -183,7 +183,7 @@ struct MyHeader {
 - `$r('sys.float.Caption_L')` / `Body_*` / `Subtitle_*` 等文字 token 是 fp 单位，不适合用在容器 `height / width / size`
 
 ### 排查提示
-1. 搜 `SymbolGlyph(` 所有点，看 `.fontSize(...)` 是否显式数字且无单位（即 vp）
+1. 搜 `SymbolGlyph(` 所有点，核对 `.fontSize(...)` 的单位：该属性的裸数字默认 fp；源语义要求固定字号时，还需核对局部 `minFontScale / maxFontScale` 是否锁定
 2. 搜 `.clip(false)` + `Chip` / 自定义容器
 3. 搜 `$r('sys.float.` 用在 `.height / .width / .size / SymbolGlyph.fontSize` 的地方
 
@@ -191,7 +191,7 @@ struct MyHeader {
 ```ts
 // 图标不应随字号变化
 SymbolGlyph($r('sys.symbol.message'))
-  .fontSize(24)                 // 纯数字 = vp
+  .fontSize(24)                 // fontSize 的裸数字默认 fp；下两行局部锁定系统字体缩放
   .minFontScale(1.0)
   .maxFontScale(1.0)
 

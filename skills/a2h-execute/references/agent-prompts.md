@@ -10,7 +10,7 @@
 
 派发某 worker 时，**Read 两个文件即构成完整派发规范**：
 
-1. [`agent-prompts/_common.md`](./agent-prompts/_common.md) — 公共规则（§2.1 registry既有6类kind、输入消费/冲突回流、Stage 3单写者纪律），**始终随读**
+1. [`agent-prompts/_common.md`](./agent-prompts/_common.md) — 公共规则（§2.1 占位 5 类 kind + Stage 3 单写者纪律），**始终随读**
 2. 下表对应的**单段文件** — 该 agent 的完整 prompt 模板
 
 **不要为求全整份加载所有段**——各段相互独立，跨段引用已在各文件内以相对链接标注。
@@ -28,4 +28,4 @@
 | §7 Stage 3 Step 3d 自身页内接线 | a2h-migration-worker | [`agent-prompts/7-step3d-wiring.md`](./agent-prompts/7-step3d-wiring.md) |
 | §8 Stage 3 group-closer | **a2h-closer**（mode=group，协议在 agent 定义） | [`agent-prompts/8-group-closer.md`](./agent-prompts/8-group-closer.md) |
 
-> 占位规则统一遵循 §2.1（见 `_common.md`）：合法占位按registry模板既有6类kind，未登记/自由文本一律FAIL。
+> 占位规则统一遵循 §2.1（见 `_common.md`）：合法占位 = 已登记的 5 类 kind 占位，未登记 / 自由文本一律 FAIL。

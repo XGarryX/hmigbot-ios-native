@@ -59,3 +59,7 @@
 Spec交付后，按 [Plan产物合同](../../a2h-plan/references/plan-delivery-contract.md) 生成indexed UI/Base/Slice责任计划及与执行JSON的显式映射。业务语义留在本目录主MD；Plan不得再自由生成另一份接口或完成时点。任务自动携带精确合同闭包与AC，独立复核者检查消费者是否完整读到。
 
 `baseline/plans/resource-mapping.md`由Execute Stage 0记录真实转换结果，不是Spec/Plan提前伪造的必交物；规格阶段只记录源资源与转换责任。原三控制账本继续由原工具写入，本目录/catalog/报告均不是新进度账本。
+
+## 多条源证据的书写与解析
+
+同一字段引用多个源锚点时，每条独立使用 `path:line` 或 `path:start-end`，推荐写为 `` `App/Models.swift:25`; `Core/Domain.swift:35` ``。生成/撰写时用 ASCII `; ` 分隔；解析兼容全角 `；`，不把分隔符并入下一路径，不批量替换文档正文标点。每条引用仍独立核对文件和行号，真实缺失、越界及越出源目录不会因兼容标点被忽略。

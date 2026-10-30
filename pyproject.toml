@@ -4,19 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hmigbot-ios"
-version = "0.13.0"
+version = "0.13.7"
 description = "Self-contained HMigBot a2h pipeline with native iOS source support"
 requires-python = ">=3.11"
 dependencies = []
 
-[project.optional-dependencies]
-test = ["pytest>=8,<10"]
-
 [project.scripts]
 ios2harmony = "hmigbot_ios.cli:main"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

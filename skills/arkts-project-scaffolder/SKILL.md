@@ -1,6 +1,6 @@
 ---
 name: arkts-project-scaffolder
-description: "生成 ArkTS/HarmonyOS 项目结构和配置文件（V2 装饰器优先，API 12+）。当用户需要创建新项目、设计多模块架构（commons/features/products）、编写 module.json5 / build-profile.json5 / oh-package.json5 / app.json5、创建 EntryAbility（含 AppStorageV2 / PersistenceV2 全局状态预热）、配置权限、或搭建任何 HarmonyOS 项目骨架时，务必触发此 skill；说\"从零搭建完整应用\"时也优先触发，它会引导调用其他 skill。即使只说\"新建个项目\"\"项目怎么搭建\"也应触发。不适用于状态管理深度用法（见 arkts-state-manager）。"
+description: 生成 ArkTS/HarmonyOS 项目结构和配置文件（V2 装饰器优先，API 12+）。当用户需要创建新项目、设计多模块架构（commons/features/products）、编写 module.json5 / build-profile.json5 / oh-package.json5 / app.json5、创建 EntryAbility（含 AppStorageV2 / PersistenceV2 全局状态预热）、配置权限、或搭建任何 HarmonyOS 项目骨架时，务必触发此 skill；说"从零搭建完整应用"时也优先触发，它会引导调用其他 skill。即使只说"新建个项目""项目怎么搭建"也应触发。不适用于状态管理深度用法（见 arkts-state-manager）。
 metadata:
   type: domain
   domain: engineering
@@ -9,6 +9,10 @@ metadata:
   - project-structure
   - config
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS Project Scaffolder — 项目脚手架（V2 优先）
 
 ## API 版本与项目策略

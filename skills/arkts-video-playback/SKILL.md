@@ -1,6 +1,6 @@
 ---
 name: arkts-video-playback
-description: "生成 ArkTS/HarmonyOS 视频播放代码（AVPlayer 视频路径 + XComponent Surface 集成）。当用户需要实现 AVPlayer 视频播放、XComponent Surface 集成、横屏全屏播放器、视频 letterbox（保留原始宽高比）、控件 3.5s 自动隐藏、点击唤出控件、播放器返回挽留 Dialog、视频画中画 PiP 时触发。**前置依赖**：AVPlayer 状态机基础、音频播放、fd:// 协议、后台播放在 arkts-media-playback。"
+description: 生成 ArkTS/HarmonyOS 视频播放代码（AVPlayer 视频路径 + XComponent Surface 集成）。当用户需要实现 AVPlayer 视频播放、XComponent Surface 集成、横屏全屏播放器、视频 letterbox（保留原始宽高比）、控件 3.5s 自动隐藏、点击唤出控件、播放器返回挽留 Dialog、视频画中画 PiP 时触发。**前置依赖**：AVPlayer 状态机基础、音频播放、fd:// 协议、后台播放在 arkts-media-playback。
 metadata:
   type: domain
   domain: media
@@ -15,6 +15,10 @@ metadata:
   - pip
   - webp
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS Video Playback — 视频播放生成器
 
 ## 0. 与其他 skill 的关系（边界）
@@ -36,7 +40,7 @@ metadata:
 | UI 基线 | 视频播放页对齐 iOS 原生（横屏 / safeArea / 沉浸全屏）|
 | Letterbox | 保留视频原始宽高比 + 顶/底栏钉视频帧 |
 | 自动隐藏 | 控件 3.5s 三态定时器 |
-| 按钮资源 | 按 iOS 资源映射提供原图或批准替代，禁用 Unicode 字符 |
+| 按钮资源 | iOS webp 直拷，禁用 Unicode 字符 |
 | 视频专属错误 | linearGradient alpha / AUDIO_PLAYBACK 误用 / 横屏方向 / 透明点击层 |
 
 视频场景**不要**无脑加 `BackgroundMode.AUDIO_PLAYBACK`（被系统策略限制）；视频后台走画中画 PiP，不是 AVPlayer 后台续播。
@@ -125,7 +129,7 @@ metadata:
 - [ ] alignContent 用 TopStart，不要用 Center
 - [ ] 控件自动隐藏覆盖 PLAYING / PAUSED / PREPARED 三态
 - [ ] 透明点击层在 XComponent 上方接收点击
-- [ ] 按钮图标用已核实的源图标资源，不用 Unicode / 手搓黑圆
+- [ ] 按钮图标用 iOS 原 webp，不用 Unicode / 手搓黑圆
 - [ ] dp→vp 1:1 直拷；layout_centerVertical = top:'50%' + translate(y:-halfH)
 - [ ] 挽留 Dialog 拦截 onBackPress
 - [ ] linearGradient.colors 用 rgba 字符串，不用 0xAARRGGBB number
@@ -152,7 +156,7 @@ metadata:
 | # | 增量经验 | 对应 reference |
 |---|---|---|
 | ① | 控件 3.5s 自动隐藏覆盖 PLAYING / PAUSED / PREPARED 三态 | `auto-hide-controls.md` |
-| ② | iOS→HMOS 按钮图标按原图标的真实格式与许可转换，禁用 Unicode + 手搓黑圆 | `auto-hide-controls.md` |
+| ② | iOS→HMOS 按钮图标必须拷原工程 webp，禁用 Unicode + 手搓黑圆 | `auto-hide-controls.md` |
 | ③ | dp→vp 1:1，layout_centerVertical = `top:'50%'` + `translate(y:-halfH)` | `video-playback-page.md` |
 | ④ | 沉浸全屏 → `setSpecificSystemBarEnabled('navigationIndicator', false)`（防进度条最右段被遮）| `video-playback-page.md` |
 | ⑤ | 顶/底栏按 `videoOffsetXVp/Y` 钉到**视频帧**（不是屏幕，避免 letterbox 黑边上挂按钮）| `letterbox-math.md` |

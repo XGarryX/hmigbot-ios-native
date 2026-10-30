@@ -6,7 +6,6 @@
   "android-ui-graph-query",
   "android-view-to-arkui",
   "android2hmos-resources-convert",
-  "app-relationship-tree",
   "compose-fact-tree",
   "toolkit-fact-indexer"
 ]

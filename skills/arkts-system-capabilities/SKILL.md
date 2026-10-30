@@ -1,6 +1,6 @@
 ---
 name: arkts-system-capabilities
-description: "HarmonyOS 系统 API 使用指南。当用户需要使用 photoAccessHelper 媒体查询、abilityAccessCtrl 权限申请、fileIo 文件操作、后台任务（workScheduler/ContinuousTask）、沙箱路径、相册访问、文件读写、权限检查、前台服务等系统能力时，务必触发此 skill。即使只说\"怎么获取相册图片\"\"怎么申请权限\"也应触发。不含 AVPlayer 完整生命周期（用 arkts-media-playback）和文件下载队列（用 arkts-download-manager）。"
+description: HarmonyOS 系统 API 使用指南。当用户需要使用 photoAccessHelper 媒体查询、abilityAccessCtrl 权限申请、fileIo 文件操作、后台任务（workScheduler/ContinuousTask）、沙箱路径、相册访问、文件读写、权限检查、前台服务等系统能力时，务必触发此 skill。即使只说"怎么获取相册图片""怎么申请权限"也应触发。不含 AVPlayer 完整生命周期（用 arkts-media-playback）和文件下载队列（用 arkts-download-manager）。
 metadata:
   type: domain
   domain: system
@@ -10,6 +10,10 @@ metadata:
   - file-io
   - background-task
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS System Capabilities — 系统能力指南
 
 ## API 版本

@@ -1,4 +1,10 @@
+# openai.yaml — Codex skill interface for the converted `a2h-build-zh` command.
+# When the user selects this skill in /skills, `interface.default_prompt` is
+# auto-attached — the Codex equivalent of running the slash command.
 interface:
-  display_name: a2h-build-zh
-  short_description: 验证原生 iOS 迁移的鸿蒙目标配置并运行真实 hvigor assembleHap，保存日志、退出码和 HAP 证据。
-  default_prompt: 请使用 $a2h-build-zh，按本技能的输入、执行步骤和验收条件完成当前任务。
+  display_name: "a2h-build-zh"
+  default_prompt: |
+    Run $a2h-build now: run .migbot/bin/a2h-tool validate, then .migbot/bin/a2h-tool build (hvigorw assembleHap), and report the stage usage.
+
+policy:
+  allow_implicit_invocation: true

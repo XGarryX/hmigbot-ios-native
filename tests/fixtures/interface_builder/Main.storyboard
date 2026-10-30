@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB">
-  <scenes><scene sceneID="scene-1"><objects>
-    <viewController id="controller-1"><view id="view-1"><subviews>
-      <label text="Hello" id="label-1"/>
-      <button id="button-1"><connections><action selector="onTap:" destination="controller-1" id="action-1"/></connections></button>
-    </subviews><constraints><constraint firstItem="label-1" firstAttribute="top" secondItem="view-1" secondAttribute="top" constant="24" id="constraint-1"/></constraints></view></viewController>
-  </objects></scene></scenes>
-</document>

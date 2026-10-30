@@ -42,7 +42,7 @@
 按 `testable-id-catalog.md §命名规范` 把每个 `spec/baseline/ui/page_xxxx_*.md` 映射到 `entry/src/main/ets/pages/<PageName>.ets`，写入 manifest 头部的映射表。
 
 - 找不到源文件 → manifest 备注 `<PageName>: SOURCE_NOT_FOUND`
-- 多候选（PhotoPage.ets / PhotoScreen.ets） → 选行数最多的
+- 多候选（PhotoPage.ets / PhotoFragment.ets） → 选行数最多的
 
 #### 1.2 component_short 映射（新增 — 抽出子组件）
 

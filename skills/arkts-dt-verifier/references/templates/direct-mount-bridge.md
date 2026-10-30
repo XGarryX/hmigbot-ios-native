@@ -2,6 +2,7 @@
 
 > **何时读这份**：根页 `grep ': NavPathStack'` 命中 1 处（Navigation 架构）。
 >
+> **何时不读这份，改读 `router-load-content.md`**：根页无 `NavPathStack`（Router-only 架构，单 Activity + `router.pushUrl/replaceUrl`）。Router-only 项目不能 direct-mount push 到目标页 —— 没有 NavPathStack 可以 push。等价方案是 `router-load-content.md`：让 EntryAbility 的 `onWindowStageCreate` 根据 `__target_page__` 直接 `windowStage.loadContent` 落到目标页。
 >
 > Step 2a Agent 在 §0 节自动探测，这两个模板**互斥二选一**，不要同时注入。
 

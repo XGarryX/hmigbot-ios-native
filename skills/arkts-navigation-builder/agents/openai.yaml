@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-navigation-builder
-  short_description: 生成 ArkTS/HarmonyOS 页面导航和路由代码（V2 优先，API 12+）。当用户需要实现页面跳转、Navig…
-  default_prompt: 请使用 $arkts-navigation-builder，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

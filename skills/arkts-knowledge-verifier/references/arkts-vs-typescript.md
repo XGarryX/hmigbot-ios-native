@@ -319,6 +319,7 @@ list.forEach((item: ItemType) => { /* ... */ })
 匿名类创建的对象类型未知，与"不支持 structural typing"冲突，**ArkTS 不支持**——用具名类或嵌套类替代。
 
 ```typescript
+// ✗ TS/Java 习惯 — 匿名类实现接口
 const handler = new (class implements Listener { onEvent(): void {} })()
 
 // ✓ ArkTS — 具名类

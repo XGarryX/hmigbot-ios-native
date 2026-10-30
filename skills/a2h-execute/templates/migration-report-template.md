@@ -1,47 +1,104 @@
-<!-- when: 每次落账、阶段收口与最终交付时生成并检查 spec/migration-report.md -->
-<!-- topics: 迁移报告, 派生汇总, 页面证据, 阶段细节 -->
+<!-- when: 所有 Stage 执行完毕后生成 spec/migration-report.md（§10）时加载 -->
+<!-- topics: 迁移报告, migration-report, Stage 详情, Skill 使用统计, 页面状态汇总 -->
 
-# a2h-execute 迁移报告协议
+# a2h-execute 迁移报告模板
 
-按 [a2h-execute §10](../SKILL.md#10-迁移报告) 实际运行 `spec-summary`、`migration-report` 和 `migration-report --check`。工具生成 `spec/reports/spec-summary.json` 与 `spec/migration-report.md`；本文件说明其消费方式，不提供可手工填成功数的报告正文。
+> 由 `a2h-execute/SKILL.md` §10 引用。所有 Stage 执行完毕后，按本模板生成 `spec/migration-report.md`。
 
-## 工具生成的固定结构
+```markdown
+# 迁移报告
 
-`migration-report` 的当前生成器是唯一结构来源。报告标题为“迁移证据报告”，携 `source_sha256` 与 `summary_sha256`，依次输出以下三张表：
+- 执行时间: YYYY-MM-DD
+- 三阶段执行: Stage 1 → Stage 2 → Stage 3
 
-| 表 | 固定列 | 值来源 |
-|---|---|---|
-| 规格数量 | 范围、数量 | 当前 feature/page/AC 清单 |
-| 全局证据轴 | 证据轴、当前状态 | 当前生成、编译、行为、视觉证据 |
-| 逐页关联 | 页面、计划项、任务、AC、生成、编译、行为、视觉 | 同轮 summary 的 `pages`，逐页关联与状态 |
+## 总览
 
-summary JSON 保留 Markdown 未展开的 `target_paths`、AC 观测状态、原内核落账、当前回执/文件摘要及证据输入。需要核查一页时沿该页的 `page_id → plan_item_refs/task_ids → target_paths → ac_ids` 阅读明细，不用页面文件数量或回执数量代替成功率。
+| 阶段 | 任务数 | 成功 | 失败 | 编译状态 |
+|------|--------|------|------|---------|
+| Stage 1: UI Pipeline | X pages | a | a' | PASS/PARTIAL |
+| Stage 2: Feature Base | 7 tasks | b | b' | PASS/FAIL |
+| Stage 3: Feature Slices | N slices × 4 steps | c | c' | PASS/PARTIAL |
+| **总计** | **M** | **S** | **F** | |
 
-## 状态的证据边界
+## Stage 1 详情: UI Pipeline
 
-- 生成通过须有当前冻结计划、回执摘要、目标产物摘要与原调度器成功落账；仅有回执、文件或旧 converted/verified 不够。
-- 编译只说明本次全工程构建证据覆盖声明的目标页面文件；不证明该页注册、可达、点击有效或满足行为。缺少目标输入绑定的旧构建报告保留 `legacy_unclassified`。
-- 行为按本页关联 AC 的独立期望、实际执行与观测层级计算；部分 AC 通过不得向其他页面或未测 AC 扩散。宿主逻辑用例不能证明设备 UI。
-- 当前没有可校验的逐页视觉证据协议，页面视觉为 `not_run`；旧视觉报告只作 `legacy_unclassified`。真实视觉结论另引 verifier 报告，不能手改派生状态。
-- `not_run`、`unknown`、`unverified`、`unmapped`、`unlanded`、`stale` 均保持原义，不按口头 PASS 翻转。
+| Batch | 页面数 | 成功 | 失败 | 编译修复轮数 |
+|-------|--------|------|------|------------|
+| Batch 1 | 3 | 3 | 0 | 2 |
+| Batch 2 | 4 | 3 | 1 | 5 |
 
-结构检查独立引用 `loops-final-structural-closure.json` 与 `final_structural_closure_brief.md`。summary 不生成结构结论，构建通过也不能替代结构检查。
+### 页面转换清单
+| 页面 | iOS 来源 | 状态 | 输出文件 |
+|------|-------------|------|---------|
+| MainPage | MainView | converted | pages/MainPage.ets |
+| HomePage | HomeView | converted | pages/HomePage.ets |
 
-## 生成与复核
+## Stage 2 详情: Feature Base
 
-构建证据可用时，三次命令传入同一个真实 `--build-evidence` 路径；未构建则不传。先读 summary JSON，再读派生 Markdown，最后运行 `--check`。检查会从当前证据重算并拒绝过期或手改报告；输入或目标变化后重跑，不直接修改结果。三份控制账本的原写者保持不变。
+| 任务 | Skill | 状态 | 产出文件数 |
+|------|-------|------|-----------|
+| Base-1: Models | arkts-data-layer | SUCCESS | 5 |
+| Base-2: Database | arkts-data-layer | SUCCESS | 3 |
+| Base-6: 公共组件库 | component-builder | SUCCESS | 8 |
 
-## 另写的阶段细节
+## Stage 3 详情: Feature Slices
 
-需要 Stage/Batch/Slice 详情时，写入 `spec/execution/` 的阶段报告，链接同轮派生报告、summary JSON 及原始证据。可记录下列事实，不复制示例成功数：
+| Slice | 功能 | Step 3a | Step 3b | Step 3c | Step 3d/3e | 状态 |
+|-------|------|---------|---------|---------|------------|------|
+| Slice 1 | 播放功能 | SUCCESS | SUCCESS | SUCCESS | WIRED+VERIFIED | PASS |
+| Slice 2 | 订阅功能 | SUCCESS | SUCCESS | SUCCESS | WIRED | VERIFIED | PASS |
+| Slice 3 | 搜索功能 | SUCCESS | SUCCESS | FAILED | - | - | FAIL |
 
-| 明细 | 必须带的定位依据 |
-|---|---|
-| 阶段任务、失败与恢复条件 | 原计划项、task_id、真实退出码、receipt/brief 路径 |
-| 页面产物与接线 | page_id、拥有文件、真实结构检查路径 |
-| Skill 调用与覆盖决定 | 实际调用记录、任务、原建议、使用能力及原因 |
-| 编译与修复轮次 | 构建报告、日志、目标输入和产物摘要 |
-| 占位与未完成项 | registry 的实际 P-ID、状态、owner、恢复条件 |
-| 结构收口 | 实际 loops JSON、brief、final_state 与 verdict |
+## Skill 使用统计
 
-阶段细节不能覆盖工具派生的页面状态；有冲突先核查输入和证据，再重建报告。
+| Skill | 调用次数 | 被覆盖次数 |
+|-------|---------|-----------|
+| a2h-ios-converter | 12 | 0 |
+| arkts-data-layer | 8 | 0 |
+| arkts-state-manager | 6 | 0 |
+| hmos-builder (agent) | 15 | 0 |
+| arkts-knowledge-verifier | 2 | 0 (追加) |
+
+## 覆盖记录
+
+| Task | 阶段 | 原建议 | 实际使用 | 覆盖原因 |
+|------|------|--------|---------|---------|
+| Slice 3 Step 3c | Stage 3 | data-layer | data-layer + media-playback | 功能涉及音频播放 |
+
+## 产出文件清单
+
+| 文件路径 | 来源阶段 | 状态 |
+|---------|---------|------|
+| entry/src/main/ets/pages/MainPage.ets | Stage 1 | NEW |
+| entry/src/main/ets/models/Episode.ets | Stage 2 | NEW |
+| entry/src/main/ets/viewmodels/PlaybackViewModel.ets | Stage 3 | NEW |
+
+## FAILED 列表
+
+| 阶段 | Task | 失败原因 | 建议处理 |
+|------|------|---------|---------|
+| Stage 3 | Slice 3 Step 3c | API 不存在 | 手动排查 API 兼容性 |
+
+## 页面状态汇总
+
+| 状态 | 数量 |
+|------|------|
+| verified | X |
+| converted | Y |
+| pending | Z |
+| FAILED | W |
+
+## 最终编译
+
+- 状态: SUCCESS | FAILED
+- 剩余错误: (如果 FAILED)
+
+## Final Structural Closure
+
+| 项 | 值 |
+|----|----|
+| final_state | PASS / ESCALATED / ROLLED_BACK |
+| verdict | CONVERGED / STALLED / REGRESSED / EXHAUSTED |
+| 迭代轮数 | N |
+| evidence | spec/execution/autofix-log/round-<R>/loops-final-structural-closure.json + spec/execution/briefs/final_structural_closure_brief.md |
+```

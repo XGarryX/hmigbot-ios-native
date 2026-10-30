@@ -245,6 +245,7 @@ import { deviceInfo } from '@kit.BasicServicesKit'
 
 const bundleName = deviceInfo.brand === 'huawei' 
   ? 'com.huawei.settings' 
+  : 'com.ios.settings'  // 其他设备
 ```
 
 ### 错误 2：忘记错误处理

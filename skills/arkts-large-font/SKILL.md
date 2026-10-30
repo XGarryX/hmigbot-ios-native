@@ -1,6 +1,6 @@
 ---
 name: arkts-large-font
-description: "ArkTS 大字体场景下的根因定位与修复（V2 优先，兼容 V1）：系统字体缩放（fontSizeScale 1.15 / 1.45 / 1.75 / 2.0 / 3.2x）下文本/布局/图标出现截断、溢出、重叠、位置错乱、SymbolGlyph 异常放大、浮层/菜单变小或越界、切换档位后不刷新等。若文本被 Ellipsis 截断但与字体档位无关，改用 arkts-text-truncation；若主要是读屏/焦点/热区等无障碍功能，改用 arkts-accessibility。"
+description: ArkTS 大字体场景下的根因定位与修复（V2 优先，兼容 V1）：系统字体缩放（fontSizeScale 1.15 / 1.45 / 1.75 / 2.0 / 3.2x）下文本/布局/图标出现截断、溢出、重叠、位置错乱、SymbolGlyph 异常放大、浮层/菜单变小或越界、切换档位后不刷新等。若文本被 Ellipsis 截断但与字体档位无关，改用 arkts-text-truncation；若主要是读屏/焦点/热区等无障碍功能，改用 arkts-accessibility。
 metadata:
   type: domain
   domain: ui
@@ -11,6 +11,10 @@ metadata:
   - accessibility
   - layout
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # arkts-large-font — ArkTS 大字体/适老化排查技能
 
 > HarmonyOS 设置 → 显示与亮度 → 字体大小/显示大小 被用户调大（尤其"适老化"档位）后，ArkUI 页面出现的截断、溢出、错位、图标失真、菜单变形等一系列缺陷的根因定位。
@@ -83,7 +87,7 @@ ArkUI 文本类组件（`Text / Button / Search / TextInput / TextArea / Badge /
 
 ```ts
 SymbolGlyph($r('sys.symbol.xxx'))
-  .fontSize(24)                 // 纯数字 = vp，不随字号缩放
+  .fontSize(24)                 // fontSize 的裸数字默认 fp；下一行局部锁定系统字体缩放
   .minFontScale(1.0).maxFontScale(1.0)
 ```
 
@@ -201,7 +205,7 @@ onConfigurationUpdate(newCfg: Configuration): void {
 
 - 给所有受影响文本类组件加 `.maxFontScale(2.0).minFontScale(1.0)`（适老化以 2.0 为上限是常见取舍）
 - 输入类组件 `TextInput / TextArea / Search` 务必锁 `.maxFontScale(2.0)`，避免超大档下光标/选区算错
-- 把 `SymbolGlyph(...).fontSize(24)`（裸数字 = vp）+ `.minFontScale(1.0).maxFontScale(1.0)` 锁死图标
+- 源语义要求图标固定字号时，保留 `SymbolGlyph(...).fontSize(24)`（fontSize 的裸数字默认 fp），用 `.minFontScale(1.0).maxFontScale(1.0)` 局部锁定系统字体缩放
 - 删掉文本容器的固定 `.height(...)`，改 `.constraintSize({ minHeight: ... })` 让内容撑
 - 自定义浮层位置算法要**同时 clamp 左右 / 上下两边**：`offset.x ∈ [edge, windowRect.width - popupWidth - edge]`；只 clamp 单边在大字体放大后会越界
 - 在 `EntryAbility.onConfigurationUpdate` 里把当前 `fontSizeScale` 写进 `AppStorageV2`（V1：`AppStorage`），弹窗 / 子窗用 `AppStorageV2.connect(FontScaleModel, ...)` 持有的 `@Local` 实例驱动重建（V1 等价：`@StorageLink`）

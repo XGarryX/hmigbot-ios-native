@@ -12,6 +12,7 @@ import re
 import json
 from pathlib import Path
 
+from .core import source_snapshot
 from .core import MigrationError, atomic_write, digest, json_bytes, read_json, safe_child, snapshot, write_json
 
 MARKER = "<!-- hmigbot-derived-gate:1 -->"
@@ -43,7 +44,7 @@ def render_spec_inputs(project):
     project = Path(project).resolve()
     source, _ = context(project)
     index = read_json(project / 'spec/baseline/ios-source-index.json')
-    current = snapshot(source)
+    current = source_snapshot(source)
     if index.get('source_sha256') != current['sha256'] or index.get('files') != current['files']:
         raise MigrationError('Source index is stale; refresh and review')
     graph_path = project / 'spec/baseline/ios-facts.json'
@@ -54,7 +55,7 @@ def render_spec_inputs(project):
     pages = _scaffold_contracts(project, index, graph, current['files'], outputs=outputs)
     _emit_scaffold(project, outputs, project / 'spec/baseline/ui-manifest.md', _manifest_text(index, pages))
     _emit_scaffold(project, outputs, project / 'spec/baseline/feature-index.md', _feature_index_text(index, pages))
-    if snapshot(source)['sha256'] != current['sha256']:
+    if source_snapshot(source)['sha256'] != current['sha256']:
         raise MigrationError('Source changed during candidate rendering')
     return {'files': outputs, 'pages': pages, 'source_sha256': current['sha256']}
 
@@ -76,7 +77,7 @@ def _source_data(project: Path):
         raise MigrationError("iOS source index files must be a list")
     from .native_pipeline import context
     source, _ = context(project)
-    current = snapshot(source)
+    current = source_snapshot(source)
     if (index.get('source_sha256') != facts.get('source_sha256')
             or index.get('source_sha256') != current['sha256'] or files != current['files']):
         raise MigrationError('Source index/facts are stale; refresh and review before generating gates')
@@ -92,7 +93,10 @@ def _page_candidates(project: Path, files):
     from .native_pipeline import context
     from .source_candidates import discover_candidates
     source, _ = context(project)
-    candidates = discover_candidates(source, {'files': files})
+    from .swift_native import project_conditions, project_syntax
+    syntax = project_syntax(project, source)
+    conditions = project_conditions(project, source)
+    candidates = discover_candidates(source, {'files': files}, swift_syntax=syntax, conditional=conditions)
     result = []
     for item in candidates:
         if not item['is_ui']:
@@ -474,6 +478,12 @@ def _cell(value):
 
 
 def generate_verify_report(project: Path, *, build_evidence=None, write=True, scope=None):
+    """The fusion public report always uses stable seven-check meanings."""
+    from .indexed_verify import report
+    return report(project, build_evidence=build_evidence, write=write, scope_request=scope)
+
+
+def generate_legacy_verify_report(project: Path, *, build_evidence=None, write=True, scope=None):
     """Bind the native four-check report to current inputs and evidence bytes.
 
     A verifier may supply spec/verification/verify-results.json (version 1).
@@ -485,7 +495,7 @@ def generate_verify_report(project: Path, *, build_evidence=None, write=True, sc
     source, project = context(Path(project))
     from .verification_scope import resolve as resolve_scope
     selected_scope = resolve_scope(scope) if scope is not None else None
-    source_sha = snapshot(source)['sha256']
+    source_sha = source_snapshot(source)['sha256']
     gate, _ = check(project, report_only=True)
     summary_error = None
     try:
@@ -580,7 +590,7 @@ def generate_execution_gates(project: Path, *, build_evidence=None, write=True):
         from .native_pipeline import context
         source, _ = context(project)
         markdown = ('# 迁移证据报告\n' + MARKER + '\ngate_status: BLOCKED\n'
-                    + 'source_sha256: ' + snapshot(source)['sha256'] + '\n\n'
+                    + 'source_sha256: ' + source_snapshot(source)['sha256'] + '\n\n'
                     + '## 证据生成阻断\n' + _cell(str(exc)) + '\n\n'
                     + '## 阶段总览\n| 阶段 | 所需证据 | 当前状态 |\n|---|---|---|\n'
                     + '| Stage 0 资源 | resource-mapping 与真实产物摘要 | unverified |\n'

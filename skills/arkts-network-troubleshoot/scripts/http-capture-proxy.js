@@ -1,9 +1,25 @@
-/** Read-only HTTP observation proxy for an authorized test device.
- * node http-capture-proxy.js [port] [hostFilter]
- * On iPhone or HarmonyOS: Wi-Fi -> connected network -> manual proxy -> host LAN IP and port.
- * Record prior settings and restore them after capture. This does not support HTTPS CONNECT.
- * Use a test account. Redact credentials and personal data before retaining or sharing evidence.
- * Source requests are evidence of this session only; unavailable traffic stays unverified.
+/**
+ * http-capture-proxy.js — 极简 HTTP 转发代理，抓 Android / HMOS App 的明文请求
+ *
+ * 用途：后端是明文 HTTP（http://）时，无需 Charles / mitmproxy / CA 证书，
+ *       用本脚本即可抓到 App 发出的【完整 headers + body】+ 响应，用于：
+ *         - 对账签名头（ss / tt / ee）、公参头
+ *         - 对账 request body 是否与 Android 逐字节一致
+ *         - 对账启动期请求时序（看请求发出顺序 / 间隔）
+ *
+ * 用法：
+ *   node http-capture-proxy.js [port] [hostFilter]
+ *     port        监听端口，默认 8888
+ *     hostFilter  只打印 URL 含该子串的请求（如自有后端域名），省略则打印全部
+ *
+ *   # Android 模拟器指向宿主代理（10.0.2.2 = 模拟器看到的宿主 IP）：
+ *   adb shell settings put global http_proxy 10.0.2.2:8888
+ *   # HMOS 设备：设置 → WiFi → 当前网络 → 代理 → 手动 → 填 宿主IP:8888
+ *   # 抓完务必还原（否则其它 App 也走代理）：
+ *   adb shell settings put global http_proxy :0
+ *
+ * 限制：仅支持明文 HTTP（http://）。HTTPS 需要 CONNECT 隧道 + CA 解密，本脚本不处理 ——
+ *       那种情况用 capture-android-traffic.md 方法 C 的 Charles / mitmproxy。
  */
 const http = require('http');
 

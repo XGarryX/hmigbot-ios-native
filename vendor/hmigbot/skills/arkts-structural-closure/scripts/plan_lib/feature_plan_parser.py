@@ -226,7 +226,7 @@ def _parse_slice(slice_text: str, header: dict) -> SliceSpec:
     if m := re.search(r"^detail\s*[:：]\s*(\S+)", slice_text, re.MULTILINE):
         spec.detail = m.group(1).strip()
     if m := re.search(
-        r"^android_source_anchors_ref\s*[:：]\s*\{(?P<body>[^}]*)\}",
+        r"^(?:source_anchors_ref|android_source_anchors_ref)\s*[:：]\s*\{(?P<body>[^}]*)\}",
         slice_text, re.MULTILINE,
     ):
         ref: dict = {}
@@ -249,7 +249,7 @@ def _parse_slice(slice_text: str, header: dict) -> SliceSpec:
 
 
 def _parse_anchors(slice_text: str) -> list[dict]:
-    block = _yaml_block(slice_text, "android_source_anchors")
+    block = _yaml_block(slice_text, "source_anchors") or _yaml_block(slice_text, "android_source_anchors")
     if not block:
         return []
     anchors: list[dict] = []

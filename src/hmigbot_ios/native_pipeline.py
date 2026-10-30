@@ -11,6 +11,7 @@ import shutil
 import uuid
 
 from .analyze import analyze
+from .core import source_snapshot
 from .core import MigrationError, read_json, safe_child, snapshot, write_json, digest, json_bytes, atomic_write, SOURCE_SUFFIXES, SOURCE_NAMES
 from .native_semantics import validate_native_facts
 from . import doctor as doctor_module
@@ -19,6 +20,15 @@ from .cli_output import configure_utf8, emit_json
 
 ROOT = Path(__file__).resolve().parents[2]
 CODE = {'.swift', '.m', '.mm', '.h', '.c', '.cpp', '.storyboard', '.xib'}
+
+
+def _emit_capability_choices(cards):
+    from .xcode_mcp import render_choice as mcp_choice
+    from .source_ui_capture import render_choice as ui_choice
+    for card in cards:
+        message=ui_choice(card) if card.get('id')=='source_ui_capture' else mcp_choice(card)
+        if message:
+            print(message,file=sys.stderr)
 
 
 def _derived_output(project, path, name, *, migration=False):
@@ -75,13 +85,12 @@ def index_source(project: Path):
     path = project / 'spec/baseline/ios-source-index.json'
     if path.exists():
         raise MigrationError('Source index exists: review changes and preserve it before refreshing')
-    facts = analyze(source)
-    current = snapshot(source)
-    if facts['source_snapshot']['sha256'] != current['sha256']:
+    current = source_snapshot(source)
+    if source_snapshot(source) != current:
         raise MigrationError('Source changed while indexing; no source index was published')
     data = {'version': 1, 'source_platform': 'ios', 'source_sha256': current['sha256'],
             'files': current['files'], 'excluded_directories': current['excluded_directories'],
-            'facts': facts['facts'], 'scope': 'Repository inventory and lexical/structured hints; not complete semantics'}
+            'facts': [], 'scope': 'Repository content snapshot only; source facts belong to the facts command'}
     write_json(path, data)
     return {'status': 'indexed', 'path': str(path), 'files': len(current['files']), 'spec_complete': False}
 
@@ -91,14 +100,17 @@ def refresh_source_index(project: Path, review_path: Path):
     review = read_json(review_path)
     path = project / 'spec/baseline/ios-source-index.json'
     prior = read_json(path)
-    current = snapshot(source)
+    current = source_snapshot(source)
     if not isinstance(review, dict) or review.get('previous_source_sha256') != prior['source_sha256'] or review.get('source_sha256') != current['sha256'] or not all(isinstance(review.get(k), str) and review[k].strip() for k in ('reviewer', 'reason')):
         raise MigrationError('Source refresh needs reviewed old/new snapshot digests and a concrete reason')
     from .ios_facts import validate_graph
     validate_graph(source, project)
     archive = project / 'spec/.a2h/history' / digest(json_bytes(prior))
     write_json(archive / 'ios-source-index.json', prior)
-    data = {**prior, 'files': current['files'], 'source_sha256': current['sha256'], 'facts': analyze(source)['facts'], 'refresh_review': review}
+    if source_snapshot(source) != current:
+        raise MigrationError('Source changed while indexing; previous source index stays published')
+    data = {**prior, 'files': current['files'], 'source_sha256': current['sha256'], 'facts': [],
+            'scope': 'Repository content snapshot only; source facts belong to the facts command', 'refresh_review': review}
     write_json(path, data)
     return {'status': 'refreshed_requires_harness_recheck', 'archive': str(archive), 'spec_complete': False}
 
@@ -147,7 +159,7 @@ def check_source(project: Path, *, after_repair=False, report_only=False):
             not isinstance(f, dict) or not isinstance(f.get('path'), str) for f in baseline['files']
         ):
             raise MigrationError('Malformed iOS source index; preserve it and re-review the source baseline')
-        current = snapshot(source)
+        current = source_snapshot(source)
         if baseline.get('source_sha256') != current['sha256']:
             fail('IOS.STALE_SOURCE', str(source), 'Source changed; re-review affected spec and evidence before refreshing the baseline')
     known = {f['path'] for f in baseline['files']}
@@ -206,7 +218,7 @@ def check_source(project: Path, *, after_repair=False, report_only=False):
         raise MigrationError('Source dispositions must be an object containing a files list')
     if disposition_path.exists():
         # Reuse the walk above when the index exists; the scope binds the live whole-source digest.
-        whole = current['sha256'] if index_path.is_file() else snapshot(source)['sha256']
+        whole = current['sha256'] if index_path.is_file() else source_snapshot(source)['sha256']
         if disposition.get('source_sha256') != whole:
             fail('IOS.STALE_DISPOSITION', disposition_path.relative_to(project).as_posix(),
                  'Disposition scope requires the current whole-source source_sha256 at the top level; '
@@ -233,7 +245,8 @@ def check_source(project: Path, *, after_repair=False, report_only=False):
     except (MigrationError, OSError, ValueError, TypeError, KeyError) as exc:
         fail('IOS.RESPONSIBILITY_INVALID', 'ios-responsibility.json', str(exc))
     validate_native_facts(source, project, documents, known, fail, projection=projection)
-    result = {'status': 'FAIL' if issues else 'PASS', 'checks': 'source provenance, AC format, file ownership and native semantic contract; not semantic equivalence',
+    from .gate_policy import summary_status
+    result = {'status': summary_status(issues, queue=queue), 'checks': 'source provenance, AC format, file ownership and native semantic contract; not semantic equivalence',
               'findings': issues, 'source_platform': 'ios', 'behavior_verified': False}
     if not report_only:
         queue.replace_section(str(project), 'spec.ios-source', issues, after_repair=after_repair)
@@ -244,7 +257,7 @@ def check_source(project: Path, *, after_repair=False, report_only=False):
 def resolve(source: Path, anchor: str):
     source = source.resolve()
     safe_child(source, anchor)  # refuse path traversal even when falling back to suffix matching
-    candidates = [source / f['path'] for f in snapshot(source)['files'] if f['path'] == anchor or f['path'].endswith('/' + anchor)]
+    candidates = [source / f['path'] for f in source_snapshot(source)['files'] if f['path'] == anchor or f['path'].endswith('/' + anchor)]
     if len(candidates) == 1:
         return {'status': 'OK', 'path': str(candidates[0])}, 0
     return {'status': 'AMBIGUOUS' if candidates else 'MISS', 'candidates': [str(p) for p in candidates]}, 3 if candidates else 2
@@ -313,19 +326,46 @@ def _maybe_spec_gates(project: Path):
 
 def main(argv=None):
     configure_utf8(sys.stdout, sys.stderr)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments[:1] == ['resource-delta']:
+        from .resource_merge import main as resource_main
+        return resource_main(arguments[1:])
+    adapters = {'pipeline-metrics': 'execution_measurements', 'indexed-dispatch': 'indexed_dispatch',
+                'route-verify': 'routing_verify',
+                'ui-delivery': 'ios_ui_delivery', 'behavior-review': 'behavior_review',
+                'ui-repair': 'ui_repair_dispatch'}
+    if arguments and arguments[0] in adapters:
+        from importlib import import_module
+        return import_module('.' + adapters[arguments[0]], __package__).main(arguments[1:])
+    from . import __version__
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version=__version__)
     commands = parser.add_subparsers(dest='command', required=True)
+    commands.add_parser('resource-delta', help='Submit and merge task-owned resource changes; use resource-delta --help')
+    for adapter in adapters:
+        commands.add_parser(adapter, help='Use ' + adapter + ' --help for the project-bound protocol')
     init = commands.add_parser('init')
     init.add_argument('--source', required=True, type=Path)
     init.add_argument('--project', required=True, type=Path)
     commands.add_parser('expertise-audit')
-    for name in ('verify-scope', 'init-environment', 'repair-permissions', 'source-index', 'source-refresh', 'source-check', 'spec-check', 'spec-authoring', 'spec-summary', 'migration-report', 'verify-report', 'gate-artifacts', 'spec-upgrade', 'validate', 'build', 'literals', 'product-literals', 'harness-init', 'import-legacy', 'facts', 'facts-view', 'harness-check', 'behavior-check', 'plan-check', 'plan-ir', 'replan', 'recover-blocked', 'next-batch', 'land-results', 'expertise-plan', 'expertise-review', 'mcp-query', 'manifest-evaluate', 'conditional-capture', 'source-analysis', 'spec-scaffold', 'usage-start', 'usage-record', 'usage-reserve', 'usage-release', 'usage-summary', 'usage-check', 'usage-finish'):
+    for name in ('execution-contract', 'verify-scope', 'init-environment', 'repair-permissions', 'source-index', 'source-refresh', 'source-check', 'spec-check', 'spec-authoring', 'spec-summary', 'migration-report', 'verify-report', 'gate-artifacts', 'spec-upgrade', 'validate', 'build', 'literals', 'product-literals', 'harness-init', 'import-legacy', 'facts', 'facts-view', 'harness-check', 'behavior-check', 'plan-check', 'plan-ir', 'replan', 'recover-blocked', 'next-batch', 'land-results', 'expertise-plan', 'expertise-review', 'mcp-query', 'manifest-evaluate', 'conditional-capture', 'source-analysis', 'spec-scaffold', 'usage-start', 'usage-record', 'usage-reserve', 'usage-release', 'usage-summary', 'usage-check', 'usage-finish'):
         p = commands.add_parser(name)
         p.add_argument('--project', required=True, type=Path)
+        if name in {'init-environment','source-analysis'}:
+            p.add_argument('--source-ui',choices=['ask','capture','replay','skip'],
+                           help='Explicit source UI strategy; scope/request/bindings come from ui_capture in analysis config')
+        if name == 'execution-contract':
+            p.add_argument('--apply', action='store_true')
+            p.add_argument('--usage-ledger',type=Path)
+            p.add_argument('--usage-run-id')
         if name == 'verify-scope':
             p.add_argument('--input', type=Path, required=True)
         if name == 'init-environment':
             p.add_argument('--prepare', action='store_true')
+            p.add_argument('--entrypoint', action='append', default=[],
+                           help='Explicit runtime entrypoint to prepare; repeat for several paths')
+            p.add_argument('--mcp', choices=['ask', 'enable', 'skip'], default='ask',
+                           help='Developer choice for Xcode MCP; CLI remains available')
         if name == 'repair-permissions':
             p.add_argument('--path', type=Path, help='Exact in-project directory/file; defaults to this project root')
         if name.startswith('usage-'):
@@ -357,6 +397,8 @@ def main(argv=None):
             p.add_argument('--apply-scaffold', action='store_true', help='Create only missing canonical, unreviewed scaffold files')
             p.add_argument('--analysis-config', type=Path, help='Explicit analysis scope and evidence; default auto')
             p.add_argument('--plan-only', action='store_true', help='Read-only context decisions without executing stages')
+            p.add_argument('--mcp', choices=['ask', 'enable', 'skip'],
+                           help='Use the existing developer choice, or explicitly select read-only MCP/CLI for this run')
         if name == 'spec-scaffold':
             p.add_argument('--apply', type=Path, help='Apply a previously derived candidate; never approves it')
             p.add_argument('--brief', action='store_true', help='With --output, print only the artifact receipt')
@@ -413,14 +455,26 @@ def main(argv=None):
     doc.add_argument('--sdk', help='Explicit HarmonyOS SDK path')
     doc.add_argument('--text', action='store_true', help='Also print human-readable report to stderr')
     args = parser.parse_args(argv)
+    from .project_progress import ProjectProgress
+    progress_note = ProjectProgress(args)
+
+    def analysis_progress(event):
+        _emit_capability_choices(event.get('capability_choices',[]))
+        print(json.dumps(event, ensure_ascii=True), file=sys.stderr)
+        progress_note.record(event.get('status', 'running'), event)
+
+    progress_note.record('running')
     try:
         code = 0
         if args.command == 'verify-scope':
-            from .verification_scope import resolve as resolve_scope
+            # Scope numbering is a public protocol, not a directory-marker mode.
+            from .indexed_verify import scope as resolve_scope
             result = resolve_scope(read_json(args.input))
         elif args.command == 'init-environment':
             from .init_environment import run
-            result = run(args.project, ROOT, prepare=args.prepare)
+            result = run(args.project, ROOT, prepare=args.prepare,
+                         entrypoints=args.entrypoint, mcp=args.mcp,source_ui=args.source_ui)
+            _emit_capability_choices(result.get('capability_choices',[]))
             code = 0 if result['status'] == 'ready' else 2
         elif args.command == 'repair-permissions':
             from .macos_permissions import ensure_runtime_permissions
@@ -485,6 +539,10 @@ def main(argv=None):
             from .source_mcp import capture
             result = capture(args.project, args.server, args.request)
         elif args.command == 'init': result = configure(args.source, args.project)
+        elif args.command == 'execution-contract':
+            from .execution_bridge import prepare
+            result = prepare(args.project, apply=args.apply,usage_ledger=args.usage_ledger,
+                             usage_run_id=args.usage_run_id)
         elif args.command == 'source-index': result = index_source(args.project)
         elif args.command == 'source-analysis':
             from .source_analysis import run
@@ -492,8 +550,10 @@ def main(argv=None):
                          providers=args.providers, manifest_evidence=args.manifest_evidence,
                          apply_scaffold=args.apply_scaffold, analysis_config=args.analysis_config,
                          plan_only=args.plan_only,
-                         progress=lambda event: print(json.dumps(event, ensure_ascii=True), file=sys.stderr))
-            code = 2 if result.get('status') in {'needs_input', 'failed'} else 0
+                         progress=analysis_progress, mcp=args.mcp,source_ui=args.source_ui)
+            if args.plan_only:
+                _emit_capability_choices(result.get('capability_choices',[]))
+            code = 2 if result.get('status') in {'needs_input', 'failed','needs_ui_evidence'} else 0
         elif args.command == 'spec-scaffold':
             from .native_scaffold import scaffold, apply_scaffold
             if args.apply:
@@ -708,11 +768,13 @@ def main(argv=None):
                 print(doctor_module.render_text(result), file=sys.stderr)
             code = 0 if result.get('status') == 'diagnostic_complete' else 2
         else: result, code = resolve(args.source, args.anchor)
+        progress_note.record(result.get('status', 'returned'), result, exit_code=code)
         emit_json(result)
         return code
     except (MigrationError, OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
         error = {'status': 'FAIL', 'error': str(exc)}
         if isinstance(getattr(exc, 'receipt', None), dict):
             error['permission_repair'] = exc.receipt
+        progress_note.record('FAIL', error, exit_code=2)
         emit_json(error, indent=None)
         return 2

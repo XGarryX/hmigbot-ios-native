@@ -3,13 +3,6 @@
 > 摘自官方 arkxtest README 的「专项能力 / 使用方式」段：`aa test` 的用例筛选(`-s class`/`-s notClass`)、
 > 测试类型过滤、随机/压力/超时(`-s timeout`)、遇错即停(`-s breakOnError`)、空跑(`-s dryRun`)等参数。
 > 完整 hypium API 见 [hypium.md](hypium.md)。
->
-> 来源：[arkxtest README 专项能力](https://github.com/openharmony/testfwk_arkxtest/blob/master/README_zh.md)、[官方单元测试指导](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/unittest-guidelines)。先核对安装包版本，命令中的包名和模块名按工程实际值填写。
-
-## 导航
-
-- 筛选：属性、名称、标签（1.0.28+）；执行：随机、压力、超时、遇错即停、dryRun
-- 用例组织：嵌套能力；更多 API 与版本条件见 [hypium.md](hypium.md)
 
 ---
 
@@ -43,7 +36,7 @@
 }
  ```
 
-  示例命令:
+  示例命令: 
 
   ```shell
   hdc shell aa test -b xxx -m xxx -s unittest OpenHarmonyTestRunner -s testType function -s size small -s level 0
@@ -53,7 +46,7 @@
 
   2、按测试套/测试用例名称筛选
 
-  名称与实际注册的 describe/it 完全一致；命名应满足目标版本规则，避免把筛选分隔符 `#`、`,` 当作名称内容。官方示例包含下划线，不将其误判为非法。
+  注意：测试套和测试用例的命名要符合框架规则，即以字母开头，后跟一个或多个字母、数字，不能包含特殊符号。
 
   框架可以通过指定测试套与测试用例名称，来指定特定用例的执行，测试套与用例名称用“#”号连接，多个用“,”英文逗号分隔
 
@@ -86,7 +79,7 @@
 }
   ```
 
-  示例命令1:
+  示例命令1: 
 
   ```shell
   hdc shell aa test -b xxx -m xxx -s unittest OpenHarmonyTestRunner -s class describeTest_000#testIt_00,describeTest_001
@@ -144,33 +137,18 @@
   hdc shell aa test -b xxx -m xxx -s unittest OpenHarmonyTestRunner -s timeout 15000
   ```
 
-  从 Hypium 1.0.28 起，`it(name, attribute, func, timeout?, tag?)` 可设置单用例超时。有效的正数 timeout 优先于 CLI 的 `-s timeout`；未传或无效时回落 CLI，再回落默认 5000ms。异步断言/初始化应正确 await，不能靠扩大超时掩盖完成协议错误。
-
-- **标签筛选（Hypium 1.0.28+）**
-
-  it 的第 5 个参数以 `|` 分隔多个标签，例如 `'network|error'`。命令行筛选语法不同：逗号表示 OR，加号表示 AND，空格忽略。
-
-  ```shell
-  hdc shell aa test -b <bundle-name> -m <module-name> \
-    -s unittest OpenHarmonyTestRunner -s tag 'network+error,storage'
-  ```
-
-  此例选择同时有 network/error 标签或带 storage 标签的用例。CLI tag 只允许字母、数字、空格、逗号、加号；上游说明非法字符会导致筛选设置失败并执行全量用例，因此调用前校验表达式并核对实际执行清单。
-
-  `-s class`、`-s notClass`、`-s tag` 只筛选用例，不撤销 import mock 映射，也不保证未选中测试模块未被静态加载。真/mock 冲突需按 [import mock](../import-mock.md) 分配置和独立运行环境，不能只换一个过滤参数。
-
 - **遇错即停模式**
 
   | Key          | 含义说明                                                     | Value取值范围                                        |
   | ------------ | ------------------------------------------------------------ | ---------------------------------------------------- |
   | breakOnError | @since1.0.6 遇错即停模式，当执行用例断言失败或者发生错误时，退出测试执行流程 | true, 不传参默认为false， 例如：-s breakOnError true |
-
+  
   示例命令：
 
   ```shell
   hdc shell aa test -b xxx -m xxx -s unittest OpenHarmonyTestRunner -s breakOnError true
   ```
-
+  
 - **测试套中用例信息输出**
 
   输出测试应用中待执行的测试用例信息
@@ -238,7 +216,7 @@
   2.示例筛选参数
     ```shell
     #执行test1的全部测试用例
-    -s class test1
+    -s class test1 
     ```
     ```shell
     #执行test1的子测试用例
@@ -257,11 +235,11 @@
   | runSkipped | @since1.0.17 指定要执行的跳过测试套&跳过用例 | all，skipped，${describeName}#${itName}，${describeName}，不传参默认为空，例如：-s runSkipped all |
 
   1.示例代码
-
+  
   ```javascript
   //Skip1.test.ets
   import { expect, xdescribe, xit } from '@ohos/hypium';
-
+  
   export default function skip1() {
     xdescribe('skip1', () => {
       //注意：在xdescribe中不支持编写it用例
@@ -273,11 +251,11 @@
     })
   }
   ```
-
+  
     ```javascript
   //Skip2.test.ets
   import { describe, expect, xit, it } from '@ohos/hypium';
-
+  
   export default function skip2() {
     describe('skip2', () => {
       //默认会跳过assertContain1
@@ -304,4 +282,5 @@
 >
 >1.0.8版本开始单元测试框架以HAR(Harmony Archive)格式发布
 >
->
+> 
+

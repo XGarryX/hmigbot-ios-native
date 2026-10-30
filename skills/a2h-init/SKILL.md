@@ -25,7 +25,8 @@ metadata:
 - 输入：用户提供的 iOS 源路径、鸿蒙目标路径；已有 `<target>/.migbot/config.json`（若有）。
 - 输出：`<target>/.migbot/config.json`（init写身份，harness-init写harness标记）+ init 最终报告。收尾跑 `mark-stage a2h-init`。
 - **顺序固定**：遥测状态（§3）→ 源根确认（§4）→ 目标根确认（§5）→ hvigor/DevEco/hdc 环境事实（§6）→ **macOS+Xcode 能力探测（§7）** → 写 config（§8）→ 最终校验（§9）→ 最终报告（§10）。任何一步不许跳过。
-- 唯一交互点 = 路径确认各步的 `(keep / <new path>)` 提问；其余禁交互追问。
+- 路径确认使用 `(keep / <new path>)`；首次 MCP/CLI 能力选择和真实系统授权缺口必须按能力选择卡处理，不受“无额外交互”限制。已有明确路径、选择和授权直接沿用，不重复询问。
+- 源端 UI 采集策略也在初始化一次说明：原生采集并复用、只复用当前证据、或本轮仅静态。需要应用/bundle、精确测试模拟器、模拟器 App 构建、固定场景与页面对应；已有明确首屏范围直接沿用，不扩到所有页面。`--source-ui` 记录选择，后续 source-analysis 实际消费配置请求，详见 [源端 UI 协议](../ios-source-analysis/references/source-ui-capture.md)。未选不阻断基础分析，录屏/桌面远控不在该选择中。
 - **第一条可见输出必须是**一行初始化计划（§3→§4→§5→§6→§7→§8→§9），然后才开始 §1。
 - 硬约束：**不写账号密码、证书私钥到配置**；**不因初始化覆盖源/目标代码**；**缺工具写 unavailable，不生成虚假路径**；**重复运行幂等**（§Notes）。
 
@@ -120,7 +121,7 @@ command -v xcodebuild; command -v xcrun; command -v swift
 ```
 
    - Apple 官方 skills（Xcode 27）：`available` = `xcrun agent skills export` 可执行；未导出 → `apple_skills.status=not_loaded`（不阻断）。实际加载在 a2h-spec 阶段按 `ios-source-analysis` 的接入规程做。
-   - Xcode MCP：仅当用户在宿主已配置（如 `codex mcp add xcode -- xcrun mcpbridge`）才记 `configured`；能探测到 xcrun ≠ 已连通 MCP，未连通记 `xcode_mcp.status=unavailable`。
+   - Xcode MCP：先说明并让开发者选择可选的 MCP 或当前 CLI 路径，见 [MCP 选择与恢复](references/xcode-mcp-choice.md)。`xcrun` 存在、开关启用、连接成功、某个工具存在、工程授权和实际查询分别记录；某一工具缺失不等于全部 MCP 不可用。选择不开启时继续当前 `xcodebuild/xcrun/Swift/Clang` 证据，不阻断初始化。
 3. **云构建日志不能代替 iPhone 安装/功能验证**（`cloud.macos_build` 与真机验证分开记录）——这是 iOS 迁移的固定红线，最终报告必须单列。
 4. 探测结果随 §9 校验一并写入最终报告；本包 provenance（`ios-analysis-provenance.json`）由 spec 阶段正式落盘。
 
@@ -136,7 +137,7 @@ python <runtime>/scripts/a2h_ios.py init --source "<ios>" --project "<target>"
 
 ## 9. 最终校验
 
-在 harness/任何原生载荷之前，执行 `python <runtime>/scripts/a2h_ios.py init-environment --project <target>` 盘点，说明动作后在已有授权内加 `--prepare` 准备。显式用量目标的 usage-start 必须先于这次必要准备。清单外/外部 runtime 不修复；报告各能力缺口。
+执行 `python <runtime>/scripts/a2h_ios.py init-environment --project <target>` 盘点。未选中的后端缺件只报告，不挡住 iOS 静态分析；需要准备某个实际将调用的清单入口时，用重复的 `--entrypoint <relative-path>` 限定范围，在已有授权内加 `--prepare`。实际载荷调用仍逐项检查可执行性和隔离状态，清单外/外部 runtime 不修复。MCP 的 `--mcp ask` 返回 `capability_choices` 并在 stderr 显示中文选择卡；主控必须把两项能力差异展示给开发者并收取选择，JSON 中存在 options 或命令 exit 0 都不代表已经询问。宿主有提问接口时用该接口；否则在对话中给出两项明确选择。已有会话授权或项目选择直接沿用，分别用 `--mcp enable --prepare` / `--mcp skip --prepare` 记录；前者选择只读 MCP，不自动修改系统开关。未选择仅暂缓 MCP 调用，独立 CLI 可继续，不能将沉默写成选择 CLI。MCP 管理员权限、连接或工程授权未就绪均不阻断独立 CLI 工作。显式用量目标的 usage-start 必须先于本次必要准备。
 
 1. **源分析配置门**：`python <runtime>/scripts/a2h_ios.py harness-init --project <target>`。exit 0 仅说明源/配置可进入 a2h-spec，不证明源理解完整或可编译；非0则保留错误，修配置或按现有显式导入协议处理，不能越过。已有v2配置可幂等重跑；仍由spec阶段执行source-index与后续源合同门。
 2. **目标构建准入**：`python <runtime>/scripts/a2h_ios.py validate --project <target>`。exit 0 仅说明构建工具路径与配置检查通过；非0列出真实失败项及恢复条件。缺 hvigor/build-profile **不阻断源分析**；保持目标构建 blocked，执行构建前必须修复并重跑到 exit 0，不伪造路径或削弱 validate。

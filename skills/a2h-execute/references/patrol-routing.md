@@ -19,14 +19,14 @@
 | 权限/通知/窗口/系统能力调用 | `arkts-system-component` | 巡检前置段待补 |
 | 三方 SDK 适配（支付/登录/推送渠道） | `arkts-thirdparty-component` | 巡检前置段待补 |
 
-（arkts-audit / arkts-verify / a2h-ios-analyzer / arkts-project-setup 非产物域，不参与巡检。）
+（arkts-audit / arkts-verify / arkts-ios-analysis / arkts-project-setup 非产物域，不参与巡检。）
 
 ## 执行协议（主会话执行，全并行零墙钟设计）
 
 1. **触发（无条件）**：批/组 closer 返回、`apply_writeback` 成功后**立即**派巡检——
    与后续批次施工**并行**（巡检只读，与任何写者零竞态；批 N 巡检 ∥ 批 N+1 转换）。
 2. **考卷（闭集）**：writeback manifest 的本批文件清单（只巡增量）+ 各页
-   `layout_sources` / slice `spec_refs` / `spec/baseline/resolved-theme.json`（源状态、appearance 与窗口装饰证据；SwiftUI、程序化 UIKit 可没有 IB 文件，以实际源锚点为准）+ 输出契约（见下）。
+   `layout_sources` / slice `spec_refs` / `spec/baseline/resolved-theme.json`（iOS真值锚点——窗口装饰级结构如自绘标题栏/状态栏条不在 layout XML 里，其真值以 resolved-theme 的 decor 条目为锚，**不得以 layout XML 缺席为由判其越权**）+ 输出契约（见下）。
 3. **派发**：按上表路由（一批可命中多域→并行多个巡检 agent）；task_name
    `patrol_<域>_<批号>` 唯一化；派发参数模板 **MUST 加载**
    [agent-prompts/9-patrol.md](./agent-prompts/9-patrol.md)。

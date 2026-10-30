@@ -605,12 +605,16 @@ def wiring(project, number, destination, original, *, feature_plan=None, index=N
     proved=[]
     for old,point in zip(details,expected):
         proof=evidence.prove(point.description,selection['allowed_target_files'])
+        attempts=[{'backend':'typed-call',**{k:proof[k] for k in ('status','failed_check','reason') if k in proof}}]
         if proof['status']=='FAIL':
             declared=evidence.prove_declarative(point.description,selection['allowed_target_files'],selection['callback_bindings'])
+            attempts.append({'backend':'declarative',**{k:declared[k] for k in ('status','failed_check','reason','repair_action','supported_description') if k in declared}})
             if declared['status']=='PASS': proof=declared
         if proof['status']=='FAIL':
             platform=evidence.prove_platform_route(point.description,selection['allowed_target_files'],selection['owned_files'])
+            attempts.append({'backend':'platform-route',**{k:platform[k] for k in ('status','failed_check','reason') if k in platform}})
             if platform['status']=='PASS': proof=platform
+        proof['proof_attempts']=attempts
         targets={entry['file'] for entry in proof.get('evidence',[]) if entry.get('role')=='definition'}
         proof['target_authority']=[entry for entry in selection['target_authority'] if entry['file'] in targets]
         proved.append({'ip_id':old['ip_id'],'description':point.description,

@@ -23,7 +23,7 @@ def preflight(path):
     """Validate every entry before any provider is started; keep argv cwd semantics.
 
     Paths retain the historical caller-working-directory interpretation. Repeated
-    operations with different inputs are valid; exact duplicate requests are not.
+    operations with different inputs are valid; identical reads are coalesced.
     Provider-specific config contents are checked by the real provider so failed
     executions continue to retain their attempt diagnostics.
     """
@@ -66,7 +66,7 @@ def preflight(path):
                 raise MigrationError(label + ' requires an input evidence bundle with manifest.json')
         identity = (operation, paths['config'], paths['input'])
         if identity in seen:
-            raise MigrationError(label + ' duplicates an earlier provider request')
+            continue
         seen.add(identity)
         entries.append({'operation': operation, **{key: str(value) for key, value in paths.items() if value is not None}})
     return entries

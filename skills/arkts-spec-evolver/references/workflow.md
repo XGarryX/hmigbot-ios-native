@@ -1,3 +1,11 @@
+
+> **原生输入边界**：本文件保留 Garry 的目标平台算法、私有 wire 字段和平台对照示例。
+> 源输入只来自当前 git facts/semantics/page spec；历史源设备命令和旧语言扫描不适用于 iOS，
+> 不得实际调用或用它们的缺省结果表示源端通过。源扫描缺少原生适配时保持 unresolved；
+> 当前范围的屏幕采集/设备控制记 not_run。目标 hdc/hvigor 的适用部分也须遵守当前授权。
+
+> **iOS 源输入**：读取 Swift/Objective-C、SwiftUI/UIKit、Xcode 工程及原生资源；实际源构建与设备观测依赖可用的源平台环境。鸿蒙侧构建和验收保持原流程。源侧操作详见 `ios-source-analysis/SKILL.md`。
+
 # spec-evolver 完整工作流程（Step 1-12 + 强制执行检查清单 + Verify 门控）
 
 > 从 arkts-spec-evolver/SKILL.md 下沉。SKILL.md 通过 MUST-read 指针引用本文件。
@@ -76,7 +84,7 @@ done
 **3.5.4 派生 affected_visual_pages**
 - 仅当 `affects` 含 `ui:` 时必填
 - 列出本次改动触碰的页面的所有关键状态（空状态、有数据状态、管理模式等）
-- 每条包含：page_id、state_label、hmos_entry_path、source_reference、iOS_entry_path
+- 每条包含：page_id、state_label、hmos_entry_path、ios_reference、ios_entry_path
 - 记入 `### affected_visual_pages`
 
 **3.5.5 填写 rationale**
@@ -301,10 +309,12 @@ Step 10.5 通过后、执行 Step 11 前，必须向用户展示最终回归清�
 |---|---|---|
 | (A) 视觉验证通过 | arkts-visual-verify 的返回报告 + 截图路径 | 设备齐全且 UI 对比通过 |
 | (B) 视觉验证失败但已达 max_rounds | arkts-visual-verify 的终态报告 | 进回退处理（Step 12），**不得**升级 done |
+| (C) 无可用设备 | 目标 `hdc list targets`，源端另用实际原生设备能力检查**命令原文 + 实际 stdout**（空设备列表需可见） | 回退 `verifying(visual-pending)`，**不得**升级 done |
 
 **硬性要求**：
 - 缺上述三项任一 → 视为跳过 Step 11 → skill 失败
 - 仅凭"跑过了"的陈述不作数；必须有**可见的命令输出 / 子 skill 返回块**在对话里
+- 目标 `hdc list targets` 与真实源设备检查本身必须在 execute 阶段结束后、设置 status 前**单独执行一次**，不能复用前面步骤的输出（设备状态随时变化）
 
 **状态升级守则**：
 - status: `verifying` → `done` 只在 (A) 成立时允许
@@ -383,8 +393,45 @@ IF sample_acs 中任一 AC 退化:
 
 IF preexisting RED（baseline 上即飘红）:
   → 不计入退化，但在报告中标注 "preexisting RED, not regression"
+```
 
+**11a.5 漏报模式知识库的双向闭环**
+
+- **写入端**（本节 11a.4）：每次 sample 抓到漏报时自动追加
+- **读取端**（a2h-incremental-migration §M3.2.5.4.5）：每次新 spec 派生时 LLM 必读该文件作为上下文
+- **结果**：第一次跑可能漏 5 个，第二次漏 3 个，第十次漏 0 个——机制在使用中越用越准，零人工调优
+
+> 类比：自动驾驶系统的 corner case 学习机制，遇到一次特殊场景就把它收录，下次遇到不再翻车。
+
+**11a.4 explosion=true 时的特殊路径**
+
+- 仅回归 spec 里 `feature_acs` 实际列出的"手挑关键 AC"
+- 全量派生结果（spec 中 `全量派生结果` 节）仅审计用，不传给 dt-verifier
+- 在验证记录里显式标注 "explosion=true，非全量回归，已 opt_out"
+
+---
+
+**Step 11b：视觉验证（新增功能对齐 + baseline_screenshots diff）**
+
+仅当 `affects` 含 `ui:` 时执行。Step 11a 通过（或不需跑）后才进入。
+
+**11b.1 设备探测（最先执行，不得跳过）**
+
+<HARD-GATE>
+进入 Step 11b 的第一个动作必须是设备探测。在探测完成前，禁止执行任何截图、对比、或视觉判定操作。
+</HARD-GATE>
+
+必须执行并在对话里显示：
+
+```text
+[历史源平台示例：不适用于 iOS，不可执行。iOS 源设备/构建按本文件适配及 native-input 协议；目标 hdc/hvigor 检查仍须实际执行。]
+# HMOS 端
+hdc list targets
+# iOS 源端（如 spec 涉及对比）
+# 源端：执行已就绪原生设备驱动的实际检查；缺失则记录 DEFERRED，不伪造设备列表
+```
 - 两个命令**都必须跑**，stdout 以 code fence 贴回对话
+- 目标 hdc 缺失 / 源端原生设备工具缺失 也要显式展示 → 视同无设备
 - 有至少一端设备可用 → 继续 11b.2
 - 两端都无设备 → 回填 `verifying(visual-pending)`，**不**升级 `done`，在"验证记录"里贴上两条命令的实际输出作为证据，**终止 Step 11b**
 
@@ -406,7 +453,7 @@ IF preexisting RED（baseline 上即飘红）:
 <HARD-GATE>
 视觉验证**必须**通过调用 `arkts-visual-verify` skill 执行。绝对禁止以下替代行为：
 - ❌ 自己截图 + 肉眼看一下就判定通过
-- ❌ 只截 HMOS 端不截 iOS 端就判定无差异
+- ❌ 只截 HMOS 端不截 iOS 源端就判定无差异
 - ❌ 只看一个状态就判定整个页面通过（必须覆盖 affected_visual_pages 的所有状态）
 - ❌ 用"截图看起来正常"替代 skill 的结构化对比报告
 
@@ -430,6 +477,7 @@ IF preexisting RED（baseline 上即飘红）:
       hmos_entry: entry/src/main/ets/pages/MainPage.ets
       sub_component: ItemsView                 # 可选，子 struct 精确定位
       entry_path: 冷启 → 底 Tab "我的作品" → 切 "我创建的"
+      ios_reference: {ios_dir}/实际页面源文件.swift
       acceptance_visual:                       # 从 spec "验收标准" 中挑视觉可判项
         - "右下 FAB 可见，圆角 + 渐变"
         - "管理模式下 FAB 消失"
@@ -452,7 +500,7 @@ arkts-visual-verify 对 `affected_visual_pages` 每条状态执行：
 
 ```
 1. HMOS 走 hmos_entry_path → 截图（after）
-2. iOS 走 iOS_entry_path → 截图（reference）
+2. iOS 走 ios_entry_path → 截图（reference）
 3. 多模态对比，按"叠加语义"判定：
    - reference（iOS）有的 UI 元素，HMOS 必须存在 + 位置/样式不变（允许像素级微差）
    - HMOS 新增元素允许（属于本次新增功能或 HMOS 设计决策）
@@ -464,9 +512,9 @@ arkts-visual-verify 对 `affected_visual_pages` 每条状态执行：
 - 当 HMOS 新增元素与 iOS 引用图差异巨大（如新增大块区域），多模态可能误判为"位移变形"。此时使用 spec 中 `## 验收标准` 的视觉条目作为补充判定依据：明确属于本次新增的不计入失败。
 - 任意一条状态出现"已有元素消失/位移/变形"且无法被验收标准合理解释 → 进 Step 12 回退处理；不得升级 done。
 
-**iOS 端不可达时的降级**：
+**iOS 源端不可达时的降级**：
 - iOS 模拟器未连 / 同状态未实现 → 该条标 `unreachable_reference`，仅做新增功能视觉对齐（11b.2-11b.3），不做对照
-- 全部状态都不可达 → spec status 标 `verifying(visual-pending)`，等 iOS 端就绪再补
+- 全部状态都不可达 → spec status 标 `verifying(visual-pending)`，等 iOS 源端就绪再补
 
 **11b.5 结果回写**
 

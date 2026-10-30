@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-large-font
-  short_description: ArkTS 大字体场景下的根因定位与修复（V2 优先，兼容 V1）：系统字体缩放（fontSizeScale 1.15 /…
-  default_prompt: 请使用 $arkts-large-font，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

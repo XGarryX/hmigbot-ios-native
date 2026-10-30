@@ -6,6 +6,9 @@ from .core import MigrationError, digest, io_path, json_bytes, read_json, safe_c
 
 
 def generation(project, source_sha):
+    if (Path(project) / 'spec/execution/execution-contract.json').is_file():
+        from .indexed_evidence import generation as indexed_generation
+        return indexed_generation(Path(project), source_sha)
     from .ios_scheduler import baseline_inputs, kernel
     from .plan_contract import assert_pinned
     plan_path = project / 'spec/waves/plan-domains.json'
@@ -42,6 +45,9 @@ def generation(project, source_sha):
         except (ValueError, TypeError): return False
     run_current = len(workflows) == 1 and current_run(workflows[0]) and current_run(dispatch)
     records, by_id = {}, {t['id']: t for t in plan['tasks']}
+    dispatch_evidence_path = project / 'spec/reports/ios-dispatch-domains.json'
+    dispatch_evidence = read_json(dispatch_evidence_path) if dispatch_evidence_path.is_file() else {}
+    before = dispatch_evidence.get('before_files') if dispatch_evidence.get('plan_sha256') == digest(plan_path.read_bytes()) else None
     for task in tasks:
         ident = task['id']; result_path = by_id[ident]['result_path']
         path = safe_child(project, result_path)
@@ -51,16 +57,15 @@ def generation(project, source_sha):
             continue
         try:
             receipt = read_json(path)
-            files = receipt.get('file_hashes')
+            from .receipt_outputs import validate_outputs
+            files, deleted = validate_outputs(project, receipt, task, before=before,
+                readonly=not task['ownership'] and task.get('verification') in {'compile', 'behavior', 'visual'})
             if (receipt.get('source_sha256') != source_sha
                     or receipt.get('ios_receipt_version') != 2
                     or receipt.get('plan_sha256') != digest(plan_path.read_bytes())
                     or receipt.get('task_id') != ident or receipt.get('behavior_verified') is not False
-                    or not isinstance(files, dict) or set(files) - set(task['ownership'])
-                    or receipt.get('status') != 'blocked' and set(files) != set(task['ownership'])
-                    or set(receipt.get('files_touched', [])) != set(files)
                     or set(receipt.get('ac_ids', [])) != set(task.get('ac_ids', []))
-                    or any(digest(safe_child(project, p).read_bytes()) != h for p, h in files.items())):
+                    ):
                 raise MigrationError('Receipt binding or current output hashes differ')
             rows = [r for r in journal.get('operation_outputs', []) if r.get('workflow_id') == 'domains'
                     and r.get('task_id') == ident and r.get('kind') == 'agent']
@@ -81,6 +86,8 @@ def generation(project, source_sha):
             else:
                 state.update(status='generated', outputs=files, landing={
                     'journal': 'spec/state/journal.json', 'attempt': landed['attempt']})
+                if deleted:
+                    state['deleted_outputs'] = deleted
         except (OSError, KeyError, TypeError, ValueError, MigrationError) as exc:
             state.update(status='stale', reason=str(exc))
     relevant = [records[t['id']]['status'] for t in tasks if t['ownership']]

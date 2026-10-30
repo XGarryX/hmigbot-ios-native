@@ -38,7 +38,7 @@ arkts-i18n skill 按其『硬编码字符串扫描与迁移』流程：扫 regis
 资源迁移后、进 Stage 1 前，主线程**自动调用** `arkts-app-identity`（**`scope=dev-identity`**）从 iOS 源落地 App 身份，消除脚手架默认值（`app_name` 滞留 "MyApplication" / `versionName` 滞留 "1.0.0" 会卡真机识别与 a2h-verify App 身份校验项）：
 
 ```
-调用 `$arkts-app-identity` skill（读取 `.agents/skills/arkts-app-identity/SKILL.md` 并按其执行），参数：`scope=dev-identity source_root=<$SOURCE_ROOT> feature_base=spec/baseline/feature-base.md`
+调用 `$arkts-app-identity` skill（读取 `.agents/skills/arkts-app-identity/SKILL.md` 并按其执行），参数：`scope=dev-identity ios_root=<$IOS_SRC> feature_base=spec/baseline/feature-base.md`
 
 只写 dev 安全字段：`app_name`（label 文本）/ `versionName` / `versionCode` / 图标资源；**不碰 `bundleName` / `vendor`**——二者与签名 / AGC 强绑定属部署期 D-009，dev 阶段写入会致签名装机不一致（保留脚手架占位，部署期再以 `scope=full` 落地）。幂等、不覆盖无关字段。**非阻断**：身份字段非编译必需，`arkts-app-identity` 返回非 0 时写迁移报告 WARN 但不阻断 Stage 1。
 

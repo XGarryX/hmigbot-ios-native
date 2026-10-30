@@ -13,15 +13,24 @@ def extraction_finding(queue, issue):
     """
     path = str(issue.get('path', 'project'))
     rule = 'IOS.EXTRACTION_UNRESOLVED'
+    advisory = issue.get('rule') == 'IOS.PROVIDER_RETRY' or issue.get('severity') == 'warn' or issue.get('blocking') is False
     if issue.get('target') is None:
-        return queue.make(rule, 'spec', path, str(issue))
+        finding = queue.make(rule, 'spec', path, str(issue), severity='warn' if advisory else None)
+        if advisory:
+            finding['advisory_basis'] = 'Historical provider attempt or producer-classified diagnostic; current evidence is checked independently.'
+        return finding
     identity = {'issue_code': issue.get('code') or issue.get('rule') or 'unresolved',
                 'project': issue.get('project_path') or path, 'target': issue['target']}
     configuration = issue.get('configuration', issue.get('config'))
     if configuration is not None:
         identity['configuration'] = configuration
     subject = 'ios-extraction:' + json.dumps(identity, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
-    finding = queue.make(rule, 'spec', subject, str(issue), subject_ref=path)
+    finding = queue.make(rule, 'spec', subject, str(issue), subject_ref=path, severity='warn' if advisory else None)
     finding['display_subject'] = path + ' [' + str(issue['target']) + ']'
     finding['extraction_subject'] = identity
+    if finding.get('impact'):
+        finding['impact']['affected_objects'] = [path]
+        finding['impact']['target'] = issue['target']
+        if configuration is not None:
+            finding['impact']['configuration'] = configuration
     return finding

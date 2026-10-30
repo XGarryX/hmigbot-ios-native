@@ -292,6 +292,8 @@ def main(argv=None, *, helper=None, root=None):
         if not args.rollout:
             raise MigrationError('Explicit current-writer --rollout is required; no other sessions will be scanned')
         project = Path(args.project).resolve()
+        if (project / 'spec/execution/execution-contract.json').exists():
+            raise MigrationError('Indexed execution uses the native host join; legacy projected rollout cannot gate this run')
         source = Path(args.rollout).resolve()
         expected_path = safe_child(project, f'spec/a2h/_work/expected_{args.join_point}.json')
         expected = read_json(expected_path)
@@ -325,7 +327,7 @@ def main(argv=None, *, helper=None, root=None):
             ledger_path = None if args.no_ledger else safe_child(project, 'spec/a2h/_work/join-ledger.jsonl')
             ledger_before = ledger_path.read_bytes() if ledger_path and ledger_path.exists() else b''
             from .runtime_timeouts import timeout_for
-            from .scheduler_windows_runtime import run as run_owned_process
+            from .process_runtime import run as run_owned_process
             env = {**os.environ, 'PYTHONUTF8': '1'}
             limit = timeout_for('join', env=env)
             if os.name == 'nt':

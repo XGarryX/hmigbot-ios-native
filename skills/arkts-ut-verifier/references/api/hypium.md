@@ -1,37 +1,3 @@
-# Hypium API 参考
-
-依据 [OpenHarmony jsunit README](https://github.com/openharmony/testfwk_arkxtest/blob/master/jsunit/README.md)、[公开类型声明](https://github.com/openharmony/testfwk_arkxtest/blob/master/jsunit/index.d.ts)及[华为单元测试指导](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/unittest-guidelines)整理。README/源码采用 master，华为指南核对自 2026-05-24 官方快照；这不代表目标项目已安装相同版本。
-
-## 使用前核对
-
-- 从目标工程 `oh-package.json5`、锁文件和实际安装包确认 Hypium 版本；从工程/SDK 确认 API、Stage 模型与编译模式。文档中的新增接口只能在已安装版本支持时使用，不自动升级已有依赖。
-- 下文 API 示例用于解释框架能力，部分沿用上游 JavaScript/TypeScript 的宽类型或常量断言；生成 ArkTS 业务测试时按项目严格模式补明确类型，并遵守 [代码模板](../test-case-template.md) 的真实焦点与强断言要求。
-- mock 的选择与生命周期以 [最小必要 mock 策略](../mock-policy.md) 为准；模块替换配置见 [import mock](../import-mock.md)，运行参数见 [运行命令](hypium-run-cmds.md)。
-
-| 能力 | 起始版本/条件 | 使用边界 |
-|---|---|---|
-| 静态函数 MockKit.mockFunc | Hypium 1.0.16 | 官方支持类上的静态方法；生产调用是否命中仍需结合编译模式核对 |
-| mockPrivateFunc / mockProperty | Hypium 1.0.25 | 实例私有方法、实例属性（含私有属性）；不要泛化为任意私有静态或未导出模块函数 |
-| SkipError | Hypium 1.0.26 | 跳过结果不能计为已验证 |
-| it 的 timeout/tag 参数 | Hypium 1.0.28 | 单用例超时与标签；旧版继续使用已有 it 签名和 CLI 超时 |
-| assertMatchObj | Hypium 1.0.28 | 部分属性匹配，最多六层嵌套；不代替完整对象/集合契约 |
-| verify 参数中的 ArgumentMatchers | Hypium 1.0.28 | 不将新版匹配能力套到旧安装包 |
-| 反向/子串/子数组/元素匹配器 | Hypium 1.0.28 | 具体名称见 ArgumentMatchers 表；基本 any 系列不因此提高版本下限 |
-| import mock / setMockList | SDK API 11+，Stage 模型 | 与 Hypium 包版本分开核对；按实际构建流程初始化 |
-
-公开 Assert 接口没有 `assertNotNull()`，非 null 断言使用 `expect(value).not().assertNull()`；该断言不排除 undefined，也不替代 ArkTS 的类型收窄，后续访问前按实际联合类型显式判断。
-
-`clear(obj)` 恢复被替换成员，`clearAll()` 不恢复。当前 [MockKit 源码](https://github.com/openharmony/testfwk_arkxtest/blob/master/jsunit/src/module/mock/MockKit.js)在桩未匹配时调用原方法，且支持对象参数比较；不能一概认为“默认返回 undefined”或“对象仅 toString 比较”。这些实现细节需要对目标安装版本复核。
-
-## 导航
-
-- [基础流程与 hooks](#接口)
-- [断言](#assert)
-- [MockKit](#mockkit)、[when](#when)、[匹配器](#argumentmatchers)
-- [测试属性](#testtype)、[Hypium 配置](#hypium)
-
----
-
 <div style="text-align: center;font-size: xxx-large" >Hypium</div>
 <div style="text-align: center">A unit test framework for OpenHarmonyOS application</div>
 
@@ -47,12 +13,12 @@ rootProject                  // Hypium工程根目录
 │      ├── ohosTest               // 测试用例目录
 │         ├── ets
 │            └── test
-│               └── List.test.ets
-│               └── TestCase.test.ets
+│               └── List.test.ets      
+│               └── TestCase.test.ets  
 └── moduleB
     ...
-│               └── List.test.ets
-│               └── TestCase.test.ets
+│               └── List.test.ets      
+│               └── TestCase.test.ets  
 ```
 
 ## 安装使用
@@ -65,11 +31,11 @@ ohpm i @ohos/hypium
 - 在DevEco Studio内使用Hypium
 - 工程级oh-package.json5内配置:
 ```json
-"devDependencies": {
-    "@ohos/hypium": "<已核对的兼容版本>"
+"dependencies": {
+    "@ohos/hypium": "1.0.28"
 }
 ```
-注：上面的版本字符串是待填写占位，先按项目配置与锁文件核对，不直接用于安装。
+注：
 hypium服务于OpenHarmonyOS应用对外接口测试、系统对外接口测试（SDK中接口），完成HAP自动化测试。
 
 ## 引入方式
@@ -99,7 +65,7 @@ describe(testSuiteName: string, func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填 | 说明                                  |
+| 参数名 | 类型     | 必填 | 说明                                  | 
 | --- |--------|----|-------------------------------------|
 | testSuiteName | string | 是  | 测试套的名称。                             |
 | func | Function | 是  | 测试套函数，用于注册测试用例。**注意：测试套函数不支持异步函数。** |
@@ -127,7 +93,7 @@ beforeAll(func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填    | 说明                                                 |
+| 参数名 | 类型     | 必填    | 说明                                                 | 
 |------------| ------ |-------|----------------------------------------------------|
 | func       | Function | 是     | 预置动作函数，在一组测试用例（测试套）开始执行之前执行。支持异步函数。 |
 
@@ -158,7 +124,7 @@ beforeEach(func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填    | 说明                                                  |
+| 参数名 | 类型     | 必填    | 说明                                                  | 
 |------------| ------ |-------|-----------------------------------------------------|
 | func       | Function | 是     | 预置动作函数，在每条测试用例开始执行之前执行，支持异步函数。  |
 
@@ -188,7 +154,7 @@ afterEach(func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填    | 说明                          |
+| 参数名 | 类型     | 必填    | 说明                          | 
 |------------| ------ |-------|-----------------------------|
 | func       | Function | 是     | 清理动作函数，在每条测试用例执行完成后运行。支持异步函数。 |
 
@@ -219,7 +185,7 @@ export function beforeEachIt(func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填    | 说明                                                  |
+| 参数名 | 类型     | 必填    | 说明                                                  | 
 |------------| ------ |-------|-----------------------------------------------------|
 | func       | Function | 是     | 预置动作函数，在每条测试用例开始执行之前执行，支持异步函数。  |
 
@@ -271,7 +237,7 @@ export function afterEachIt(func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填    | 说明                          |
+| 参数名 | 类型     | 必填    | 说明                          | 
 |------------| ------ |-------|-----------------------------|
 | func       | Function | 是     | 清理动作函数，在每条测试用例执行完成后运行。支持异步函数。 |
 
@@ -321,7 +287,7 @@ afterAll(func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填    | 说明                          |
+| 参数名 | 类型     | 必填    | 说明                          | 
 |------------| ------ |-------|-----------------------------|
 | func       | Function | 是     | 清理动作函数，在一组测试用例（测试套）执行完成后运行，用于 释放资源、重置状态、清除数据。支持异步函数。 |
 
@@ -378,7 +344,7 @@ export default function customAssertTest() {
     })
 }
 // 执行顺序
-// beforeAll ->
+// beforeAll -> 
 // outer beforeEachIt -> outer beforeEach -> outer it -> outer afterEach -> outer afterEachIt ->
 // outer beforeEachIt -> inner beforeEachIt -> inner beforeEach -> inner it -> inner afterEach -> inner afterEachIt -> outer afterEachIt ->
 // afterAll
@@ -395,7 +361,7 @@ export default function customAssertTest() {
 
 **参数：**
 
-| 参数名 | 类型                      | 必填 | 说明 |
+| 参数名 | 类型                      | 必填 | 说明 | 
 |------------|-------------------------|----|----|
 | testCaseNames   | `Array<string>` 或 string | 是  | 单个用例名称或用例名称数组。 |
 |      func      | Function                | 是  |  预置动作函数，在自定义的一组测试用例或单个测试用例开始执行之前运行。支持异步函数。  |
@@ -425,7 +391,7 @@ export default function beforeItSpecifiedTest() {
 
 **参数：**
 
-| 参数名 | 类型                      | 必填 | 说明 |
+| 参数名 | 类型                      | 必填 | 说明 | 
 |------------|-------------------------|----|----|
 | testCaseNames   | `Array<string>` 或 string | 是  | 单个用例名称或用例名称数组。|
 |      func      | Function                | 是  |  清理动作函数，在自定义的一组测试用例或单个测试用例执行完成后运行。支持异步函数。 |
@@ -456,7 +422,7 @@ it(testCaseName: string, attribute: number, func: Function): void
 
 **参数：**
 
-| 参数名 | 类型                 | 必填 | 说明                               |
+| 参数名 | 类型                 | 必填 | 说明                               | 
 |------------|--------------------|----|----------------------------------------------------|
 | testSuiteName      | string             | 是  | 测试套的名称。 |
 |      attribute    | number | 是  | 过滤参数，支持传0或Level、Size、TestType对象中的枚举值。若传0，则不过滤用例，若传其他参数，则可对用例的级别、规模、测试类型进行过滤，具体参见[TestType, Size, Level相关介绍](#testtype)。 |
@@ -476,66 +442,6 @@ export default function attributeTest() {
 }
 ```
 
-### it 1.0.28
-
-it(testCaseName: string, attribute: TestType | Size | Level, func: Function, timeout?: number, tag?: string): void
-
-定义一条测试用例
-
-**参数：**
-
-| 参数名       | 类型     | 必填 | 说明                                                         |
-| ------------ | -------- | ---- | ------------------------------------------------------------ |
-| testCaseName | string   | 是   | 测试用例的名称。                                             |
-| attribute    | number   | 是   | 过滤参数，支持传0或Level、Size、TestType对象中的枚举值。若传0，则不过滤用例，若传其他参数，则可对用例的级别、规模、测试类型进行过滤，具体参见[TestType, Size, Level相关介绍](https://gitcode.com/openharmony/testfwk_arkxtest/blob/408c803a86827b211cbfeb168ef6a330054bcf1f/jsunit/README.md#testtype)。 |
-| func         | Function | 是   | 测试函数，用于注册测试用例。                                 |
-| timeout      | number   | 否   | 用例的超时时间，取值大于0，传入不在范围内的值或未设置时，则取命令行中-s timeout 设置的值，若命令行中未设置，则设为默认超时时间5000 |
-| tag          | string   | 否   | 用例标签，由字母、数字、空格、`|` 组成，多个标签用 `|` 分隔 。 |
-
-**示例：**
-
-```javascript
-import { describe, expect, it } from '@ohos/hypium';
-
-const sleep = (ms: number) => {
-  return new Promise<void>(res => setTimeout(res, ms))
-}
-
-export default function itOfTagTest() {
-  describe("itOfTagTest", (): void => {
-    it('timeout1', 0, async () => {
-      await sleep(4000)
-    }, 2000)
-    // 用例超时时间2000小于实际执行时间4000，用例超时失败
-
-    it('timeout2', 0, async () => {
-      await sleep(4000)
-    }, 6000)
-    // 用例pass
-
-    it('timeout3', 0, async () => {
-      await sleep(4000)
-    }, -1)
-    // 取值不在范围内，取执行命令行-s timeout 中设置的值作为超时时间，若-s timeout未设置则此用例超时时间为5000。
-
-    it('tag1', 0, () => {
-      expect(1).assertEqual(1)
-    }, 4000, "a")
-    // 设置用例标签为a，命令行执行参数为-s tag 'a'时执行该用例
-
-    it('tag2', 0, () => {
-      expect(1).assertEqual(1)
-    }, 4000, "a  |  b")
-    // 设置用例标签为a和b，命令行执行参数为-s tag 'a'或者'b'时执行该用例
-
-    it('tag3', 0, () => {
-      expect(1).assertEqual(1)
-    }, 4000, "a@b")
-    // 传入非法字符@，等同于没有设置标签，-s tag 传递任何值都不会选中此用例
-  })
-}
-```
-
 ### xdescribe<sup>1.0.17</sup>
 
 xdescribe(testSuiteName: string, func: Function): void
@@ -544,7 +450,7 @@ xdescribe(testSuiteName: string, func: Function): void
 
 **参数：**
 
-| 参数名 | 类型     | 必填| 说明           |
+| 参数名 | 类型     | 必填| 说明           | 
 | --- | ------ |---|--------------|
 | testSuiteName | string | 是 | 跳过的测试套名称。    |
 | func | Function | 是 | 测试套函数，用于注册测试用例。**注意：测试套函数不支持异步函数。** |
@@ -572,7 +478,7 @@ xit(testCaseName: string,attribute: number,func: Function): void
 
 **参数：**
 
-| 参数名 | 类型                | 必填 | 说明                                                                                            |
+| 参数名 | 类型                | 必填 | 说明                                                                                            | 
 |------------|-------------------|----|-----------------------------------------------------------------------------------------------|
 | testSuiteName      | string   | 是  | 跳过的测试用例名称。                                                                                    |
 |      attribute              | number| 是  | 过滤参数，支持传0或Level、Size、TestType对象中的枚举值。若传0，则不过滤用例，若传其他参数，则可对用例的级别、规模、测试类型进行过滤，具体参见[TestType, Size, Level相关介绍](#testtype) |
@@ -1018,6 +924,7 @@ assertDeepEquals(expectValue: any): void
 |---|-----------------|----|--------------------------------------------|
 | expectValue  | any | 是  | 期望值，即待验证的表达式或变量的值。可为任意类型，包括基本类型、对象类型或空值等。  |
 
+
 **示例：**
 ```javascript
 import { describe, expect, it } from '@ohos/hypium';
@@ -1264,107 +1171,6 @@ export default function assertMessageTest() {
             expect(actualValue).message('0 != 2').assertEqual(expectValue);
         })
     })
-}
-
-```
-
-#### assertMatchObj<sup>1.0.28</sup>
-
-assertMatchObj(expectValue: Object): void
-
-检验实际对象的属性是否匹配期望对象的结构和值。
-
-**参数：**
-
-| 参数名      | 类型   | 必填 | 说明                           |
-| ----------- | ------ | ---- | ------------------------------ |
-| expectValue | Object | 是   | 期望对象，即待验证的对象结构。 |
-
-**功能说明：**
-
-1. **部分匹配**：只验证期望对象中指定的属性，不要求实际对象和期望对象完全一致
-2. **ArgumentMatchers 支持**：可结合 ArgumentMatchers 使用匹配器进行灵活验证
-3. **嵌套对象支持**：支持嵌套对象的递归匹配，支持最大嵌套深度为6层。
-
-**示例：**
-
-```javascript
-import { ArgumentMatchers, describe, expect, it } from '@ohos/hypium';
-
-interface User {
-  name: string;
-  age: number;
-  email: string;
-  active: boolean;
-  tags: string[];
-  profile?: UserProfile;
-}
-
-interface UserProfile {
-  phone: string;
-  address: string;
-  city: string;
-}
-
-export default function assertMatchObjTest() {
-  describe('assertMatchObj', () => {
-    // 精确匹配
-    it('basic_exact_match', 0, () => {
-      const user: User = {
-        name: "John",
-        age: 30,
-        email: "john@example.com",
-        active: true,
-        tags: ["user", "vip"]
-      };
-
-      expect(user).assertMatchObj({
-        name: "John",
-        age: 30,
-        active: true,
-      });
-    });
-
-    // 使用匹配器
-    it('matcher_match', 0, () => {
-      const user: User = {
-        name: "John",
-        age: 30,
-        email: "john@example.com",
-        active: true,
-        tags: []
-      };
-
-      expect(user).assertMatchObj({
-        name: ArgumentMatchers.anyString,
-        email: ArgumentMatchers.matchRegexs(/.*@.*/)
-      });
-    });
-
-    // 嵌套对象
-    it('nested_match', 0, () => {
-      const user: User = {
-        name: "John",
-        age: 30,
-        email: "john@example.com",
-        active: true,
-        tags: [],
-        profile: {
-          phone: "123-456-7890",
-          address: "123 Main St",
-          city: "New York"
-        }
-      };
-
-      expect(user).assertMatchObj({
-        name: "John",
-        profile: {
-          phone: "123-456-7890",
-          city: "New York"
-        }
-      });
-    });
-  });
 }
 
 ```
@@ -1672,7 +1478,7 @@ Mock某个类的实例上的属性，将其值设置为预期值，支持私有�
 
 | 参数名           | 类型   | 必填 | 说明            |
 |---------------|------|----|---------------|
-| obj | Object | 是 | 某个类的实例。 |
+| Object        | obj | 是  | 某个类的实例。       |
 | propertyName  |String  | 是  | 类的实例上的属性名称。   |
 | value         |  any    |  是  | 期望被Mock后的属性值。 |
 
@@ -1765,7 +1571,7 @@ export default function staticTest() {
 | 参数名       | 类型          | 必填 | 说明                        |
 |-----------|-------------|----|---------------------------|
 | methodName    | String      | 是  | 类的实例上的公共方法名。              |
-| argsArray | `Array<any>` | 是  | 一个数组，表示期望该方法被调用时所传入的参数列表。@since1.0.28，参数可传入ArgumentMatchers进行模糊匹配。 |
+| argsArray | `Array<any>` | 是  | 一个数组，表示期望该方法被调用时所传入的参数列表。 |
 
 **返回值：**
 
@@ -1828,10 +1634,10 @@ clear(obj: Object): void
 import { describe, expect, it, MockKit, when } from '@ohos/hypium';
 
 class ClassName {
-
+    
   constructor() {
   }
-
+  
   method_1(...arg: number[]) {
     return '888888';
   }
@@ -1871,10 +1677,10 @@ clearAll(): void
 import { describe, expect, it, MockKit, when } from '@ohos/hypium';
 
 class ClassName {
-
+    
   constructor() {
   }
-
+  
   method_1(...arg: number[]) {
     return '888888';
   }
@@ -1913,7 +1719,7 @@ when(fn: Function): Function
 
 | 参数名       | 类型         | 必填 | 说明              |
 |-----------|------------|----|-----------------|
-| fn | Function | 是 | 被 MockKit 处理后的函数。 |
+| fn    | String        | 是  | 被MockKit处理后的函数。 |
 
 
 **返回值：**
@@ -1973,7 +1779,7 @@ afterReturn(value: any): void
 import { describe, expect, it, MockKit, when } from '@ohos/hypium';
 
 class ClassName {
-
+    
   constructor() {
   }
 
@@ -2012,14 +1818,14 @@ afterReturnNothing(): void
 import { describe, expect, it, MockKit, when } from '@ohos/hypium';
 
 class ClassName {
-
+    
   constructor() {
   }
 
   method_1(arg: string) {
     return '888888';
   }
-
+  
 }
 
 export default function afterReturnNothingTest() {
@@ -2060,7 +1866,7 @@ afterAction(action: Function): void
 import { describe, expect, it, MockKit, when } from '@ohos/hypium';
 
 class ClassName {
-
+    
    constructor() {
    }
 
@@ -2110,7 +1916,7 @@ afterThrow(e_msg: string): void
 import { describe, expect, it, MockKit, when } from '@ohos/hypium';
 
 class ClassName {
-
+    
   constructor() {
   }
 
@@ -2162,7 +1968,7 @@ times(count: Number): void
 import { describe, it, MockKit, when } from '@ohos/hypium'
 
 class ClassName {
-
+    
   constructor() {
   }
 
@@ -2206,10 +2012,10 @@ once(): void
 import { describe, it, MockKit } from '@ohos/hypium';
 
 class ClassName {
-
+    
   constructor() {
   }
-
+  
   method_1(...arg: string[]) {
     return '888888';
   }
@@ -2251,7 +2057,7 @@ atLeast(count: Number): void
 import { describe, it, MockKit, when } from '@ohos/hypium'
 
 class ClassName {
-
+    
     constructor() {
     }
 
@@ -2299,7 +2105,7 @@ atMost(count: Number): void
 import { describe, it, MockKit, when } from '@ohos/hypium'
 
 class ClassName {
-
+    
   constructor() {
   }
 
@@ -2340,10 +2146,10 @@ never(): void
 import { describe, it, MockKit } from '@ohos/hypium';
 
 class ClassName {
-
+    
   constructor() {
   }
-
+  
   method_1(...arg: string[]) {
     return '888888';
   }
@@ -2380,20 +2186,19 @@ ArgumentMatchers用于在Mock函数时自定义函数参数，它的接口以枚
 | anyFunction    | -     | 设定用户传任何function类型参数，执行的结果都是预期的值，使用ArgumentMatchers.anyFunction方式调用。                    |
 | anyNumber     | -    | 设定用户传任何数字类型参数，执行的结果都是预期的值，使用ArgumentMatchers.anyNumber方式调用。                                   |
 | anyObj | - | 设定用户传任何对象类型参数，执行的结果都是预期的值，使用ArgumentMatchers.anyObj方式调用。  |
-| matchRegexs     | -    | 设定用户传任何符合正则表达式验证的参数，执行的结果都是预期的值，使用ArgumentMatchers.matchRegexs(RegExp)方式调用。  |
-| notString | - | @since1.0.28，设定用户传任何非字符串参数，执行的结果都是预期的值，使用ArgumentMatchers.notString方式调用。 |
-| notBoolean | - | @since1.0.28，设定用户传任何非boolean类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notBoolean方式调用。 |
-| notNumber | - | @since1.0.28，设定用户传任何非数字类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notNumber方式调用。 |
-| notObj | - | @since1.0.28，设定用户传任何非对象类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notObj方式调用。 |
-| notFunction | - | @since1.0.28，设定用户传任何非function类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notFunction方式调用。 |
-| notMatchRegexs | - | @since1.0.28，设定用户传任何不符合正则表达式验证的参数，执行的结果都是预期的值，使用ArgumentMatchers.notMatchRegexs(RegExp)方式调用。 |
-| containSubstring | - | @since1.0.28，设定用户传任何包含特定子串的字符串参数，执行的结果都是预期的值，使用ArgumentMatchers.containSubstring(subString)方式调用。 |
-| notContainSubstring | - | @since1.0.28，设定用户传任何不包含特定子串的字符串参数，执行的结果都是预期的值，使用ArgumentMatchers.notContainSubstring(subString)方式调用。 |
-| containSubArray | - | @since1.0.28，设定用户传任何包含特定数组的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.containSubArray(subArray)方式调用。 |
-| notContainSubArray | - | @since1.0.28，设定用户传任何不包含特定数组的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.notContainSubArray(subArray)方式调用。 |
-| containValue | - | @since1.0.28，设定用户传任何包含特定值的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.containValue(value)方式调用。 |
-| notContainValue | - | @since1.0.28，设定用户传任何不包含特定值的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.notContainValue(value)方式调用。 |
-
+| matchRegexs     | -    | 设定用户传任何符合正则表达式验证的参数，执行的结果都是预期的值，使用ArgumentMatchers.matchRegexs(Regex)方式调用。                  |
+| notString     | -    | @since1.0.28，设定用户传任何非字符串参数，执行的结果都是预期的值，使用ArgumentMatchers.notString方式调用。                 |
+| notBoolean     | -    | @since1.0.28，设定用户传任何非boolean类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notBoolean方式调用。                |
+| notNumber     | -    | @since1.0.28，设定用户传任何非数字类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notNumber方式调用。                |
+| notObj     | -    | @since1.0.28，设定用户传任何非对象类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notObj方式调用。               |
+| notFunction     | -    | @since1.0.28，设定用户传任何非function类型参数，执行的结果都是预期的值，使用ArgumentMatchers.notFunction方式调用。               |
+| notMatchRegexs     | -    | @since1.0.28，设定用户传任何不符合正则表达式验证的参数，执行的结果都是预期的值，使用ArgumentMatchers.notMatchRegexs(RegExp)方式调用。               |
+| containSubstring     | -    | @since1.0.28，设定用户传任何包含特定子串的字符串参数，执行的结果都是预期的值，使用ArgumentMatchers.containSubstring(subString)方式调用。              |
+| notContainSubstring     | -    | @since1.0.28，设定用户传任何不包含特定子串的字符串参数，执行的结果都是预期的值，使用ArgumentMatchers.notContainSubArray(subString)方式调用。              |
+| containSubArray     | -    | @since1.0.28，设定用户传任何包含特定数组的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.containSubArray(subArray)方式调用。              |
+| notContainSubArray     | -    | @since1.0.28，设定用户传任何不包含特定数组的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.notContainSubArray(subArray)方式调用。              |
+| containValue     | -    | @since1.0.28，设定用户传任何包含特定值的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.containValue(value)方式调用。              |
+| notContainValue     | -    | @since1.0.28，设定用户传任何不包含特定值的数组参数，执行的结果都是预期的值，使用ArgumentMatchers.notContainValue(value)方式调用。              |
 
 **示例：**
 
@@ -2402,16 +2207,16 @@ import { ArgumentMatchers, describe, expect, it, MockKit, when } from '@ohos/hyp
 
 class ClassName {
 
-  constructor() {
-  }
+    constructor() {
+    }
 
-  method_1(arg: string) {
+    method_1(arg: string) {
     return '888888';
-  }
+}
 
-  method_2(arg: number[]) {
+method_2(arg: number[]) {
     return '888888';
-  }
+}
 }
 
 export default function argumentMatchersAnyTest() {
@@ -2431,72 +2236,72 @@ export default function argumentMatchersAnyTest() {
             expect(claser.method_1('test')).assertEqual('1'); // 用例执行通过。
         })
 
-		it('testArgumentMatchers_ContainsSubString', 0, () => {
+        it('testArgumentMatchers_ContainsSubString', 0, () => {
             // 1.创建一个Mock能力的对象MockKit
-			let mocker: MockKit = new MockKit();
+            let mocker: MockKit = new MockKit();
             // 2.定类ClassName，里面两个函数，然后创建一个对象claser
-			let claser: ClassName = new ClassName();
+            let claser: ClassName = new ClassName();
             // 3.进行Mock操作,比如需要对ClassName类的method_1函数进行Mock
-			let mockfunc: Function = mocker.mockFunc(claser, claser.method_1);
+            let mockfunc: Function = mocker.mockFunc(claser, claser.method_1);
             // 4.期望claser.method_1函数被Mock后, 以任何包含'testA'字串的字符串作为入参时返回结果'1'
-			when(mockfunc)(ArgumentMatchers.containSubstring('testA')).afterReturn('1');
+            when(mockfunc)(ArgumentMatchers.containSubstring('testA')).afterReturn('1');
             // 5.对Mock后的函数进行断言，看是否符合预期，注意选择跟第4步中对应的断言方法
             // testABBBC 包含 testA，满足条件，返回 '1'
-			expect(claser.method_1("testABBBC")).assertEqual('1'); // 断言执行通过
+            expect(claser.method_1("testABBBC")).assertEqual('1'); // 断言执行通过
             // 6.校验method_1被mock后符合条件的调用次数
             // 目前仅调用过1次，入参为testABBBC，testAAA不包含testABBBC，满足条件
-			mocker.verify('method_1', [ArgumentMatchers.notContainSubstring('testAAA')]).once();
+            mocker.verify('method_1', [ArgumentMatchers.notContainSubstring('testAAA')]).once();
         })
 
-		it('testArgumentMatchers_ContainElement', 0, () => {
+        it('testArgumentMatchers_ContainElement', 0, () => {
             // 1.创建一个Mock能力的对象MockKit
-			let mocker: MockKit = new MockKit();
+            let mocker: MockKit = new MockKit();
             // 2.定类ClassName，里面两个函数，然后创建一个对象claser
-			let claser: ClassName = new ClassName();
+            let claser: ClassName = new ClassName();
             // 3.进行Mock操作,比如需要对ClassName类的method_2函数进行Mock
-			let mockfunc: Function = mocker.mockFunc(claser, claser.method_2);
+            let mockfunc: Function = mocker.mockFunc(claser, claser.method_2);
             // 4.期望claser.method_2函数被Mock后, 以任何包含1的数组作为入参时返回结果'1'
-			when(mockfunc)(ArgumentMatchers.containValue(1)).afterReturn('1');
+            when(mockfunc)(ArgumentMatchers.containValue(1)).afterReturn('1');
             // 5.对Mock后的函数进行断言，看是否符合预期，注意选择跟第4步中对应的断言方法
             // [1,2,3] 包含 1，满足条件，返回 '1'
-			expect(claser.method_2([1,2,3])).assertEqual('1'); // 断言执行通过
+            expect(claser.method_2([1,2,3])).assertEqual('1'); // 断言执行通过
             // 6.校验method_2被mock后符合条件的调用次数
             // 目前仅调用过1次，入参为[1,2,3]，4不被[1,2,3]包含，满足条件
-			mocker.verify('method_2', [ArgumentMatchers.notContainValue(4)]).once(); // 执行success
+            mocker.verify('method_2', [ArgumentMatchers.notContainValue(4)]).once(); // 执行success
         })
 
-		it('testArgumentMatchers_ContainSunArray', 0, () => {
+        it('testArgumentMatchers_ContainSunArray', 0, () => {
             // 1.创建一个Mock能力的对象MockKit
-			let mocker: MockKit = new MockKit();
+            let mocker: MockKit = new MockKit();
             // 2.定类ClassName，里面两个函数，然后创建一个对象claser
-			let claser: ClassName = new ClassName();
+            let claser: ClassName = new ClassName();
             // 3.进行Mock操作,比如需要对ClassName类的method_2函数进行Mock
-			let mockfunc: Function = mocker.mockFunc(claser, claser.method_2);
+            let mockfunc: Function = mocker.mockFunc(claser, claser.method_2);
             // 4.期望claser.method_2函数被Mock后, 以任何包含子数组[1,2]的数组作为入参时返回结果'1'
-			when(mockfunc)(ArgumentMatchers.containSubArray([1,2])).afterReturn('1');
+            when(mockfunc)(ArgumentMatchers.containSubArray([1,2])).afterReturn('1');
             // 5.对Mock后的函数进行断言，看是否符合预期，注意选择跟第4步中对应的断言方法
             // [1,2,3] 包含 [1,2]，满足条件，返回 '1'
-			expect(claser.method_2([1,2,3])).assertEqual('1'); // 断言执行通过
+            expect(claser.method_2([1,2,3])).assertEqual('1'); // 断言执行通过
             // 6.校验method_2被mock后符合条件的调用次数
             // 目前仅调用过1次，入参为[1,2,3]，[3,4]不被[1,2,3]包含，满足条件
-			mocker.verify('method_2', [ArgumentMatchers.notContainSubArray([3,4])]).once(); // 执行success
+            mocker.verify('method_2', [ArgumentMatchers.notContainSubArray([3,4])]).once(); // 执行success
         })
 
-		it('testArgumentMatchers_MatchRegexs', 0, () => {
+        it('testArgumentMatchers_MatchRegexs', 0, () => {
             // 1.创建一个Mock能力的对象MockKit
-			let mocker: MockKit = new MockKit();
+            let mocker: MockKit = new MockKit();
             // 2.定类ClassName，里面两个函数，然后创建一个对象claser
-			let claser: ClassName = new ClassName();
+            let claser: ClassName = new ClassName();
             // 3.进行Mock操作,比如需要对ClassName类的method_1函数进行Mock
-			let mockFunc: Function = mocker.mockFunc(claser, claser.method_1);
+            let mockFunc: Function = mocker.mockFunc(claser, claser.method_1);
             // 4.期望claser.method_1函数被Mock后, 以任何匹配正则表达式RegExp('123456')的字符串作为入参时返回结果'1'
-			when(mockFunc)(ArgumentMatchers.matchRegexs(new RegExp('123456'))).afterReturn('1');
+            when(mockFunc)(ArgumentMatchers.matchRegexs(new RegExp('123456'))).afterReturn('1');
             // 5.对Mock后的函数进行断言，看是否符合预期，注意选择跟第4步中对应的断言方法
             // '12345678' 匹配正则表达式RegExp('123456')，满足条件，返回 '1'
-			expect(claser.method_1('12345678')).assertEqual('1') //用例执行通过
+            expect(claser.method_1('12345678')).assertEqual('1') //用例执行通过
             // 6.校验method_1被mock后符合条件的调用次数
             // 目前仅调用过1次，入参为'12345678'，不匹配正则表达式RegExp('333')，满足条件
-			mocker.verify('method_1', [ArgumentMatchers.notMatchRegexs(new RegExp('333'))]).once(); // 执行success
+            mocker.verify('method_1', [ArgumentMatchers.notMatchRegexs(new RegExp('333'))]).once(); // 执行success
         })
     })
 }
@@ -2599,7 +2404,7 @@ interface customAssert extends Assert {
 
 //自定义断言实现
 let myAssertEqual = (actualValue: boolean, expectValue: boolean) => {
-
+    
 interface R {
   pass: boolean,
   message: string

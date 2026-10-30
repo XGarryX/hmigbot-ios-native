@@ -1,6 +1,6 @@
 ---
 name: arkts-animation-builder
-description: "生成 ArkTS/HarmonyOS 动画和交互效果代码（V2 优先，API 12+）。当用户需要实现 animateTo 显式动画、属性动画 animation()、transition 转场、geometryTransition 共享元素转场、Spring 弹簧动画、手势跟随、循环动画、淡入淡出/缩放/位移/旋转等 UI 动效时，务必触发此 skill。即使只说\"加个动画\"\"让它动起来\"也应触发。从 iOS 动画框架迁移（SwiftUI/Core Animation/Lottie 等）的识别与还原决策用 arkts-animation-migrate。"
+description: 生成 ArkTS/HarmonyOS 动画和交互效果代码（V2 优先，API 12+）。当用户需要实现 animateTo 显式动画、属性动画 animation()、transition 转场、geometryTransition 共享元素转场、Spring 弹簧动画、手势跟随、循环动画、淡入淡出/缩放/位移/旋转等 UI 动效时，务必触发此 skill。即使只说"加个动画""让它动起来"也应触发。从 iOS 动画框架迁移（Lottie/ObjectAnimator/帧动画/SVGA 等）的识别与还原决策用 arkts-animation-migrate。
 metadata:
   type: domain
   domain: ui
@@ -10,10 +10,14 @@ metadata:
   - arkts-v2
   - gesture
 ---
+
+> **0.13.4 统一合同（优先于历史示例）**：先读 [执行交界合同](../a2h-run/references/execution-boundary.md)。源读取、选定构建配置、SwiftSyntax/facts、源 AC 和 indexed 计划由当前 git 上游唯一生产；从 execute 起使用本技能的 Garry 实施/收口方法。只使用宿主实际支持的派发字段，不照抄 `agent_type`。已有授权直接沿用；依赖失败输入的任务保持 blocked，不降低静态门禁。权限按交界合同区分：禁止桌面远控；指定测试应用/模拟器的截图、控件查询和固定回放可按已确认范围执行，Preview 不证明业务运行。录屏及未指定设备不在此授权内，未执行项如实记 not_run。未经授权不运行遥测上传。工具修复、工具验证、项目转换、HAP 构建和完整迁移验收分别报告，不能用局部 100% 代表全部完成。
+
+
 # ArkTS Animation Builder — 动画效果生成器（V2 优先）
 
 > **从 iOS 项目迁移动画 → see [arkts-animation-migrate](../arkts-animation-migrate/SKILL.md)**
-> 含 SwiftUI / UIKit / Core Animation / Lottie / 转场 全套迁移视角与 iOS→ArkTS 映射表。
+> 含 Lottie / 属性 / 补间 / 帧 / SVGA / Transition / 共享元素 / MotionLayout 全套迁移视角与 iOS→ArkTS 映射表。
 > 本 skill 提供完整可运行的 ArkTS 动画 demo（被 migrate 内部 see also 引用）。
 
 ## API 版本与项目策略

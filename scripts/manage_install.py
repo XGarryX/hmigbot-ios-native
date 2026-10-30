@@ -23,6 +23,8 @@ def filesystem_path(path):
 
 ROOT = filesystem_path(Path(__file__).resolve().parents[1])
 sys.path.insert(0, str(ROOT / 'src'))
+from hmigbot_ios.payload_layout import (DEFERRED_SKILLS, ROOT_DIRECTORIES, ROOT_FILES, exclusion,
+                                       release_profile)
 BEGIN = '<!-- hmigbot-ios:begin -->'
 END = '<!-- hmigbot-ios:end -->'
 BLOCK = f'''{BEGIN}
@@ -39,7 +41,16 @@ fix/release/install evidence separately from project gates and conversion progre
 Load references/external-expertise.md in that skill for pinned iOS expertise.
 Run expertise-plan/review before the source gate; MCP responses stay tool evidence.
 Generate machine facts/obligations and run source-check --harness before plan-ir.
-Use next-batch/receipt/land-results; only original tools write the three state ledgers.
+Read a2h-run/references/execution-boundary.md. Run execution-contract --apply,
+then the indexed resources/UI/Base/Slices/FV stages and closer/writeback protocol.
+Legacy v2 attempts keep their original receipt/recovery API; never run both schedulers.
+Only original tools write state ledgers. Read rules/app-ui-validation-boundary.md
+in the bundled runtime. Installation does not grant a device or application scope.
+Within the task's already authorized test app, simulator and fixed scenarios, use
+official app screenshots, control queries and UI tests; do not require desktop control.
+Desktop takeover through CUA/mouse/keyboard, unrelated apps, automatic system-permission
+changes, recording and unspecified personal devices remain outside that authorization.
+Find conversion progress in spec/reports/ios-progress.md inside this target project.
 All skills, references, templates, binaries and agent roles are local. No external
 HMigBot path or binding packet is needed. Helper runtime: .hmigbot-ios/plugin.
 Use the original ArkTS implementation and validation steps. Respect current user
@@ -71,6 +82,9 @@ def put(path, data):
 @lru_cache(maxsize=8)
 def skill_names(root):
     names = {s.name for s in (root / 'skills').iterdir() if s.is_dir()}
+    # Old owned installations must remain removable after optional source
+    # directories have been moved out of this release tree.
+    names.update(DEFERRED_SKILLS)
     names.update('a2h-ios-' + s for s in ('run', 'analyze', 'map', 'implement', 'verify', 'evidence'))
     retired = root / 'docs/upstream/retired-skills.json'
     if retired.is_file():
@@ -100,35 +114,48 @@ def child(workspace, relative):
     return path
 
 
-def payload():
+def require_release_host():
+    profile = release_profile()
+    if (platform.system() != profile['host']['system'] or
+            platform.machine().lower() not in profile['host']['architectures']):
+        raise ValueError('This release profile supports macOS Apple Silicon only: ' + profile['id'])
+
+
+def payload(*, check_host=True):
+    if check_host:
+        require_release_host()
     files = {}
-    for folder in ('.codex-plugin', 'skills', 'scripts', 'src', 'rules', 'schemas', 'providers', 'docs', 'evaluations', 'agents-codex', 'bin', 'policies', 'vendor'):
+    for folder in sorted(ROOT_DIRECTORIES):
         for path in (ROOT / folder).rglob('*'):
+            if exclusion(path.relative_to(ROOT).as_posix(), directory=path.is_dir()):
+                continue
             if path.is_file() and not {'__pycache__', '.build', '.swiftpm'}.intersection(path.parts) and path.suffix != '.pyc':
                 if path.is_symlink():
                     raise ValueError('Install source contains links')
                 files['.hmigbot-ios/plugin/' + path.relative_to(ROOT).as_posix()] = path
-    for name in ('.gitattributes', '.gitignore', 'README.md', 'CHANGELOG.md', 'pyproject.toml', 'install.ps1', 'install.sh', 'uninstall.ps1', 'uninstall.sh', 'runtime-entrypoints.json'):
-        files['.hmigbot-ios/plugin/' + name] = ROOT / name
+    for name in sorted(ROOT_FILES):
+        if (ROOT / name).is_file() and not exclusion(name):
+            files['.hmigbot-ios/plugin/' + name] = ROOT / name
     for skill in (ROOT / 'skills').iterdir():
-        if not skill.is_dir() or not (skill / 'SKILL.md').is_file():
+        if (not skill.is_dir() or not (skill / 'SKILL.md').is_file() or
+                exclusion(skill.relative_to(ROOT).as_posix(), directory=True)):
             continue
         for file in skill.rglob('*'):
-            if file.is_file() and '__pycache__' not in file.parts:
+            if file.is_file() and not exclusion(file.relative_to(ROOT).as_posix()):
                 files['.agents/skills/' + skill.name + '/' + file.relative_to(skill).as_posix()] = file
         files[f'.agents/skills/{skill.name}/runtime.json'] = b'{"runtime_relative":"../../../.hmigbot-ios/plugin"}\n'
     for role in (ROOT / 'agents-codex').glob('*.toml'):
-        files['.codex/agents/' + role.name] = role
+        if not exclusion(role.relative_to(ROOT).as_posix()):
+            files['.codex/agents/' + role.name] = role
     for path in (ROOT / 'bin').iterdir():
-        if path.is_file(): files['.migbot/bin/' + path.name] = path
-    os_name = {'Windows': 'windows', 'Darwin': 'darwin', 'Linux': 'linux'}.get(platform.system())
-    arch = 'arm64' if platform.machine().lower() in {'arm64', 'aarch64'} else 'amd64'
-    suffix = '.exe' if os_name == 'windows' else ''
-    asset = ROOT / 'bin' / f'a2h-{os_name}-{arch}{suffix}'
+        if path.is_file() and not exclusion(path.relative_to(ROOT).as_posix()):
+            files['.migbot/bin/' + path.name] = path
+    asset = ROOT / 'bin/a2h-darwin-arm64'
     if not asset.is_file(): raise ValueError('Bundled runtime unavailable: ' + asset.name)
-    files['.migbot/bin/a2h' + suffix] = asset
+    files['.migbot/bin/a2h'] = asset
     for path in (ROOT / 'policies').glob('*'):
-        if path.is_file(): files['.migbot/policies/' + path.name] = path
+        if path.is_file() and not exclusion(path.relative_to(ROOT).as_posix()):
+            files['.migbot/policies/' + path.name] = path
     return files
 
 
@@ -249,6 +276,7 @@ def manage(workspace, mode, hmigbot_root=None):
             if target.exists():
                 permission_receipts.append(ensure_runtime_permissions(workspace, target))
         manifest = {'schema_version': 1, 'owner': 'hmigbot-ios', 'version': new_version,
+                    'release_profile': release_profile(),
                     'files': hashes, 'agent_block': BLOCK,
                     'agent_original_base64': old.get('agent_original_base64') if old else (base64.b64encode(agent_bytes).decode() if agent_bytes is not None else None),
                     'agent_installed_sha256': checksum(agent_path.read_bytes())}
@@ -302,6 +330,7 @@ def manage(workspace, mode, hmigbot_root=None):
             'skills': sum(1 for key in new if key.startswith('.agents/skills/') and key.endswith('/SKILL.md')),
             'hmigbot': 'bundled', 'agents': sum(key.startswith('.codex/agents/') for key in new),
             'version': manifest['version'], 'upgrade_cleanup': cleanup.receipt,
+            'release_profile': manifest['release_profile'],
             'permission_repairs': permission_receipts}
 
 

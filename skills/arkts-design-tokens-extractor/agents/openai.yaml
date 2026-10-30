@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-design-tokens-extractor
-  short_description: ArkTS / HarmonyOS 工程的「魔鬼数字」量化与资源化工具。扫描 *.ets 中所有 `.width(＜int…
-  default_prompt: 请使用 $arkts-design-tokens-extractor，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

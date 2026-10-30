@@ -627,7 +627,7 @@ grep -rn "syncTokenTo\|syncToLib\|mirror.*User\|copyUserInfo" features products 
 
 `lib_network.AccountApi` 是**唯一**的登录入口。所有 LoginViewModel 必须按这个模板：
 
-⚠️ **关键 trap**：AccountApi.bindPhone 等方法内部往 `LibUserData` 写 token/userId 等用户态字段，但 `UserPreferences.isLogin` 是**业务工程独立**的 KV 字段（`PreferenceKeys.IS_LOGIN`），私仓 AccountApi **不会写**这个字段。MineScreenComponent 等 UI 用 `await UserPreferences.isLogin()` 判定登录态 —— 业务侧**必须**在登录成功路径调一次 `UserPreferences.setIsLogin(true)`，否则会出现"已登录但 UI 仍显示未登录"症状（2026-05-08 客户复审第二次实证）。
+⚠️ **关键 trap**：AccountApi.bindPhone 等方法内部往 `LibUserData` 写 token/userId 等用户态字段，但 `UserPreferences.isLogin` 是**业务工程独立**的 KV 字段（`PreferenceKeys.IS_LOGIN`），私仓 AccountApi **不会写**这个字段。MineFragmentComponent 等 UI 用 `await UserPreferences.isLogin()` 判定登录态 —— 业务侧**必须**在登录成功路径调一次 `UserPreferences.setIsLogin(true)`，否则会出现"已登录但 UI 仍显示未登录"症状（2026-05-08 客户复审第二次实证）。
 
 ```ts
 // ✅ 正确 — 业务 LoginViewModel
@@ -646,10 +646,10 @@ export class LoginViewModel extends BaseViewModel {
   /**
    * 登录成功后的本地会话标记 + 通知 UI 刷新。
    * AccountApi 自治写 LibUserData，但 isLogin 是工程独立 KV 字段，私仓不会写，
-   * 必须业务侧自己 setIsLogin(true) 否则 MineScreen 还显示未登录。
+   * 必须业务侧自己 setIsLogin(true) 否则 个人页仍显示未登录。
    */
   private async finalizeLoginSession(phoneToPersist?: string): Promise<void> {
-    await UserPreferences.setIsLogin(true);          // ⚠️ 必须！MineScreen 用此字段判登录态
+    await UserPreferences.setIsLogin(true);          // ⚠️ 必须！个人页用此字段判登录态
     if (phoneToPersist && phoneToPersist.length > 0) {
       await UserPreferences.setPhone(phoneToPersist);
     }
@@ -712,7 +712,7 @@ export class LoginViewModel extends BaseViewModel {
 根因：`UserPreferences.setIsLogin(true)` 漏调（旧版 `finalizeLoginSession` 里有这行，删除时被一并删掉，没意识到 `IS_LOGIN` 是工程独立 KV，不是 LibUserData 内字段）。
 
 **反辩白**：
-- ❌ "AccountApi.bindPhone 已经写了 LibUserData.token，UI 应该能用 token 判登录" → MineScreenComponent 用的是 `await UserPreferences.isLogin()` 读 `IS_LOGIN` KV，不是读 token
+- ❌ "AccountApi.bindPhone 已经写了 LibUserData.token，UI 应该能用 token 判登录" → MineFragmentComponent 用的是 `await UserPreferences.isLogin()` 读 `IS_LOGIN` KV，不是读 token
 - ❌ "客户说不要业务侧赋值" → 客户原意是不要业务侧 mirror **用户字段**（token/userId/vipLevel/...），`IS_LOGIN` 是工程自有的 UI 显示开关字段，跟用户字段无关，必须业务侧维护
 
 **audit 触发器（R6.8-F 专用）**：
@@ -941,7 +941,7 @@ grep -rn "LibUserData\.getInstance()\.\(isBinding\|isVip\)\(\)\|UserData\.getIns
 
 - 改前：8 处 `await UserPreferences.isLogin()` + 1 处 `userInfoModel.isLogin` + 4 处 `vipLevel > 0`
 - 改后：13 处 `LibUserData.getInstance().isBinding/isVip()` 调用
-- 涉及文件：MineScreenComponent / MemberCenterViewModel / MineSettingPage / GuideMemberCenterPage / VideoCreatePicturePage / HomeViewModel / IonBusiness / AppRepository / MembershipRefresher
+- 涉及文件：MineFragmentComponent / MemberCenterViewModel / MineSettingPage / GuideMemberCenterPage / VideoCreatePicturePage / HomeViewModel / IonBusiness / AppRepository / MembershipRefresher
 - 客户原话："判断是否登录，采用 UserData.getInstance().isBinding() 判断，判断是否开通 vip，采用 UserData.getInstance().isVip() 判断"
 
 ---

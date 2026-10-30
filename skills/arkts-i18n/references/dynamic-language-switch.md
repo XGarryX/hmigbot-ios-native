@@ -571,6 +571,7 @@ import { process } from '@kit.BasicServicesKit'
 function restartApp(): void {
   const context = getContext(this) as common.UIAbilityContext
   // ⚠️ 需要查证：HarmonyOS 是否支持应用重启
+  // iOS: Process.killProcess(Process.myPid())
   // HarmonyOS: 可能需要使用 context.terminateSelf() 然后重新启动
   context.terminateSelf()
 }

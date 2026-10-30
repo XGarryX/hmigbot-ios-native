@@ -1,4 +1,0 @@
-interface:
-  display_name: arkts-visual-verify
-  short_description: 按 iOS 原生页面和状态对比真实 iOS 与鸿蒙截图、交互结果；复用 HMigBot fix 轮次和目标修复角色，未采集…
-  default_prompt: 请使用 $arkts-visual-verify，按本技能的输入、执行步骤和验收条件完成当前任务。

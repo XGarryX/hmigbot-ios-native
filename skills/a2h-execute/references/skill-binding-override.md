@@ -16,7 +16,7 @@
 | Stage 3 Step 3a 页面未转换且有 iOS 源码 | 先触发 Phase A 按需数据准备，再调 converter | 必须有数据才能转换 |
 | 上一个编译检查点 FAILED | 暂停执行，报告错误列表 | 阻断性检查点不继续后续 task |
 | task 使用了不确定的 API | 追加 `arkts-knowledge-verifier` | 防止使用错误/废弃的 API |
-| task 内容命中 a2h-plan `references/skill-binding-rules.md` 映射表关键词（动画/视频/媒体/下载/权限等）但 plan 未标 | 按该表追加对应 Domain Skill——**plan 漏标兜底，非第二映射源**（具体映射零复制，查表为准）；兜底触发即在迁移报告覆盖记录表标「plan 漏标：该 slice 文件 `suggested_skills+:` 应补」 | 主路径 = plan 期落字段；runtime 只兜漏网 |
+| task 内容命中 [a2h-plan 绑定规则](../../a2h-plan/references/skill-binding-rules.md) 映射表关键词（动画/视频/媒体/下载/权限等）但 plan 未标 | 按该表追加对应 Domain Skill——**plan 漏标兜底，非第二映射源**（具体映射零复制，查表为准）；兜底触发即在迁移报告覆盖记录表标「plan 漏标：该 slice 文件 `suggested_skills+:` 应补」 | 主路径 = plan 期落字段；runtime 只兜漏网 |
 | task 联调报错出现 `401` / `-500` / 签名错 / `Missing request attribute` / 响应 unwrap 失败 / 后端调不通 | 追加 `arkts-network-troubleshoot` | 网络层反向救火（error-lookup 反查 Phase + 修复模板） |
 | task 跨多个领域 | 组合多个 skill 按顺序执行 | 单个 skill 无法覆盖所有需求 |
 | plan 中 style_set != none | 追加对应风格集的全部 style skills | 风格 skills 提供团队规范约束，subagent 自动遵循 |

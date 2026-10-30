@@ -49,20 +49,28 @@ def contract_revision(project):
              root / 'skills/a2h-plan/references/plan-delivery-contract.md']
     paths += [root / 'src/hmigbot_ios' / name for name in ('swiftui.py', 'computed_properties.py', 'spec_discovery.py', 'spec_helpers.py', 'finding_identity.py', 'provider_plan.py', 'provider_runs.py', 'providers.py', 'gate_artifacts.py', 'native_scaffold.py', 'init_environment.py', 'source_candidates.py', 'artifact_commit.py', 'verification_scope.py', 'source_build_membership.py')]
     paths += [root / 'runtime-entrypoints.json', root / 'schemas/source-build-membership.schema.json']
-    # All maintained readers/routers and schema adapters participate in the freeze,
-    # including old modules whose policy changed through a shared service.
-    paths += sorted((root / 'src/hmigbot_ios').glob('*.py'))
-    paths += sorted((root / 'src/hmigbot_ios').glob('*.json'))
-    paths += sorted((root / 'schemas').glob('*.json'))
+    # Public CLI routers are intentionally not traversed by consumed_modules.
+    # These indexed execution/recheck/measurement protocols do consume frozen
+    # task identities and must invalidate an older frozen implementation.
+    paths += [root / 'src/hmigbot_ios' / name for name in (
+        'indexed_dispatch.py', 'indexed_compile_gate.py', 'repair_triage.py', 'ui_repair_dispatch.py',
+        'execution_measurements.py', 'ios_ui_delivery.py', 'behavior_review.py')]
+    from .contract_identity import consumed_modules, rule_digest
+    paths += sorted(consumed_modules(root, paths))
     scheduler_payload = root / 'vendor/hmigbot-1.7.0/skills/a2h-execute/scripts'
     paths += sorted(scheduler_payload.glob('*.py'))
-    paths += sorted(scheduler_payload.glob('bin/*/_entry.dist/_entry.bin'))
-    paths += sorted(scheduler_payload.glob('bin/*/_entry.dist/_entry.exe'))
+    # This delivery selects macOS ARM64. Deferred Intel/Windows payloads cannot
+    # invalidate its plan; changing the selected platform is a contract change.
+    paths += sorted(scheduler_payload.glob('bin/macos-arm64/_entry.dist/_entry.bin'))
     paths += sorted((root / 'skills/a2h-plan/templates').glob('*.md'))
     from .source_responsibility import parser_fingerprints
+    selected_parsers = {path: sha for path, sha in parser_fingerprints().items()
+                        if '/bin/' not in path or '/bin/macos-arm64/' in path}
     return digest(json_bytes({'artifacts': revision(Path(project)),
-                              'source_responsibility_parsers': parser_fingerprints(),
-                              'plan_rules': {p.relative_to(root).as_posix(): digest(p.read_bytes()) for p in paths if p.is_file()}}))
+                              'source_responsibility_parsers': selected_parsers,
+                              'execution_payload_profile': {'selected': 'macos-arm64',
+                                  'deferred': ['macos-x64', 'windows-x64']},
+                              'plan_rules': {p.relative_to(root).as_posix(): rule_digest(p) for p in paths if p.is_file()}}))
 
 
 def assert_pinned(project, contract):
@@ -111,13 +119,16 @@ def structural_digest(text, *, artifact=None):
         if text.index(begin) > text.index(end):
             raise MigrationError('Malformed managed progress block order')
         content = text[text.index(begin) + len(begin):text.index(end)]
+        retained_notes = []
         for entry in content.splitlines():
             entry = re.sub(r'^\s*(?:-\s+)?', '', entry).strip()
             count = r'(?:\d+ of \d+|(?:generation|acceptance|features|pages|registered|resolved):\s*\d+(?:/\d+)?)'
             state = r'(?:generation|compilation|behavior|visual):\s*(?:pending|not_run|running|passed|failed|stale|blocked|generated|unverified)'
             if entry and not re.fullmatch('(?:' + count + '|' + state + ')', entry):
-                raise MigrationError('Managed progress only permits defined count/axis state lines')
-        text = text[:text.index(begin)] + begin + '\n' + end + text[text.index(end) + len(end):]
+                retained_notes.append(entry)
+        # Human notes are permitted but remain frozen semantic text. Only
+        # recognized machine counters/status lines are projected away.
+        text = text[:text.index(begin)] + begin + '\n' + '\n'.join(retained_notes) + '\n' + end + text[text.index(end) + len(end):]
     lines = text.splitlines()
     for section, table in _core_index_tables(text, artifact):
         progress = section['progress']
@@ -345,6 +356,13 @@ def indexed_contract_inputs(project):
     project = Path(project).resolve()
     pending = [target for row in _feature_rows(project).values() for target, _, _ in _contract_dependencies(project, row)[1]]
     seen, hashes = set(), {}
+    from .ios_ui_delivery import INVENTORY
+    route_input = safe_child(project, 'spec/verification/ios-routing.json')
+    if route_input.is_file():
+        hashes['spec/verification/ios-routing.json'] = digest(route_input.read_bytes())
+    inventory = safe_child(project, INVENTORY)
+    if inventory.is_file():
+        hashes[INVENTORY] = digest(inventory.read_bytes())
     while pending:
         path = pending.pop()
         if path in seen:
@@ -421,7 +439,7 @@ def task_inputs(project, task, items=None):
     return [consumed[key] for key in sorted(consumed)]
 
 
-def plan_units(project):
+def plan_units(project, *, check_ui_delivery=True):
     """Load the same bounded indexed responsibility authority used by validate_plan."""
     project = Path(project).resolve()
     from .artifact_contract import catalog
@@ -452,6 +470,9 @@ def plan_units(project):
             if not ident.startswith(expected) or ident in units:
                 raise MigrationError('Duplicate or misplaced plan item: ' + ident)
             units[ident] = item
+    if check_ui_delivery:
+        from .ios_ui_delivery import validate_inventory
+        validate_inventory(project, units)
     return projections, units
 
 

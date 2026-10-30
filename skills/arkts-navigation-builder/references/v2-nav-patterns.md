@@ -8,7 +8,7 @@
 >
 > **导航 API 在 V1/V2 中完全一致**：`Navigation / NavPathStack / NavDestination / pushPathByName / pop / popToName / clear / @Builder pageMap` 用法不变，**仅页面组件内的状态装饰器需要使用 V2**。
 
-> **注意**：`@ohos.router` 在 API 12+ 已废弃。所有新代码必须使用本文件中的 Navigation + NavPathStack 方案。如需从 router 迁移到 Navigation，参阅 arkts-knowledge-verifier skill 的 `references/migration-patterns.md`。
+> **注意**：`@ohos.router` 在 API 12+ 已废弃。所有新代码必须使用本文件中的 Navigation + NavPathStack 方案。如需从 router 迁移到 Navigation，参阅 [arkts-knowledge-verifier API 迁移参考](../../arkts-knowledge-verifier/references/migration-patterns.md)。
 
 > **⚠️ 传参写法（V2 严格模式必读）**：传参一律用 **`new XParam()` 类型化类实例**、取参一律用 **`as Object` widening + `instanceof`**。裸对象字面量 `pushPathByName('X', {...} as Record<string,string>)` 在 API 12+ 严格模式会编译失败（`arkts-no-untyped-obj-literals`）；裸 `const p = ctx.pathInfo.param` 会触发 `arkts-no-any-unknown`。完整规矩见 SKILL.md「⚠️ 编译硬规矩」。
 

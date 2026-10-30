@@ -1,4 +1,2 @@
-interface:
-  display_name: arkts-spec-evolver
-  short_description: 增量 Spec 演进管理（V2 优先，API 12+）。当用户需要补全功能、修复 Bug、性能优化、审计 spec 与代码…
-  default_prompt: 请使用 $arkts-spec-evolver，按本技能的输入、执行步骤和验收条件完成当前任务。
+policy:
+  allow_implicit_invocation: false

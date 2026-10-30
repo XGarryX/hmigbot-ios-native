@@ -156,104 +156,30 @@ def synchronized_membership(root, project_path, objects, targets):
 
 
 class OpenStep:
+    """Compatibility facade over Apple's read-only property-list parser.
+
+    plutil owns OpenStep string/escape syntax. This establishes serialized
+    project structure only; actual target membership still comes from Xcode.
+    """
     def __init__(self, text):
-        self.tokens = []
-        pos = 0
-        while pos < len(text):
-            if text[pos].isspace() or text[pos] == '\ufeff':
-                pos += 1
-            elif text.startswith('//', pos):
-                end = text.find('\n', pos)
-                pos = end if end >= 0 else len(text)
-            elif text.startswith('/*', pos):
-                end = text.find('*/', pos + 2)
-                if end < 0:
-                    raise MigrationError('Unterminated OpenStep comment')
-                pos = end + 2
-            elif text[pos] == '"':
-                pos += 1
-                chars = []
-                while pos < len(text) and text[pos] != '"':
-                    if text[pos] == '\\':
-                        pos += 1
-                        if pos >= len(text):
-                            raise MigrationError('Unterminated OpenStep escape')
-                        escape = text[pos]
-                        if escape in {'n', 'r', 't', '"', '\\'}:
-                            chars.append({'n': '\n', 'r': '\r', 't': '\t'}.get(escape, escape))
-                        elif escape in '01234567':
-                            match = re.match('[0-7]{1,3}', text[pos:])
-                            chars.append(chr(int(match.group(), 8)))
-                            pos += len(match.group()) - 1
-                        elif escape == 'U' and re.fullmatch('[0-9A-Fa-f]{4}', text[pos + 1:pos + 5]):
-                            chars.append(chr(int(text[pos + 1:pos + 5], 16)))
-                            pos += 4
-                        else:
-                            raise MigrationError(f'Unsupported OpenStep escape: {escape}')
-                    else:
-                        chars.append(text[pos])
-                    pos += 1
-                if pos >= len(text):
-                    raise MigrationError('Unterminated OpenStep string')
-                self.tokens.append(('value', ''.join(chars)))
-                pos += 1
-            elif text[pos] in '{}()=;,':
-                self.tokens.append(('punctuation', text[pos]))
-                pos += 1
-            else:
-                match = re.match(r'[^\s{}()=;,"]+', text[pos:])
-                if not match:
-                    raise MigrationError('Invalid OpenStep input')
-                self.tokens.append(('value', match.group()))
-                pos += len(match.group())
-        self.pos = 0
-
-    def is_punctuation(self, value):
-        return self.pos < len(self.tokens) and self.tokens[self.pos] == ('punctuation', value)
-
-    def take(self, punctuation=None):
-        if self.pos == len(self.tokens):
-            raise MigrationError('Unexpected end of OpenStep document')
-        token = self.tokens[self.pos]
-        if punctuation is not None and token != ('punctuation', punctuation):
-            raise MigrationError(f'Expected OpenStep {punctuation}, found {token[1]}')
-        self.pos += 1
-        return token
-
-    def value(self, depth=0):
-        if depth > 128:
-            raise MigrationError('OpenStep nesting limit exceeded')
-        if self.is_punctuation('{'):
-            self.take('{')
-            result = {}
-            while not self.is_punctuation('}'):
-                kind, key = self.take()
-                if kind != 'value' or key in result:
-                    raise MigrationError('Invalid or duplicate OpenStep dictionary key')
-                self.take('=')
-                result[key] = self.value(depth + 1)
-                self.take(';')
-            self.take('}')
-            return result
-        if self.is_punctuation('('):
-            self.take('(')
-            result = []
-            while not self.is_punctuation(')'):
-                result.append(self.value(depth + 1))
-                if not self.is_punctuation(')'):
-                    self.take(',')
-            self.take(')')
-            return result
-        kind, value = self.take()
-        if kind != 'value':
-            raise MigrationError('Expected OpenStep scalar')
-        return value
+        self.text = text
 
     def parse(self):
-        value = self.value()
-        if self.pos != len(self.tokens):
-            raise MigrationError('Trailing OpenStep content')
-        return value
+        import json
+        import subprocess
+        command = ['/usr/bin/plutil', '-convert', 'json', '-o', '-', '--', '-']
+        try:
+            result = subprocess.run(command, input=self.text.encode('utf-8'),
+                                    capture_output=True, timeout=15, shell=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise MigrationError('Apple plutil could not read project structure: ' + str(exc)) from exc
+        if result.returncode:
+            detail = result.stderr.decode('utf-8', errors='replace').strip()
+            raise MigrationError('Apple plutil rejected property-list structure: ' + detail)
+        try:
+            return json.loads(result.stdout)
+        except (ValueError, UnicodeError) as exc:
+            raise MigrationError('Apple plutil returned invalid JSON') from exc
 
 
 def project_inventory(root, files):

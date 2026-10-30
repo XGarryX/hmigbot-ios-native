@@ -1,3 +1,44 @@
+## [0.13.7] 源证据与登记兼容、路由注册复核
+
+- 源证据解析兼容 ASCII/全角分号；仍逐条验证路径与行号，撰写示例使用 ASCII 分号，不批量改正文。
+- 占位登记多组完整读取，普通写回/质量计数/Stage 3 门禁共用规则；点号 P-ID 在读取、计数、显式表头修复与原写回全链支持，错序/缺列/重复 ID 明确拒绝。
+- CHECK-6 除真实目标边抽取外，实际调用随包目标注册扫描；修正 Navigation/pageMap 被经典 router 注册标志误判的问题。系统路由表未能解析时保留 DEFERRED，不伪造高级导航语义通过。
+- C2 报告保留 typed/declarative/platform 实际证明尝试；区分描述协议不支持与缺少源码接线，澄清动态图片窄范围规则，不为语法兼容放宽真实性验证。
+- 继承 0.13.6 MCP 通用连接与路由自动执行改进。本次仅工具维护及隔离样例验证，不操作实际应用工程。
+
+## [0.13.6] MCP 通用连接与路由验证闭环
+
+- 延续 B0–B3 已实现能力，加入分阶段等待与总体上限、同操作连接复用、实际只读项目探测优先的实例选择、动态窗口绑定及准确错误分类。
+- 路由CHECK-6从仅消费已有结果改为按页面/导航适用性实际执行随包静态抽取与当前iOS源对账，结果进入正式报告；缺清单/崩溃/过期不能读旧PASS，报告只读检查和未选范围不启动脚本。
+- F01 本轮复核已确认原生终答实际进入 trace.completed 并由 gate 验收，未发现所报缺接线，不修改其功能逻辑。
+- 工具回归与包验证、真实 Apple 工程集成及应用迁移验收分别报告；不自动改系统授权或操作业务工程。
+
+## [0.13.5] 子任务可信终态与资源增量合并
+
+MCP通用修复：分阶段/整体等待预算、实际只读项目探测优先的实例选择、同操作连接复用、当前schema/窗口绑定和分连接错误归类。保留只读边界与CLI降级，真实Apple工程核验单独记账。
+
+B0–B3 补充：
+
+- 加入真实调用计量与同范围/质量比较，区分实际总时间、任务重叠、等待、构建、返工、材料和回写；不按减少检查宣称提速。
+- indexed执行新增按实际容量补位、独立Base依赖并发、稳定Slice输入发布及可核验的集中构建试点；公共收尾和原最终门保持。
+- 页面组件、状态、弹窗和交互形成正式交付清单，按任务绑定并消费源参考，静态交付与真实行为证据分别验证。
+- 设置保存/读回/效果与按钮业务链消费原行为case及独立oracle；修复按实际影响和同因依赖执行原复查，逐条保留问题与恢复条件。
+- 新协议改变规则指纹，旧冻结项目须按既有审核/重排恢复；本轮维护验证与真实项目重跑验收分开报告。
+
+
+- Join 在完整原始宿主历史中接受具备路由与身份依据的原生最终消息，同时保留 completed；同句柄续作使旧终态失效，完成后仍核对当前 attempt 与产物。
+- Execute 的 UI Batch / Slice Group 在派发前冻结任务资源 scope；每个 worker 提交独立增量，唯一 closer 去重、拒绝冲突后统一合并，跨文件中断由日志恢复。
+- 新执行合同标记 task-deltas-v1；原 writeback 入口在 brief/账本变更前核对资源收据与本批组计划归属，并将证明绑定到 indexed receipt。旧冻结合同按原受审恢复流程处理，不静默补写。
+- 本版维护验证与具体 App 的编译、设备行为及迁移验收分别报告。
+
+## [0.13.4] Git/Garry 阶段能力融合
+
+- init/spec/plan 的冲突实现由 git 主导，execute 本身及后续由 Garry 主导。
+- 采用 Garry 的执行/收口规程、签名路径适配、原始宿主日志 join、失败派发/授权恢复和图标输入守卫；不复制第二套源解析包。
+- 新增 execution-contract，实际校验并冻结上游输入，生成明确为静态的下游 meta/outline；拒绝混用两套 domains 调度。
+- 源事实/官方能力链、预算、受审重排、所有权、安装事务和旧冻结任务恢复保持各自合同。新增来源与阶段机器目录，过程证据保存在工具包外。
+- 本记录仅说明实现；真实测试、未验证平台与应用迁移结果分开交付。
+
 # 0.12.0 — 2026-10-23（原生能力归一）
 
 - 以原生 Xcode、资源坐标、ObjC、条件证据、责任及门禁内容为主，融合 Swift 边界/计算属性/identity、缓存、Provider attempts、预算、调度与 Windows 适配。
@@ -14,14 +55,14 @@
 - 冻结审阅、决策、语义、页面锚点、构建/条件证据、责任载荷、原解析器与通用规则；候选不能直接授权派发，变化在落账前拒绝。
 - UI 派生报告按精确源锚点登记，并展示全部复合类型；保留现有作者计划，不把文件存在或报告改善算作门禁通过。
 - 修复安装冒烟实测发现的macOS同目录别名共享合同报错，目录根归一后保留完整传递依赖；新增目录别名回归。
-- 新增工具/项目结果分离规程和托管 AGENTS 规则；工具回归、发布、安装、项目实测分别记录。安装与项目重跑见 docs/RELEASE-0.9.7.md。
+- 新增工具/项目结果分离规程和托管 AGENTS 规则；工具回归、发布、安装、项目实测分别记录。安装与项目重跑见 [安装说明](docs/INSTALL.md) 和 [升级清理规则](docs/UPGRADE-CLEANUP.md)。
 
 # 0.9.6 — 2026-10-23（Objective-C状态事实修复）
 
 - 在0.9.5交付目录上保留资源路由、打包和安装修复，增加真实property/ivar状态事实。
 - 保留owner/type/ownership、存储依据、零初始化与独立init/lifecycle赋值证据；未知宏、字符字面量等不支持语法显式阻断。
 - 修复自定义setter、self遮蔽、属性宏、条件上下文边界，原typed消费者继续拒绝篡改和漏项，提取器纳入冻结revision。
-- 工具回归与OFDDemo源事实核验不能替代业务覆盖、主工程构建或设备验收；完整边界见docs/objc-state-facts.md。
+- 工具回归与源事实核验不能替代业务覆盖、主工程构建或设备验收；完整边界见docs/objc-state-facts.md。
 
 # 0.9.5 — 2026-10-23（本地目录交付修正）
 
@@ -41,7 +82,7 @@
 
 # 0.9.3 — 2026-10-22（本地发布候选）
 
-- 整合工程中已验证的 pragma、路径/调度、Spec/Plan、能力接线、结构审计、失败恢复及证据报告优化；逐项来源和限制见 docs/reports/optimization-rollup-2026-10-22.md。
+- 整合工程中已验证的 pragma、路径/调度、Spec/Plan、能力接线、结构审计、失败恢复及证据报告优化；逐项来源和限制保存在当轮外置整合证据中。
 - 选择性纳入 Clang 条件证据生产/回放/冻结及独立门禁诊断；保留未解析、不适用矛盾和过期阻断。
 - 接入门禁文件自动生成、零 AC 诚实汇总、精确派生文件审计与 shell/PowerShell 参数透传。
 - 修复 macOS 中文安装路径下原Nuitka检查器初始化abort，公共包装器统一ASCII临时执行位置。
@@ -63,7 +104,7 @@
 - Swift 字符串保留完整 raw 分隔符、表达式和跨度，无法解码时标记 unresolved，不输出错误 value；同步资源消费 MD。
 - 新增只读 spec-upgrade 和明确选择候选的受控应用，不猜语义、不自动切 profile 或继承 PASS。
 - summary schema 2 逐页连接计划、原调度身份/落账、回执和当前输出；行为从本页 AC 原始观察推导；新增确定性 migration-report/--check，并在 Execute/Verify MD 实际调用。
-- 增加边界反例、独立审查及中性真实构建/逻辑评估；Chunky 和双端设备验收仍不在本次完成范围。
+- 增加边界反例、独立审查及中性真实构建/逻辑评估；实际业务工程和双端设备验收仍不在本次完成范围。
 
 # 0.9.0 — 2026-10-16
 
@@ -140,7 +181,7 @@
 - 私有GitHub云Xcode构建、证据下载和IPA设备架构检查；Windows普通Apple账户本地签名教程。
 - 完整安装/升级/卸载脚本、中文/空格路径、归属及用户编辑保护，重写使用说明和范围说明。
 
-完整性、自测和局部构建不能代替任意业务应用的双端验收，详见 docs/VALIDATION.md。
+完整性、自测和局部构建不能代替任意业务应用的双端验收，验证结果以当轮外置证据为准。
 
 # 0.1.0 · 2026-09-28
 
@@ -148,7 +189,7 @@
 
 通用规则与业务示例分离。未知语法拒绝转换，旧配置冲突拒绝读取，生成不覆盖已有工程，旧摘要不能证明新源码，完整性/编译/行为验证状态分别记录。
 
-完整原生应用迁移、编译器语义 provider、UIKit 转换、跨端运行等价与 HMigBot 原五阶段集成尚未完成。具体证据见 docs/VALIDATION.md。
+完整原生应用迁移、编译器语义 provider、UIKit 转换、跨端运行等价与 HMigBot 原五阶段集成尚未完成。具体证据保存在当轮外置验证记录中。
 
 # 0.11.0 — 2026-10-22
 
@@ -159,7 +200,7 @@
 - Reuse existing Windows extended-length IO at provider capture/config/input/retry boundaries, with real deep-path lifecycle regression coverage and portable contract paths.
 - Distinguish exact reviewed platform comparisons from unreviewed legacy instructions in native-surface audits; preserve adjacent-command and stale-review rejection.
 - Make full-suite release timeout and fresh dedicated test paths explicit and retain timeout evidence; correct the Execute skill description for the official validator.
-- Deliver a standalone Mac handoff with backgrounds, Windows changes, Darwin clock identity gap, native evidence design, real Cuike and full acceptance work still required.
+- Deliver a standalone Mac handoff with native evidence design; application acceptance still requires separate verification.
 - Preserve original pipeline, vendor resources, control-state writers and local verification semantics. Real App equivalence and end-to-end scale/time/token goals remain unverified.
 
 # 0.10.1 — 2026-10-21
@@ -196,7 +237,7 @@
 - Swift 字符串保留完整 raw 分隔符、表达式和跨度，无法解码时标记 unresolved，不输出错误 value；同步资源消费 MD。
 - 新增只读 spec-upgrade 和明确选择候选的受控应用，不猜语义、不自动切 profile 或继承 PASS。
 - summary schema 2 逐页连接计划、原调度身份/落账、回执和当前输出；行为从本页 AC 原始观察推导；新增确定性 migration-report/--check，并在 Execute/Verify MD 实际调用。
-- 增加边界反例、独立审查及中性真实构建/逻辑评估；Chunky 和双端设备验收仍不在本次完成范围。
+- 增加边界反例、独立审查及中性真实构建/逻辑评估；实际业务工程和双端设备验收仍不在本次完成范围。
 
 # 0.9.0 — 2026-10-16
 
@@ -273,7 +314,7 @@
 - 私有GitHub云Xcode构建、证据下载和IPA设备架构检查；Windows普通Apple账户本地签名教程。
 - 完整安装/升级/卸载脚本、中文/空格路径、归属及用户编辑保护，重写使用说明和范围说明。
 
-完整性、自测和局部构建不能代替任意业务应用的双端验收，详见 docs/VALIDATION.md。
+完整性、自测和局部构建不能代替任意业务应用的双端验收，验证结果以当轮外置证据为准。
 
 # 0.1.0 · 2026-09-28
 
@@ -281,4 +322,4 @@
 
 通用规则与业务示例分离。未知语法拒绝转换，旧配置冲突拒绝读取，生成不覆盖已有工程，旧摘要不能证明新源码，完整性/编译/行为验证状态分别记录。
 
-完整原生应用迁移、编译器语义 provider、UIKit 转换、跨端运行等价与 HMigBot 原五阶段集成尚未完成。具体证据见 docs/VALIDATION.md。
+完整原生应用迁移、编译器语义 provider、UIKit 转换、跨端运行等价与 HMigBot 原五阶段集成尚未完成。具体证据保存在当轮外置验证记录中。

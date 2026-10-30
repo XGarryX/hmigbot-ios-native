@@ -1,4 +1,0 @@
-interface:
-  display_name: arkts-scenario-runner
-  short_description: 组织 iOS 与鸿蒙应用的真实到态和操作场景；根据实际可用设备工具执行步骤并保存证据，不把脚本配置或源码推断当成已完成的点击。
-  default_prompt: 请使用 $arkts-scenario-runner，按本技能的输入、执行步骤和验收条件完成当前任务。
